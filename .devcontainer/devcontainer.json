@@ -1,0 +1,21 @@
+{
+    "name": "gibbs devcontainer",
+    "image": "tamada/devcontainer-rust-base:latest",
+    "runArgs": [
+        "--rm",
+        "--name=gibbs-devcontainer"
+    ],
+    "customizations": {
+        // カスタマイズ
+        "vscode": {
+            "extensions": [
+                "taichi.vscode-textlint",         // 文章校正として、textlintの拡張機能
+                "DavidAnson.vscode-markdownlint", // Markdownの構文とスタイルをチェックの拡張機能
+                "hediet.vscode-drawio",           // 図を記載する際に使うdrawioの拡張機能
+                "bierner.markdown-mermaid"        // mermaidの記載もプレビューできるようにする拡張機能
+            ],
+        },
+    },
+    "workspaceFolder": "/work",
+    "workspaceMount": "source=${localWorkspaceFolder},target=${containerWorkspaceFolder},type=bind,consistency=cached"
+}
