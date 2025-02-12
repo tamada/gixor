@@ -1,0 +1,18 @@
+{
+    "base-path": "testdata/boilerplates",
+    "repositories": [
+        {
+            "url": "https://github.com/github/gitignore.git",
+            "repo-name": "gitignore",
+            "owner": "github",
+            "name": "default",
+            "path": "default"
+        }, {
+            "url": "https://github.com/tamada/gitignore.git",
+            "repo-name": "gitignore",
+            "owner": "tamada",
+            "name": "tamada",
+            "path": "tamada"
+        }
+    ]
+}
