@@ -199,4 +199,3 @@ pub fn pull(repo: &PathBuf, remote: &str, branch: &str) -> Result<(), git2::Erro
     do_merge(&git_repo, remote, fetch_commit)
 }
 // ------------- the above part is copied from gita crate ------------------
-

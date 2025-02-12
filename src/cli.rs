@@ -1,18 +1,23 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use gibbs::LogLevel;
+use gixor::LogLevel;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, arg_required_else_help = true)]
 pub(crate) struct CliOpts {
     #[clap(subcommand)]
-    pub(crate) subcmd: GibbsCommand,
+    pub(crate) subcmd: GixorCommand,
 
     #[arg(short, long, help = "Specify the log level", default_value = "warn")]
     pub(crate) log: LogLevel,
 
-    #[arg(short, long, value_name = "CONFIG_JSON", help = "Specify the configuration file")]
+    #[arg(
+        short,
+        long,
+        value_name = "CONFIG_JSON",
+        help = "Specify the configuration file"
+    )]
     pub(crate) config: Option<PathBuf>,
 
     #[cfg(debug_assertions)]
@@ -21,7 +26,7 @@ pub(crate) struct CliOpts {
 }
 
 #[derive(Subcommand, Debug)]
-pub(crate) enum GibbsCommand {
+pub(crate) enum GixorCommand {
     #[command(name = "dump", about = "Dump the boilerplates")]
     Dump(DumpOpts),
     #[command(
@@ -84,7 +89,12 @@ The NAME shows the owner name of the repository, e.g., "github" means "https://g
 
 #[derive(Parser, Debug)]
 pub(crate) struct RepoRemoveOpts {
-    #[clap(short, long, default_value_t = false, help = "Do not remove the directory of corresponding repository")]
+    #[clap(
+        short,
+        long,
+        default_value_t = false,
+        help = "Do not remove the directory of corresponding repository"
+    )]
     pub(crate) keep_dir: bool,
 
     #[clap(
@@ -122,7 +132,12 @@ pub(crate) struct DumpOpts {
 
 #[derive(Parser, Debug)]
 pub(crate) struct EntriesOpts {
-    #[clap(short, long, help = "Specify the directory located the .gitignore file", default_value = ".")]
+    #[clap(
+        short,
+        long,
+        help = "Specify the directory located the .gitignore file",
+        default_value = "."
+    )]
     pub(crate) dir: PathBuf,
 }
 
@@ -149,7 +164,11 @@ pub(crate) struct SearchOpts {
 
 #[derive(Parser, Debug)]
 pub(crate) struct UpdateOpts {
-    #[clap(short, long, help = "Force update the gitignore boilerplate repositories")]
+    #[clap(
+        short,
+        long,
+        help = "Force update the gitignore boilerplate repositories"
+    )]
     pub(crate) force: bool,
 }
 

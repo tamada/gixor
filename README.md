@@ -1,20 +1,21 @@
-# Gibbs
+# Gixor
 
-Git Ignore Boilerplates Base System.
+Git Ignore Managenemnt System for Multiple Repositories.
 This is alternative tool for [gibo](https://github.com/simonwhitaker/gibo).
 
 ## :speaking_head: Overview
 
-`gibo` は便利であるが，独自の `gitignore` も使いたい場合もある．
-`gibo` は `github.com/github/gitignore` に依存しており，チーム独自の `gitignore`リポジトリを使いたい場合は別途設定が必要となる．
-そこで，複数のリポジトリを対象にした `gitignore` ファイルの管理を行うツールを作成する．
+`gibo` is the great tool to manage the `.gitignore` file.
+However, you may want to use your own `gitignore` boilerplate. 
+`gibo` relies on `github.com/github/gitignore` and needs further configuration separately if you want to use your team's own `gitignore` repository.
+Therefore, I just create a tool to manage `gitignore` files for multiple repositories.
 
 ## :runner: Usage
 
 ```shell
 git ignore [OPTIONS] [ARGS...]
     or 
-gibbs --log <LOG> <COMMAND>
+gixor --log <LOG> <COMMAND>
 
 Commands:
   dump        Dump the boilerplates
@@ -32,3 +33,9 @@ Options:
   -V, --version    Print version
 ```
 
+## About
+
+### Product Name
+
+Gixor means "GItignore indeX ORganizer," or "Git Ignorizer."
+Pronounce it as "jigsaw" or "gigsor".
