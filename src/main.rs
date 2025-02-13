@@ -1,7 +1,7 @@
 use std::{io::Write, path::PathBuf};
 
 use clap::Parser;
-use gixor::{Gixor, GixorError, Result};
+use gixor::{Gixor, GixorError, Name, Result};
 use std::io::{BufRead, BufReader};
 use utils::errs_vec_to_result;
 
@@ -69,16 +69,14 @@ fn find_content(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Vec<String>> {
         let mut content = vec![];
         let mut errs = vec![];
         for name in opts.names.clone() {
-            match gixor.dump(name.clone()) {
+            let name2 = name.clone();
+            match gixor.find(Name::parse(name)) {
                 Some(boilerplate) => content.push(boilerplate),
-                None => errs.push(GixorError::NotFound(name)),
+                None => errs.push(GixorError::NotFound(name2)),
             }
         }
         if errs.is_empty() {
-            let r = content
-                .iter()
-                .map(|s| s.dump())
-                .collect::<Vec<_>>();
+            let r = content.iter().map(|s| s.dump()).collect::<Vec<_>>();
             if r.iter().any(|s| s.is_err()) {
                 let r = errs
                     .into_iter()
@@ -164,7 +162,7 @@ fn find_entries(dir: PathBuf) -> Result<Vec<String>> {
 fn list_each_boilerplate(repo: &gixor::Repository, base_path: &PathBuf) -> Result<Vec<String>> {
     let r = repo
         .iter(base_path)
-        .map(|entry| entry.file_stem().unwrap().to_string_lossy().to_string())
+        .map(|entry| entry.name)
         .collect::<Vec<_>>();
     Ok(r)
 }
@@ -256,7 +254,7 @@ fn update_repositories(gixor: &Gixor, opts: cli::UpdateOpts) -> Result<Option<Gi
 fn search_boilerplates(gixor: &Gixor, opts: cli::SearchOpts) -> Result<Option<Gixor>> {
     let names = gixor
         .iter()
-        .map(|path| path.file_stem().unwrap().to_string_lossy().to_string())
+        .map(|b| b.name)
         .filter(|name| {
             opts.queries
                 .iter()
