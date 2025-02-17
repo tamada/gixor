@@ -1,0 +1,86 @@
+# Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
+function __fish_totebag_global_optspecs
+	string join \n l/log= c/config= h/help V/version
+end
+
+function __fish_totebag_needs_command
+	# Figure out if the current invocation already has a command.
+	set -l cmd (commandline -opc)
+	set -e cmd[1]
+	argparse -s (__fish_totebag_global_optspecs) -- $cmd 2>/dev/null
+	or return
+	if set -q argv[1]
+		# Also print the command, so this can be used to figure out what it is.
+		echo $argv[1]
+		return 1
+	end
+	return 0
+end
+
+function __fish_totebag_using_subcommand
+	set -l cmd (__fish_totebag_needs_command)
+	test -z "$cmd"
+	and return 1
+	contains -- $cmd[1] $argv
+end
+
+complete -c totebag -n "__fish_totebag_needs_command" -s l -l log -d 'Specify the log level' -r -f -a "trace\t''
+debug\t''
+info\t''
+warn\t''
+error\t''"
+complete -c totebag -n "__fish_totebag_needs_command" -s c -l config -d 'Specify the configuration file' -r -F
+complete -c totebag -n "__fish_totebag_needs_command" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_needs_command" -s V -l version -d 'Print version'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "dump" -d 'Dump the boilerplates'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "entries" -d 'List the the current entries in the .gitignore file'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "list" -d 'List available boilerplates'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "root" -d 'Show the root directory of the boilerplate'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "search" -d 'Search the boilerplates from the query'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "update" -d 'Update the gitignore boilerplate repositories (alias of `repository update`)'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "repository" -d 'Manage the gitignore boilerplate repositories'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "generate-completion-files" -d 'Generate the completion files'
+complete -c totebag -n "__fish_totebag_needs_command" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c totebag -n "__fish_totebag_using_subcommand dump" -s d -l dest -d 'Specify the destination directory. "-" means stdout.' -r
+complete -c totebag -n "__fish_totebag_using_subcommand dump" -s c -l clean -d 'Clear the current content of gitignore'
+complete -c totebag -n "__fish_totebag_using_subcommand dump" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand entries" -s d -l dir -d 'Specify the directory located the .gitignore file' -r -F
+complete -c totebag -n "__fish_totebag_using_subcommand entries" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand list" -s H -l header -d 'Show header'
+complete -c totebag -n "__fish_totebag_using_subcommand list" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand root" -s o -l open -d 'Open the folder in the GUI file manager'
+complete -c totebag -n "__fish_totebag_using_subcommand root" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand search" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand update" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and not __fish_seen_subcommand_from add list remove update help" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and not __fish_seen_subcommand_from add list remove update help" -f -a "add" -d 'Add a new gitignore boilerplate repository'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and not __fish_seen_subcommand_from add list remove update help" -f -a "list" -d 'List the current gitignore boilerplate repositories'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and not __fish_seen_subcommand_from add list remove update help" -f -a "remove" -d 'Remove a gitignore boilerplate repository'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and not __fish_seen_subcommand_from add list remove update help" -f -a "update" -d 'Update a gitignore boilerplate repository'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and not __fish_seen_subcommand_from add list remove update help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from add" -s n -l name -d 'Specify the name of the gitignore boilerplate repository' -r
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from add" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from list" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from remove" -s k -l keep-dir -d 'Do not remove the directory of corresponding repository'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from remove" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from update" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from help" -f -a "add" -d 'Add a new gitignore boilerplate repository'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from help" -f -a "list" -d 'List the current gitignore boilerplate repositories'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from help" -f -a "remove" -d 'Remove a gitignore boilerplate repository'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from help" -f -a "update" -d 'Update a gitignore boilerplate repository'
+complete -c totebag -n "__fish_totebag_using_subcommand repository; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c totebag -n "__fish_totebag_using_subcommand generate-completion-files" -l completion-out-dir -d 'Output directory of completion files' -r -F
+complete -c totebag -n "__fish_totebag_using_subcommand generate-completion-files" -s h -l help -d 'Print help'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "dump" -d 'Dump the boilerplates'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "entries" -d 'List the the current entries in the .gitignore file'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "list" -d 'List available boilerplates'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "root" -d 'Show the root directory of the boilerplate'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "search" -d 'Search the boilerplates from the query'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "update" -d 'Update the gitignore boilerplate repositories (alias of `repository update`)'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "repository" -d 'Manage the gitignore boilerplate repositories'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "generate-completion-files" -d 'Generate the completion files'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and not __fish_seen_subcommand_from dump entries list root search update repository generate-completion-files help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and __fish_seen_subcommand_from repository" -f -a "add" -d 'Add a new gitignore boilerplate repository'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and __fish_seen_subcommand_from repository" -f -a "list" -d 'List the current gitignore boilerplate repositories'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and __fish_seen_subcommand_from repository" -f -a "remove" -d 'Remove a gitignore boilerplate repository'
+complete -c totebag -n "__fish_totebag_using_subcommand help; and __fish_seen_subcommand_from repository" -f -a "update" -d 'Update a gitignore boilerplate repository'

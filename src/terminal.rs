@@ -1,3 +1,4 @@
+/// Represents a terminal that can format strings in columns.
 pub(crate) struct Terminal {
     pub(crate) width: usize,
     pub(crate) padding: String,
@@ -20,7 +21,7 @@ impl Terminal {
         Self { width, padding }
     }
 
-    fn get_max_length_and_number_of_columns(&self, list: &Vec<String>) -> (usize, usize) {
+    fn get_max_length_and_number_of_columns(&self, list: &[String]) -> (usize, usize) {
         let max_length = list.iter().map(|item| item.len()).max().unwrap_or(0);
         let number_of_columns: usize = (self.width + 1) / (max_length + self.padding.len());
         if number_of_columns == 0 {
@@ -35,10 +36,6 @@ impl Terminal {
         let deco_prefix = "=".repeat(deco_len / 2);
         let deco_suffix = "=".repeat(deco_len - deco_prefix.len());
         format!("{} {} {}", deco_prefix, header, deco_suffix)
-    }
-
-    pub(crate) fn print_header(&self, header: String) {
-        println!("{}", self.format_header(header));
     }
 
     pub(crate) fn format_in_column(&self, items: Vec<String>) -> Vec<String> {
@@ -57,14 +54,6 @@ impl Terminal {
             }
         }
         result
-    }
-
-    /// Print a list of strings in columns
-    /// The routine of this function is ported from https://github.com/simonwhitaker/gibo/blob/main/utils/fmt.go
-    pub(crate) fn print_in_column(&self, items: Vec<String>) {
-        for item in self.format_in_column(items) {
-            println!("{}", item);
-        }
     }
 }
 
@@ -113,5 +102,14 @@ mod tests {
         assert_eq!(r2.len(), 2);
         assert_eq!(r2[0], "macOS            Linux            Windows          Go               VisualStudioCode JetBrains        Rust");
         assert_eq!(r2[1], "NetBeans");
+    }
+
+    #[test]
+    pub fn test_format_header() {
+        let t = Terminal::new_with(80, " ");
+        assert_eq!(
+            t.format_header("Hello, World!".to_string()),
+            "================================ Hello, World! ================================="
+        );
     }
 }

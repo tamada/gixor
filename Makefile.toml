@@ -18,7 +18,7 @@ args = ["llvm-cov", "--html"]
 [tasks.generate-completion]
 script = [
     "mkdir -p assets",
-    "cargo run -- --generate-completions",
+    "cargo run -- generate-completion-files",
     "cp -r target/completions ./assets"
 ]
 

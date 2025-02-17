@@ -1,0 +1,205 @@
+
+using namespace System.Management.Automation
+using namespace System.Management.Automation.Language
+
+Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+
+    $commandElements = $commandAst.CommandElements
+    $command = @(
+        'totebag'
+        for ($i = 1; $i -lt $commandElements.Count; $i++) {
+            $element = $commandElements[$i]
+            if ($element -isnot [StringConstantExpressionAst] -or
+                $element.StringConstantType -ne [StringConstantType]::BareWord -or
+                $element.Value.StartsWith('-') -or
+                $element.Value -eq $wordToComplete) {
+                break
+        }
+        $element.Value
+    }) -join ';'
+
+    $completions = @(switch ($command) {
+        'totebag' {
+            [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'Specify the log level')
+            [CompletionResult]::new('--log', '--log', [CompletionResultType]::ParameterName, 'Specify the log level')
+            [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Specify the configuration file')
+            [CompletionResult]::new('--config', '--config', [CompletionResultType]::ParameterName, 'Specify the configuration file')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
+            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
+            [CompletionResult]::new('dump', 'dump', [CompletionResultType]::ParameterValue, 'Dump the boilerplates')
+            [CompletionResult]::new('entries', 'entries', [CompletionResultType]::ParameterValue, 'List the the current entries in the .gitignore file')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List available boilerplates')
+            [CompletionResult]::new('root', 'root', [CompletionResultType]::ParameterValue, 'Show the root directory of the boilerplate')
+            [CompletionResult]::new('search', 'search', [CompletionResultType]::ParameterValue, 'Search the boilerplates from the query')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update the gitignore boilerplate repositories (alias of `repository update`)')
+            [CompletionResult]::new('repository', 'repository', [CompletionResultType]::ParameterValue, 'Manage the gitignore boilerplate repositories')
+            [CompletionResult]::new('generate-completion-files', 'generate-completion-files', [CompletionResultType]::ParameterValue, 'Generate the completion files')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'totebag;dump' {
+            [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the destination directory. "-" means stdout.')
+            [CompletionResult]::new('--dest', '--dest', [CompletionResultType]::ParameterName, 'Specify the destination directory. "-" means stdout.')
+            [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Clear the current content of gitignore')
+            [CompletionResult]::new('--clean', '--clean', [CompletionResultType]::ParameterName, 'Clear the current content of gitignore')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;entries' {
+            [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the directory located the .gitignore file')
+            [CompletionResult]::new('--dir', '--dir', [CompletionResultType]::ParameterName, 'Specify the directory located the .gitignore file')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;list' {
+            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'Show header')
+            [CompletionResult]::new('--header', '--header', [CompletionResultType]::ParameterName, 'Show header')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;root' {
+            [CompletionResult]::new('-o', '-o', [CompletionResultType]::ParameterName, 'Open the folder in the GUI file manager')
+            [CompletionResult]::new('--open', '--open', [CompletionResultType]::ParameterName, 'Open the folder in the GUI file manager')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;search' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;update' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;repository' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update a gitignore boilerplate repository')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'totebag;repository;add' {
+            [CompletionResult]::new('-n', '-n', [CompletionResultType]::ParameterName, 'Specify the name of the gitignore boilerplate repository')
+            [CompletionResult]::new('--name', '--name', [CompletionResultType]::ParameterName, 'Specify the name of the gitignore boilerplate repository')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;repository;list' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;repository;remove' {
+            [CompletionResult]::new('-k', '-k', [CompletionResultType]::ParameterName, 'Do not remove the directory of corresponding repository')
+            [CompletionResult]::new('--keep-dir', '--keep-dir', [CompletionResultType]::ParameterName, 'Do not remove the directory of corresponding repository')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;repository;update' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;repository;help' {
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update a gitignore boilerplate repository')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'totebag;repository;help;add' {
+            break
+        }
+        'totebag;repository;help;list' {
+            break
+        }
+        'totebag;repository;help;remove' {
+            break
+        }
+        'totebag;repository;help;update' {
+            break
+        }
+        'totebag;repository;help;help' {
+            break
+        }
+        'totebag;generate-completion-files' {
+            [CompletionResult]::new('--completion-out-dir', '--completion-out-dir', [CompletionResultType]::ParameterName, 'Output directory of completion files')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'totebag;help' {
+            [CompletionResult]::new('dump', 'dump', [CompletionResultType]::ParameterValue, 'Dump the boilerplates')
+            [CompletionResult]::new('entries', 'entries', [CompletionResultType]::ParameterValue, 'List the the current entries in the .gitignore file')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List available boilerplates')
+            [CompletionResult]::new('root', 'root', [CompletionResultType]::ParameterValue, 'Show the root directory of the boilerplate')
+            [CompletionResult]::new('search', 'search', [CompletionResultType]::ParameterValue, 'Search the boilerplates from the query')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update the gitignore boilerplate repositories (alias of `repository update`)')
+            [CompletionResult]::new('repository', 'repository', [CompletionResultType]::ParameterValue, 'Manage the gitignore boilerplate repositories')
+            [CompletionResult]::new('generate-completion-files', 'generate-completion-files', [CompletionResultType]::ParameterValue, 'Generate the completion files')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'totebag;help;dump' {
+            break
+        }
+        'totebag;help;entries' {
+            break
+        }
+        'totebag;help;list' {
+            break
+        }
+        'totebag;help;root' {
+            break
+        }
+        'totebag;help;search' {
+            break
+        }
+        'totebag;help;update' {
+            break
+        }
+        'totebag;help;repository' {
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update a gitignore boilerplate repository')
+            break
+        }
+        'totebag;help;repository;add' {
+            break
+        }
+        'totebag;help;repository;list' {
+            break
+        }
+        'totebag;help;repository;remove' {
+            break
+        }
+        'totebag;help;repository;update' {
+            break
+        }
+        'totebag;help;generate-completion-files' {
+            break
+        }
+        'totebag;help;help' {
+            break
+        }
+    })
+
+    $completions.Where{ $_.CompletionText -like "$wordToComplete*" } |
+        Sort-Object -Property ListItemText
+}

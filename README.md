@@ -15,22 +15,23 @@ Therefore, I just create a tool to manage `gitignore` files for multiple reposit
 ```shell
 git ignore [OPTIONS] [ARGS...]
     or 
-gixor --log <LOG> <COMMAND>
+gixor [OPTIONS] <COMMAND>
 
 Commands:
   dump        Dump the boilerplates
-  show        Show the entries in the .gitignore file
+  entries     List the the current entries in the .gitignore file
   list        List available boilerplates
   root        Show the root directory of the boilerplate
-  serach      Search the boilerplates from the query
-  update      Update the gitignore boilerplate repositories
+  search      Search the boilerplates from the query
+  update      Update the gitignore boilerplate repositories (alias of `repository update`)
   repository  Manage the gitignore boilerplate repositories
   help        Print this message or the help of the given subcommand(s)
 
 Options:
-  -l, --log <LOG>  Specify the log level [possible values: trace, debug, info, warn, error]
-  -h, --help       Print help
-  -V, --version    Print version
+  -l, --log <LOG>             Specify the log level [default: warn] [possible values: trace, debug, info, warn, error]
+  -c, --config <CONFIG_JSON>  Specify the configuration file
+  -h, --help                  Print help
+  -V, --version               Print version
 ```
 
 ## About
@@ -39,3 +40,8 @@ Options:
 
 Gixor means "GItignore indeX ORganizer," or "Git Ignorizer."
 Pronounce it as "jigsaw" or "gigsor".
+
+### Related Tools and Services
+
+- [gibo](https://github.com/simonwhitaker/gibo)
+- [gitignore.io](https://www.gitignore.io/)

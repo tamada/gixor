@@ -19,10 +19,6 @@ pub(crate) struct CliOpts {
         help = "Specify the configuration file"
     )]
     pub(crate) config: Option<PathBuf>,
-
-    #[cfg(debug_assertions)]
-    #[clap(flatten)]
-    pub(crate) compopts: CompleteOpts,
 }
 
 #[derive(Subcommand, Debug)]
@@ -44,7 +40,7 @@ pub(crate) enum GixorCommand {
         name = "update",
         about = "Update the gitignore boilerplate repositories (alias of `repository update`)"
     )]
-    Update(UpdateOpts),
+    Update,
     #[command(
         name = "repository",
         alias = "repo",
@@ -52,6 +48,13 @@ pub(crate) enum GixorCommand {
     )]
     #[clap(subcommand)]
     Repository(RepositoryOpts),
+
+    #[cfg(debug_assertions)]
+    #[command(
+        name = "generate-completion-files",
+        about = "Generate the completion files"
+    )]
+    CompletionFiles(CompleteOpts),
 }
 
 #[derive(Debug, Subcommand)]
@@ -66,7 +69,7 @@ pub(crate) enum RepositoryOpts {
     #[command(name = "remove", about = "Remove a gitignore boilerplate repository")]
     Remove(RepoRemoveOpts),
     #[command(name = "update", about = "Update a gitignore boilerplate repository")]
-    Update(UpdateOpts),
+    Update,
 }
 
 #[derive(Parser, Debug)]
@@ -162,30 +165,13 @@ pub(crate) struct SearchOpts {
     pub(crate) queries: Vec<String>,
 }
 
-#[derive(Parser, Debug)]
-pub(crate) struct UpdateOpts {
-    #[clap(
-        short,
-        long,
-        help = "Force update the gitignore boilerplate repositories"
-    )]
-    pub(crate) force: bool,
-}
-
 #[cfg(debug_assertions)]
 #[derive(Parser, Debug)]
 pub(crate) struct CompleteOpts {
     #[clap(
-        long = "generate-completion-files",
-        help = "Generate completion files",
-        hide = true
-    )]
-    pub(crate) completion: bool,
-
-    #[clap(
         long = "completion-out-dir",
         value_name = "DIR",
-        default_value = "assets/completions",
+        default_value = "target/completions",
         help = "Output directory of completion files",
         hide = true
     )]
