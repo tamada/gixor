@@ -1,18 +1,18 @@
 //! Gixor is a tool to manage the boilerplate files (`.gitignore`).
 //! This is alternative tool of [gibo](https://github.com/simonwhitaker/gibo) written in Rust.
-//! 
+//!
 //! Also, this library provides an API of the Gitignore boilerplate management.
 //! The main structure of this library is [`Gixor`].
-//! 
+//!
 //! # Example of Dump the boilerplate
-//! 
+//!
 //! ```rust
 //! let gixor = Gixor::load("testdata/config.json").unwrap();
 //! gixor.update_all().unwrap(); // clone or update all repositories, if needed.
 //! let r = dump_boilerplates(gixor, "-", // dump the boilerplate of rust, macos, linux, and windows into stdout.
 //!     vec![Name::parse("rust"), Name::parse("macos"), Name::parse("linux"), Name::parse("windows")]);
 //! ```
-//! 
+//!
 use std::{
     fmt::{Display, Write},
     io::BufRead,
