@@ -41,7 +41,7 @@ pub(super) fn find_boilerplates(
         .into_iter()
         .map(|name| gixor.find(name))
         .collect::<Vec<_>>();
-    super::utils::vec_result_to_result_vec(r)
+    vec_result_to_result_vec(r)
 }
 
 pub(super) fn list_entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
@@ -119,7 +119,7 @@ pub(super) fn dump_boilerplates_impl<P: AsRef<Path>>(
     };
     let mut w = std::io::BufWriter::new(w);
     let prologue = load_prologue();
-    let contents = super::utils::vec_result_to_result_vec(
+    let contents = vec_result_to_result_vec(
         boilerplates
             .into_iter()
             .map(|b| b.dump())
@@ -132,7 +132,7 @@ pub(super) fn dump_boilerplates_impl<P: AsRef<Path>>(
                 .chain(content.iter())
                 .map(|line| writeln!(w, "{}", line).map_err(super::GixorError::IO))
                 .collect::<Vec<_>>();
-            match super::utils::vec_result_to_result_vec(r) {
+            match vec_result_to_result_vec(r) {
                 Ok(_) => Ok(()),
                 Err(e) => Err(e),
             }
@@ -156,5 +156,30 @@ fn load_prologue() -> Vec<String> {
             result
         }
         Err(_) => vec![],
+    }
+}
+
+/// Convert `Vec<Result<T>>` to `Result<Vec<T>>`
+/// If `Vec<Result<T>>` has the multiple errors,
+/// `Result<Vec<T>>` returns `Err(GixorError::Array(Vec<GixorError>))`.
+pub(super) fn vec_result_to_result_vec<T>(result: Vec<Result<T>>) -> Result<Vec<T>> {
+    let mut errs = vec![];
+    let mut ok_results = vec![];
+    for r in result {
+        match r {
+            Ok(ok) => ok_results.push(ok),
+            Err(err) => errs.push(err),
+        }
+    }
+    super::utils::errs_vec_to_result(errs, ok_results)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_vec_result_to_result_vec() {
+        let value = vec![Ok(1), Ok(2), Ok(3)];
+        let result = super::vec_result_to_result_vec(value).unwrap();
+        assert_eq!(result, vec![1, 2, 3]);
     }
 }

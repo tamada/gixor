@@ -31,6 +31,9 @@ fn do_fetch<'a>(
     remote: &'a mut git2::Remote,
 ) -> Result<git2::AnnotatedCommit<'a>, git2::Error> {
     let mut cb = git2::RemoteCallbacks::new();
+    if is_ssh_url(remote.url()) {
+        register_credentials(&mut cb);
+    }
 
     // Print out our transfer progress.
     cb.transfer_progress(|stats| {
@@ -207,13 +210,20 @@ pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()
     let path = path.as_ref();
     if url.starts_with("https://") {
         clone_with_https(url, path)
-    } else if url.starts_with("ssh://") || url.starts_with("git@") {
+    } else if is_ssh_url(Some(url)) {
         clone_with_ssh(url, path)
     } else {
         Err(crate::GixorError::Fatal(format!(
             "{}: Unsupported protocol",
             url
         )))
+    }
+}
+
+fn is_ssh_url(url: Option<&str>) -> bool {
+    match url {
+        Some(url) => url.starts_with("git@") || url.starts_with("ssh://"),
+        None => false,
     }
 }
 
@@ -238,15 +248,19 @@ fn find_privatekey() -> crate::Result<PathBuf> {
     }
 }
 
+fn register_credentials(callbacks: &mut RemoteCallbacks) {
+    let privatekey = find_privatekey().unwrap();
+    callbacks.credentials(move |_url, _username_from_url, _allowed_types| {
+        Cred::ssh_key("git", None, privatekey.as_path(), None)
+    });
+}
+
 /// Clone a repository with SSH protocol. This code is copied from Sample code of RepoBuilder in git2 crate.
 /// https://docs.rs/git2/latest/git2/build/struct.RepoBuilder.html#example
 fn clone_with_ssh<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()> {
     // Prepare callbacks.
     let mut callbacks = RemoteCallbacks::new();
-    callbacks.credentials(|_url, username_from_url, _allowed_types| {
-        let privatekey = find_privatekey().unwrap();
-        Cred::ssh_key(username_from_url.unwrap(), None, privatekey.as_path(), None)
-    });
+    register_credentials(&mut callbacks);
 
     // Prepare fetch options.
     let mut fo = git2::FetchOptions::new();

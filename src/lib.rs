@@ -7,9 +7,11 @@
 //! # Example of Dump the boilerplate
 //!
 //! ```rust
+//! use gixor::{Gixor, Name, Result};
+//!
 //! let gixor = Gixor::load("testdata/config.json").unwrap();
 //! gixor.update_all().unwrap(); // clone or update all repositories, if needed.
-//! let r = dump_boilerplates(gixor, "-", // dump the boilerplate of rust, macos, linux, and windows into stdout.
+//! let r = gixor::dump_boilerplates(&gixor, "-", // dump the boilerplate of rust, macos, linux, and windows into stdout.
 //!     vec![Name::parse("rust"), Name::parse("macos"), Name::parse("linux"), Name::parse("windows")]);
 //! ```
 //!

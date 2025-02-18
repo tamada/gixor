@@ -286,15 +286,3 @@ fn main() -> Result<()> {
     init_log(&opts.log);
     perform(opts)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_vec_result_to_result_vec() {
-        let value = vec![Ok(1), Ok(2), Ok(3)];
-        let result = utils::vec_result_to_result_vec(value).unwrap();
-        assert_eq!(result, vec![1, 2, 3]);
-    }
-}

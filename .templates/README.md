@@ -53,9 +53,9 @@ Pronounce it as "jigsaw" or "gigsor".
 
 ### Related Tools and Services
 
-- [gibo](https://github.com/simonwhitaker/gibo)
-- [gitignore.io](https://www.gitignore.io/)
-- [bliss](https://github.com/ajmwagar/bliss)
-- [gitignore-it](https://github.com/christopherkade/gitignore-it)
-- [gitnr](https://github.com/reemus-dev/gitnr)
-- [gig](https://github.com/shihanng/gig)
+- [gibo](https://github.com/simonwhitaker/gibo) (Go lang)
+- [gitignore.io](https://www.gitignore.io/) (Swift, Less, JavaScript, ...)
+- [bliss](https://github.com/ajmwagar/bliss) (Rust)
+- [gitignore-it](https://github.com/christopherkade/gitignore-it) (JavaScript)
+- [gitnr](https://github.com/reemus-dev/gitnr) (Rust)
+- [gig](https://github.com/shihanng/gig) (Go lang)

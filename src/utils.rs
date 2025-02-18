@@ -15,18 +15,3 @@ pub(super) fn single_err_or_errs_array<T>(errs: Vec<GixorError>) -> Result<T> {
         Err(GixorError::Array(errs))
     }
 }
-
-/// Convert `Vec<Result<T>>` to `Result<Vec<T>>`
-/// If `Vec<Result<T>>` has the multiple errors,
-/// `Result<Vec<T>>` returns `Err(GixorError::Array(Vec<GixorError>))`.
-pub(super) fn vec_result_to_result_vec<T>(result: Vec<Result<T>>) -> Result<Vec<T>> {
-    let mut errs = vec![];
-    let mut ok_results = vec![];
-    for r in result {
-        match r {
-            Ok(ok) => ok_results.push(ok),
-            Err(err) => errs.push(err),
-        }
-    }
-    errs_vec_to_result(errs, ok_results)
-}
