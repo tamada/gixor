@@ -11,9 +11,6 @@ command = "cargo"
 args = ["build"]
 dependencies = ["format"]
 
-[tasks.pre-test]
-dependencies = [ "clone_default_ignores", "clone_tamada_ignores" ]
-
 [tasks.clone_default_ignores]
 condition = { files_not_exist = ["${CARGO_MAKE_WORKING_DIRECTORY}/testdata/boilerplates/default"] }
 script = [
@@ -23,12 +20,13 @@ script = [
 [tasks.clone_tamada_ignores]
 condition = { files_not_exist = ["${CARGO_MAKE_WORKING_DIRECTORY}/testdata/boilerplates/tamada"] }
 script = [
-    "git clone git@github.com:tamada/gitignore.git testdata/boilerplates/tamada"
+    "git clone https://github.com/tamada/gitignore.git testdata/boilerplates/tamada"
 ]
 
 [tasks.test]
 command = "cargo"
 args = ["llvm-cov", "--lcov", "--output-path", "target/coverage.lcov"]
+dependencies = [ "clone_default_ignores", "clone_tamada_ignores" ]
 
 [tasks.generate-completion]
 script = [
