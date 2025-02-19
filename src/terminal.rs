@@ -1,3 +1,4 @@
+use terminal_size::{Width, Height};
 /// Represents a terminal that can format strings in columns.
 pub(crate) struct Terminal {
     pub(crate) width: usize,
@@ -12,7 +13,10 @@ impl Default for Terminal {
 
 impl Terminal {
     pub fn new<S: AsRef<str>>(padding: S) -> Self {
-        let (cols, _rows) = termion::terminal_size().unwrap();
+        let (cols, _rows) = match terminal_size::terminal_size() {
+            Some((Width(w), Height(h))) => (w, h),
+            _ => (80, 24),
+        };
         Self::new_with(cols as usize, padding)
     }
 
