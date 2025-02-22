@@ -21,7 +21,7 @@
 use git2::Repository;
 use std::{
     io::{self, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     str,
 };
 
@@ -31,6 +31,9 @@ fn do_fetch<'a>(
     remote: &'a mut git2::Remote,
 ) -> Result<git2::AnnotatedCommit<'a>, git2::Error> {
     let mut cb = git2::RemoteCallbacks::new();
+    if is_ssh_url(remote.url()) {
+        register_credentials(&mut cb);
+    }
 
     // Print out our transfer progress.
     cb.transfer_progress(|stats| {
@@ -82,7 +85,7 @@ fn do_fetch<'a>(
     }
 
     let fetch_head = repo.find_reference("FETCH_HEAD")?;
-    Ok(repo.reference_to_annotated_commit(&fetch_head)?)
+    repo.reference_to_annotated_commit(&fetch_head)
 }
 
 fn fast_forward(
@@ -184,7 +187,7 @@ fn do_merge<'a>(
     } else if analysis.0.is_normal() {
         // do a normal merge
         let head_commit = repo.reference_to_annotated_commit(&repo.head()?)?;
-        normal_merge(&repo, &head_commit, &fetch_commit)?;
+        normal_merge(repo, &head_commit, &fetch_commit)?;
     } else {
         log::info!("Nothing to do...");
     }
@@ -192,10 +195,84 @@ fn do_merge<'a>(
 }
 
 /// `git pull`
-pub fn pull(repo: &PathBuf, remote: &str, branch: &str) -> Result<(), git2::Error> {
-    let git_repo = Repository::open(repo.clone())?;
+pub fn pull(repo: &Path, remote: &str, branch: &str) -> Result<(), git2::Error> {
+    let git_repo = Repository::open(repo)?;
     let mut remote_branch = git_repo.find_remote(remote)?;
     let fetch_commit = do_fetch(&git_repo, &[branch], &mut remote_branch)?;
     do_merge(&git_repo, remote, fetch_commit)
 }
 // ------------- the above part is copied from gita crate ------------------
+
+use git2::{Cred, RemoteCallbacks};
+
+pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()> {
+    let url = url.as_ref();
+    let path = path.as_ref();
+    if url.starts_with("https://") {
+        clone_with_https(url, path)
+    } else if is_ssh_url(Some(url)) {
+        clone_with_ssh(url, path)
+    } else {
+        Err(crate::GixorError::Fatal(format!(
+            "{}: Unsupported protocol",
+            url
+        )))
+    }
+}
+
+fn is_ssh_url(url: Option<&str>) -> bool {
+    match url {
+        Some(url) => url.starts_with("git@") || url.starts_with("ssh://"),
+        None => false,
+    }
+}
+
+fn clone_with_https<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()> {
+    match git2::Repository::clone(url.as_ref(), path.as_ref()) {
+        Err(e) => Err(crate::GixorError::Git(e)),
+        Ok(_) => Ok(()),
+    }
+}
+
+fn find_privatekey() -> crate::Result<PathBuf> {
+    let ssh_dir = dirs::home_dir().unwrap().join(".ssh");
+
+    let path_rsa = ssh_dir.join("id_rsa");
+    let path_ed25519 = ssh_dir.join("id_ed25519");
+    if path_rsa.exists() {
+        Ok(path_rsa)
+    } else if path_ed25519.exists() {
+        Ok(path_ed25519)
+    } else {
+        Err(crate::GixorError::Fatal("No private key found".to_string()))
+    }
+}
+
+fn register_credentials(callbacks: &mut RemoteCallbacks) {
+    let privatekey = find_privatekey().unwrap();
+    callbacks.credentials(move |_url, _username_from_url, _allowed_types| {
+        Cred::ssh_key("git", None, privatekey.as_path(), None)
+    });
+}
+
+/// Clone a repository with SSH protocol. This code is copied from Sample code of RepoBuilder in git2 crate.
+/// https://docs.rs/git2/latest/git2/build/struct.RepoBuilder.html#example
+fn clone_with_ssh<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()> {
+    // Prepare callbacks.
+    let mut callbacks = RemoteCallbacks::new();
+    register_credentials(&mut callbacks);
+
+    // Prepare fetch options.
+    let mut fo = git2::FetchOptions::new();
+    fo.remote_callbacks(callbacks);
+
+    // Prepare builder.
+    let mut builder = git2::build::RepoBuilder::new();
+    builder.fetch_options(fo);
+
+    // Clone the project.
+    match builder.clone(url.as_ref(), path.as_ref()) {
+        Err(e) => Err(crate::GixorError::Git(e)),
+        Ok(_) => Ok(()),
+    }
+}

@@ -1,0 +1,61 @@
+[env]
+VERSION = { script = [ "grep '^version = ' Cargo.toml | sed 's/version = \"\\(.*\\)\"/\\1/g'" ] }
+
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+dependencies = ["format"]
+
+[tasks.clone_default_ignores]
+condition = { files_not_exist = ["${CARGO_MAKE_WORKING_DIRECTORY}/testdata/boilerplates/default"] }
+script = [
+    "git clone https://github.com/github/gitignore.git testdata/boilerplates/default"
+]
+
+[tasks.clone_tamada_ignores]
+condition = { files_not_exist = ["${CARGO_MAKE_WORKING_DIRECTORY}/testdata/boilerplates/tamada"] }
+script = [
+    "git clone https://github.com/tamada/gitignore.git testdata/boilerplates/tamada"
+]
+
+[tasks.test]
+command = "cargo"
+args = ["llvm-cov", "--lcov", "--output-path", "target/coverage.lcov"]
+dependencies = [ "clone_default_ignores", "clone_tamada_ignores" ]
+
+[tasks.generate-completion]
+script = [
+    "mkdir -p assets",
+    "cargo run -- generate-completion-files",
+    "cp -r target/completions ./assets"
+]
+
+# [tasks.post-build]
+# description = "Generate completion files after build"
+# script = [
+#     "mkdir -p target/completions",
+#     "cargo run -- --generate-completion-files --completion-out-dir target/completions"
+# ]
+
+[tasks.start]
+description = "Start the document server"
+script = ["hugo -s site server"]
+
+[tasks.site]
+description = "Build the site document"
+script = ["hugo -s site"]
+
+[tasks.docker]
+description = "Build the docker image for the current arch"
+command = "docker build -t ghcr.io/tamada/gixor:latest -t ghcr.io/tamada/gixor:${VERSION} ."
+
+[tasks.docker_buildx]
+description = "Build the docker image for multi-arch"
+script = [
+    "docker buildx build --platform linux/arm64/v8,linux/amd64 --output=type=image,push=true -t ghcr.io/tamada/gixor:latest -t ghcr.io/tamada/gixor:${VERSION} ."
+]

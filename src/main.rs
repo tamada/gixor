@@ -1,9 +1,7 @@
-use std::{io::Write, path::PathBuf};
-
 use clap::Parser;
-use gixor::{Gixor, GixorError, Result};
-use std::io::{BufRead, BufReader};
-use utils::errs_vec_to_result;
+use std::path::PathBuf;
+
+use gixor::{Gixor, GixorError, Name, Result};
 
 mod cli;
 mod terminal;
@@ -28,7 +26,7 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
     let gixor = if gixor.is_empty() {
         log::trace!("no repositories are given. add default repository");
         store_flag = true;
-        gixor.add_repository(gixor::default_repository())
+        gixor.add_repository(gixor::Repository::default())
     } else {
         Ok(gixor)
     };
@@ -41,154 +39,27 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
     }
 }
 
-fn load_prologue() -> Vec<String> {
-    match std::fs::File::open(".gitignore") {
-        Ok(f) => {
-            log::info!("loading prologue from .gitignore");
-            let mut result = vec![];
-            let reader = BufReader::new(f);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    if line.starts_with("### ") {
-                        break;
-                    }
-                    result.push(line);
-                }
-            }
-            result
-        }
-        Err(_) => vec![],
-    }
-}
-
-fn find_content(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Vec<String>> {
-    let prologue = if opts.clean { vec![] } else { load_prologue() };
-    if opts.names.is_empty() {
-        Ok(prologue)
-    } else {
-        let mut content = vec![];
-        let mut errs = vec![];
-        for name in opts.names.clone() {
-            match gixor.dump(name.clone()) {
-                Some(boilerplate) => content.push(boilerplate),
-                None => errs.push(GixorError::NotFound(name)),
-            }
-        }
-        if errs.is_empty() {
-            let r = content
-                .iter()
-                .map(|s| s.dump())
-                .collect::<Vec<_>>();
-            if r.iter().any(|s| s.is_err()) {
-                let r = errs
-                    .into_iter()
-                    .chain(r.into_iter().filter_map(|r| r.err()))
-                    .collect();
-                return errs_vec_to_result(r, vec![]);
-            } else {
-                let lines = r.into_iter().filter_map(|r| r.ok()).collect::<Vec<_>>();
-                let mut result = prologue;
-                result.extend(lines);
-                return Ok(result);
-            }
-        } else {
-            errs_vec_to_result(errs, vec![])
-        }
-    }
-}
-
-fn print_content(dest: String, content: Vec<String>) {
-    let w: Box<dyn Write> = if dest == "-" {
-        Box::new(std::io::stdout())
-    } else {
-        match std::fs::File::create(dest) {
-            Ok(f) => Box::new(f),
-            Err(e) => {
-                log::error!("{:?}", e);
-                return;
-            }
-        }
-    };
-    let mut w = std::io::BufWriter::new(w);
-    for line in content {
-        if let Err(e) = writeln!(w, "{}", line) {
-            log::error!("{:?}", e);
-            return;
-        }
-    }
-}
-
-fn dump_boilerplates(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<Gixor>> {
+fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<Gixor>> {
     let dest = opts.dest.clone();
-    match find_content(gixor, opts) {
+    let names = opts.names.iter().map(Name::parse).collect::<Vec<_>>();
+    match gixor::dump_boilerplates(gixor, dest, names) {
+        Ok(_) => Ok(None),
         Err(e) => Err(e),
-        Ok(content) => {
-            print_content(dest, content);
-            Ok(None)
-        }
-    }
-}
-
-fn strip_to_boilerplate_name(line: String) -> String {
-    let items = line.rsplit("/").collect::<Vec<_>>();
-    if items.len() < 1 {
-        "".to_string()
-    } else {
-        items[0].strip_suffix(".gitignore").unwrap().to_string()
-    }
-}
-
-fn find_entries(dir: PathBuf) -> Result<Vec<String>> {
-    let path = dir.join(".gitignore");
-    if !path.exists() {
-        Err(GixorError::NotFound(path.to_string_lossy().to_string()))
-    } else {
-        match std::fs::File::open(path) {
-            Err(e) => Err(GixorError::IO(e)),
-            Ok(f) => {
-                let reader = BufReader::new(f);
-                let mut entries = vec![];
-                for line in reader.lines() {
-                    if let Ok(line) = line {
-                        if line.starts_with("### ") && line.ends_with(".gitignore") {
-                            entries.push(strip_to_boilerplate_name(line));
-                        }
-                    }
-                }
-                Ok(entries)
-            }
-        }
     }
 }
 
 fn list_each_boilerplate(repo: &gixor::Repository, base_path: &PathBuf) -> Result<Vec<String>> {
     let r = repo
         .iter(base_path)
-        .map(|entry| entry.file_stem().unwrap().to_string_lossy().to_string())
+        .map(|entry| entry.boilerplate_name().to_string())
         .collect::<Vec<_>>();
     Ok(r)
 }
 
 fn list_boilerplates(gixor: &Gixor, opts: cli::ListOpts) -> Result<Option<Gixor>> {
-    let mut errs = vec![];
-    let repos = if opts.repos.is_empty() {
-        gixor.repositories().collect::<Vec<_>>()
-    } else {
-        let r = opts
-            .repos
-            .iter()
-            .map(|name| (name, gixor.repository(name)))
-            .collect::<Vec<_>>();
-        r.iter()
-            .filter(|(_, opts)| opts.is_none())
-            .map(|(n, _)| n)
-            .for_each(|&n| errs.push(GixorError::NotFound(n.clone())));
-        r.iter()
-            .filter(|(_, opts)| opts.is_some())
-            .map(|(_n_, opts)| opts.unwrap())
-            .collect::<Vec<_>>()
-    };
+    let repos = gixor::find_target_repositories(gixor, opts.repos.clone())?;
     let base_path = gixor.base_path().to_path_buf();
+    let mut errs = vec![];
     for &repo in repos.iter() {
         let header = if opts.header {
             Some(repo.name.clone())
@@ -207,9 +78,11 @@ pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<Stri
     if atty::is(atty::Stream::Stdout) {
         let term = terminal::Terminal::default();
         if let Some(header) = header {
-            term.print_header(header);
+            println!("{}", term.format_header(header));
         }
-        term.print_in_column(items);
+        term.format_in_column(items)
+            .iter()
+            .for_each(|line| println!("{}", line));
     } else {
         if let Some(header) = header {
             println!("========== {} ==========", header)
@@ -221,7 +94,7 @@ pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<Stri
 }
 
 fn list_entries(_: &Gixor, opts: cli::EntriesOpts) -> Result<Option<Gixor>> {
-    match find_entries(opts.dir) {
+    match gixor::list_entries(opts.dir) {
         Err(e) => Err(e),
         Ok(entries) => {
             print_in_columns_if_needed(entries, None);
@@ -246,8 +119,8 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<Gixor>> {
     }
 }
 
-fn update_repositories(gixor: &Gixor, opts: cli::UpdateOpts) -> Result<Option<Gixor>> {
-    match gixor.update_all(opts.force) {
+fn update_repositories(gixor: &Gixor) -> Result<Option<Gixor>> {
+    match gixor.update_all() {
         Ok(_) => Ok(None),
         Err(e) => Err(e),
     }
@@ -256,7 +129,7 @@ fn update_repositories(gixor: &Gixor, opts: cli::UpdateOpts) -> Result<Option<Gi
 fn search_boilerplates(gixor: &Gixor, opts: cli::SearchOpts) -> Result<Option<Gixor>> {
     let names = gixor
         .iter()
-        .map(|path| path.file_stem().unwrap().to_string_lossy().to_string())
+        .map(|b| b.boilerplate_name().to_string())
         .filter(|name| {
             opts.queries
                 .iter()
@@ -288,12 +161,12 @@ fn remove_repository(gixor: &Gixor, opts: cli::RepoRemoveOpts) -> Result<Option<
 fn list_repositories(gixor: &Gixor, _: cli::ListReposOpts) -> Result<Option<Gixor>> {
     let base_path = gixor.base_path().to_path_buf();
     for repo in gixor.repositories() {
-        let path = base_path.join(&repo.path);
         println!(
-            "{}: {}\n    {}",
+            "{}: {}\n    {}/{}",
             repo.name,
             repo.url,
-            path.to_string_lossy().to_string()
+            base_path.display(),
+            repo.name
         );
     }
     Ok(None)
@@ -306,7 +179,7 @@ fn perform_impl(
 ) -> Result<Option<Gixor>> {
     use cli::GixorCommand::*;
     let r = match subcmd {
-        Dump(opts) => dump_boilerplates(&gixor, opts),
+        Dump(opts) => perform_dump(&gixor, opts),
         Entries(opts) => list_entries(&gixor, opts),
         List(opts) => list_boilerplates(&gixor, opts),
         Repository(opts) => {
@@ -315,12 +188,14 @@ fn perform_impl(
                 Add(opts) => add_repository(&gixor, opts),
                 List(opts) => list_repositories(&gixor, opts),
                 Remove(opts) => remove_repository(&gixor, opts),
-                Update(opts) => update_repositories(&gixor, opts),
+                Update => update_repositories(&gixor),
             }
         }
         Root(opts) => show_root(&gixor, opts),
         Search(opts) => search_boilerplates(&gixor, opts),
-        Update(opts) => update_repositories(&gixor, opts),
+        Update => update_repositories(&gixor),
+        #[cfg(debug_assertions)]
+        CompletionFiles(opts) => gencomp::generate(opts.dest),
     };
     match r {
         Ok(Some(g)) => Ok(Some(g)),
@@ -382,7 +257,7 @@ mod gencomp {
         }
     }
 
-    pub fn generate(outdir: PathBuf) -> Result<()> {
+    pub fn generate(outdir: PathBuf) -> Result<Option<gixor::Gixor>> {
         let shells = vec![
             (Shell::Bash, "bash/gixor"),
             (Shell::Fish, "fish/gixor"),
@@ -399,7 +274,7 @@ mod gencomp {
             }
         }
         if errs.is_empty() {
-            Ok(())
+            Ok(None)
         } else {
             Err(GixorError::Array(errs))
         }
@@ -409,13 +284,5 @@ mod gencomp {
 fn main() -> Result<()> {
     let opts = cli::CliOpts::parse();
     init_log(&opts.log);
-    if cfg!(debug_assertions) {
-        #[cfg(debug_assertions)]
-        if opts.compopts.completion {
-            if let Err(e) = gencomp::generate(opts.compopts.dest.clone()) {
-                return Err(e);
-            }
-        }
-    }
     perform(opts)
 }

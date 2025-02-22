@@ -1,0 +1,468 @@
+#compdef totebag
+
+autoload -U is-at-least
+
+_totebag() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'-l+[Specify the log level]:LOG:(trace debug info warn error)' \
+'--log=[Specify the log level]:LOG:(trace debug info warn error)' \
+'-c+[Specify the configuration file]:CONFIG_JSON:_files' \
+'--config=[Specify the configuration file]:CONFIG_JSON:_files' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_totebag_commands" \
+"*::: :->gixor" \
+&& ret=0
+    case $state in
+    (gixor)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:totebag-command-$line[1]:"
+        case $line[1] in
+            (dump)
+_arguments "${_arguments_options[@]}" : \
+'-d+[Specify the destination directory. "-" means stdout.]:DEST:_default' \
+'--dest=[Specify the destination directory. "-" means stdout.]:DEST:_default' \
+'-c[Clear the current content of gitignore]' \
+'--clean[Clear the current content of gitignore]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'*::names -- The boilerplate names to dump.:_default' \
+&& ret=0
+;;
+(entries)
+_arguments "${_arguments_options[@]}" : \
+'-d+[Specify the directory located the .gitignore file]:DIR:_files' \
+'--dir=[Specify the directory located the .gitignore file]:DIR:_files' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+'-H[Show header]' \
+'--header[Show header]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'*::repos -- The repository names:_default' \
+&& ret=0
+;;
+(root)
+_arguments "${_arguments_options[@]}" : \
+'-o[Open the folder in the GUI file manager]' \
+'--open[Open the folder in the GUI file manager]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(search)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+'*::queries -- The search query:_default' \
+&& ret=0
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(repository)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_totebag__repository_commands" \
+"*::: :->repository" \
+&& ret=0
+
+    case $state in
+    (repository)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:totebag-repository-command-$line[1]:"
+        case $line[1] in
+            (add)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Specify the name of the gitignore boilerplate repository]:NAME:_default' \
+'--name=[Specify the name of the gitignore boilerplate repository]:NAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+':url -- Specify the URL or NAME of the gitignore boilerplate repository.
+The NAME shows the owner name of the repository, e.g., "github" means "https\://github.com/github/gitignore":_default' \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+'-k[Do not remove the directory of corresponding repository]' \
+'--keep-dir[Do not remove the directory of corresponding repository]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':name -- Specify the NAME of the gitignore boilerplate repository:_default' \
+&& ret=0
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_totebag__repository__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:totebag-repository-help-command-$line[1]:"
+        case $line[1] in
+            (add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(generate-completion-files)
+_arguments "${_arguments_options[@]}" : \
+'--completion-out-dir=[Output directory of completion files]:DIR:_files' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_totebag__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:totebag-help-command-$line[1]:"
+        case $line[1] in
+            (dump)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(entries)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(root)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(search)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(repository)
+_arguments "${_arguments_options[@]}" : \
+":: :_totebag__help__repository_commands" \
+"*::: :->repository" \
+&& ret=0
+
+    case $state in
+    (repository)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:totebag-help-repository-command-$line[1]:"
+        case $line[1] in
+            (add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(generate-completion-files)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_totebag_commands] )) ||
+_totebag_commands() {
+    local commands; commands=(
+'dump:Dump the boilerplates' \
+'entries:List the the current entries in the .gitignore file' \
+'list:List available boilerplates' \
+'root:Show the root directory of the boilerplate' \
+'search:Search the boilerplates from the query' \
+'update:Update the gitignore boilerplate repositories (alias of \`repository update\`)' \
+'repository:Manage the gitignore boilerplate repositories' \
+'generate-completion-files:Generate the completion files' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'totebag commands' commands "$@"
+}
+(( $+functions[_totebag__dump_commands] )) ||
+_totebag__dump_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag dump commands' commands "$@"
+}
+(( $+functions[_totebag__entries_commands] )) ||
+_totebag__entries_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag entries commands' commands "$@"
+}
+(( $+functions[_totebag__generate-completion-files_commands] )) ||
+_totebag__generate-completion-files_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag generate-completion-files commands' commands "$@"
+}
+(( $+functions[_totebag__help_commands] )) ||
+_totebag__help_commands() {
+    local commands; commands=(
+'dump:Dump the boilerplates' \
+'entries:List the the current entries in the .gitignore file' \
+'list:List available boilerplates' \
+'root:Show the root directory of the boilerplate' \
+'search:Search the boilerplates from the query' \
+'update:Update the gitignore boilerplate repositories (alias of \`repository update\`)' \
+'repository:Manage the gitignore boilerplate repositories' \
+'generate-completion-files:Generate the completion files' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'totebag help commands' commands "$@"
+}
+(( $+functions[_totebag__help__dump_commands] )) ||
+_totebag__help__dump_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help dump commands' commands "$@"
+}
+(( $+functions[_totebag__help__entries_commands] )) ||
+_totebag__help__entries_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help entries commands' commands "$@"
+}
+(( $+functions[_totebag__help__generate-completion-files_commands] )) ||
+_totebag__help__generate-completion-files_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help generate-completion-files commands' commands "$@"
+}
+(( $+functions[_totebag__help__help_commands] )) ||
+_totebag__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help help commands' commands "$@"
+}
+(( $+functions[_totebag__help__list_commands] )) ||
+_totebag__help__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help list commands' commands "$@"
+}
+(( $+functions[_totebag__help__repository_commands] )) ||
+_totebag__help__repository_commands() {
+    local commands; commands=(
+'add:Add a new gitignore boilerplate repository' \
+'list:List the current gitignore boilerplate repositories' \
+'remove:Remove a gitignore boilerplate repository' \
+'update:Update a gitignore boilerplate repository' \
+    )
+    _describe -t commands 'totebag help repository commands' commands "$@"
+}
+(( $+functions[_totebag__help__repository__add_commands] )) ||
+_totebag__help__repository__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help repository add commands' commands "$@"
+}
+(( $+functions[_totebag__help__repository__list_commands] )) ||
+_totebag__help__repository__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help repository list commands' commands "$@"
+}
+(( $+functions[_totebag__help__repository__remove_commands] )) ||
+_totebag__help__repository__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help repository remove commands' commands "$@"
+}
+(( $+functions[_totebag__help__repository__update_commands] )) ||
+_totebag__help__repository__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help repository update commands' commands "$@"
+}
+(( $+functions[_totebag__help__root_commands] )) ||
+_totebag__help__root_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help root commands' commands "$@"
+}
+(( $+functions[_totebag__help__search_commands] )) ||
+_totebag__help__search_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help search commands' commands "$@"
+}
+(( $+functions[_totebag__help__update_commands] )) ||
+_totebag__help__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag help update commands' commands "$@"
+}
+(( $+functions[_totebag__list_commands] )) ||
+_totebag__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag list commands' commands "$@"
+}
+(( $+functions[_totebag__repository_commands] )) ||
+_totebag__repository_commands() {
+    local commands; commands=(
+'add:Add a new gitignore boilerplate repository' \
+'list:List the current gitignore boilerplate repositories' \
+'remove:Remove a gitignore boilerplate repository' \
+'update:Update a gitignore boilerplate repository' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'totebag repository commands' commands "$@"
+}
+(( $+functions[_totebag__repository__add_commands] )) ||
+_totebag__repository__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository add commands' commands "$@"
+}
+(( $+functions[_totebag__repository__help_commands] )) ||
+_totebag__repository__help_commands() {
+    local commands; commands=(
+'add:Add a new gitignore boilerplate repository' \
+'list:List the current gitignore boilerplate repositories' \
+'remove:Remove a gitignore boilerplate repository' \
+'update:Update a gitignore boilerplate repository' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'totebag repository help commands' commands "$@"
+}
+(( $+functions[_totebag__repository__help__add_commands] )) ||
+_totebag__repository__help__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository help add commands' commands "$@"
+}
+(( $+functions[_totebag__repository__help__help_commands] )) ||
+_totebag__repository__help__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository help help commands' commands "$@"
+}
+(( $+functions[_totebag__repository__help__list_commands] )) ||
+_totebag__repository__help__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository help list commands' commands "$@"
+}
+(( $+functions[_totebag__repository__help__remove_commands] )) ||
+_totebag__repository__help__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository help remove commands' commands "$@"
+}
+(( $+functions[_totebag__repository__help__update_commands] )) ||
+_totebag__repository__help__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository help update commands' commands "$@"
+}
+(( $+functions[_totebag__repository__list_commands] )) ||
+_totebag__repository__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository list commands' commands "$@"
+}
+(( $+functions[_totebag__repository__remove_commands] )) ||
+_totebag__repository__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository remove commands' commands "$@"
+}
+(( $+functions[_totebag__repository__update_commands] )) ||
+_totebag__repository__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag repository update commands' commands "$@"
+}
+(( $+functions[_totebag__root_commands] )) ||
+_totebag__root_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag root commands' commands "$@"
+}
+(( $+functions[_totebag__search_commands] )) ||
+_totebag__search_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag search commands' commands "$@"
+}
+(( $+functions[_totebag__update_commands] )) ||
+_totebag__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'totebag update commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_totebag" ]; then
+    _totebag "$@"
+else
+    compdef _totebag totebag
+fi
