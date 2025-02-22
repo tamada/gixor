@@ -16,9 +16,12 @@ This is alternative tool for [gibo](https://github.com/simonwhitaker/gibo).
 ## :speaking_head: Overview
 
 `gibo` is the great tool to manage the `.gitignore` file.
-However, you may want to use your own `gitignore` boilerplate. 
-`gibo` relies on `github.com/github/gitignore` and needs further configuration separately if you want to use your team's own `gitignore` repository.
-Therefore, I just create a tool to manage `gitignore` files for multiple repositories.
+However, `gibo` uses [`github.com/github/gitignore`](https://github.com/github/gitignore) as the default and only repository, and we cannot use own `gitignore` boilerplates.
+Then, we needs further configuration aprt from `gibo` if the team want to use their own `gitignore` repository.
+Therefore, I just create a tool named `gixor` to manage `gitignore` files for multiple repositories.
+
+`gixor` is also uses [`github.com/github/gitignore`](https://github.com/github/gitignore) as the default repository (no explicit `git clone`).
+Then, the team want to use their own `gitignore` repository, run `gixor repository add <GIT_URL>` to add the repository.
 
 ## :runner: Usage
 

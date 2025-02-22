@@ -181,7 +181,7 @@ pub fn find_target_repositories<S: AsRef<str>>(
 }
 
 /// The name of the boilerplate which contains the repository name and the boilerplate name.
-/// The repository name is [Repository::name].
+/// The repository name is [`Repository::name`].
 /// The boilerplate name is the file stem of the boilerplate (gitignore) file.
 pub struct Name {
     pub repository_name: Option<String>,
@@ -198,7 +198,7 @@ impl From<&str> for Name {
 impl Name {
     /// Create a new `Name` instance with boilerplate name.
     /// The repository name is `None` (`None` means don't care).
-    pub fn new_of<S: AsRef<str>>(boilerplate_name: S) -> Self {
+    fn new_of<S: AsRef<str>>(boilerplate_name: S) -> Self {
         Self {
             repository_name: None,
             boilerplate_name: boilerplate_name.as_ref().to_string(),

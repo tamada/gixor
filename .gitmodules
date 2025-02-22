@@ -1,0 +1,6 @@
+[submodule "themes/tabi"]
+	path = themes/tabi
+	url = https://github.com/welpo/tabi
+[submodule "docs/themes/tabi"]
+	path = docs/themes/tabi
+	url = https://github.com/welpo/tabi
