@@ -1,0 +1,25 @@
+[package]
+name = "gixor-cli"
+readme = "README.md"
+categories = ["command-line-utilities"]
+description = "Git ignore managenemnt system for multiple repositories."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+
+[dependencies]
+gixor = { path = "../lib" }
+atty = "0.2.14"
+clap = { version = "4.5.28", features = ["derive"] }
+clap_complete = "4.5.44"
+env_logger = "0.11.6"
+log = "0.4.25"
+opener = "0.7.2"
+terminal_size = "0.4.1"
+
+[dev-dependencies]
+tokio = { version = "1.16.1", features = ["full"] }
+reqwest = { version = "0.12.12", features = ["json"] }

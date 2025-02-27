@@ -1,0 +1,46 @@
+title: Gixor
+baseurl: https://tamada.github.io/gixor/
+languageCode: en
+
+params:
+  subtitle: "Git Ignore Managenemnt System for Multiple Repositories."
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+menu:
+  main:
+    - name: "🏠 Home"
+      pageRef: "/"
+      weight: 10
+    - name: "⚓️ Install"
+      pageRef: "/install"
+      weight: 20
+    - name: "🦏 Inside Gixor"
+      pageRef: "/inside"
+      weight: 30
+    - name: "🔍 Search"
+      weight: 100
+      params:
+        type: search
+    - name: "GitHub"
+      url: "https://github.com/tamada/gixor/"
+      params:
+        icon: github
+      weight: 500
+    - name: "Tamada's WWW page"
+      url: "https://tamada.github.io/"
+      weight: 1000
+      params:
+        icon: globe
+
+params:
+  navbar:
+    displayTitle: true
+    displayLogo: true
+    logo:
+      path: icons/logo.svg
+      dark: icons/logo.svg
+      width: 40
+      height: 20

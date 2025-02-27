@@ -1,30 +1,17 @@
-[package]
-name = "gixor"
+[workspace]
+members = [
+    "lib",
+    "cli"
+]
+resolver = "3"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
 authors = [ "Haruaki Tamada" ]
 license-file = "LICENSE"
-description = ""
 repository = "https://github.com/tamada/gixor.git"
 homepage = "https://tamada.github.io/gixor/"
 readme = "README.md"
 categories = [ "command-line-utilities", "configuration", "development-tools" ]
 keywords = [ "cli", "gitignore", "gitignore-generator", "git", "shell", "gitignore-files", "gitignore-templates" ]
-
-[dependencies]
-atty = "0.2.14"
-clap = { version = "4.5.28", features = ["derive"] }
-clap_complete = "4.5.44"
-dirs = "6.0.0"
-env_logger = "0.11.6"
-git2 = "0.20.0"
-ignore = "0.4.23"
-log = "0.4.25"
-opener = "0.7.2"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.138"
-terminal_size = "0.4.1"
-tokio = { version = "1.16.1", features = ["full"] }
-
-[dev-dependencies]
-reqwest = { version = "0.12.12", features = ["json"] }
