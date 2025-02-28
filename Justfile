@@ -16,7 +16,7 @@ build target = "": formats clippy
 
 # Run the test with cargo test
 test: (build "") clone_for_test
-    cargo llvm-cov --lcov --output-path target/covergae.lcov
+    cargo llvm-cov --lcov --output-path target/coverage.lcov
 
 # Run cargo fmt for formatting the source codes.
 formats:
