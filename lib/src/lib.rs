@@ -714,9 +714,9 @@ mod tests {
 
     #[test]
     fn test_repo() {
-        let repo = Repository::new_with("tamada", "git@github.com:tamada/gitignore.git");
+        let repo = Repository::new_with("tamada", "https://github.com/tamada/gitignore.git");
         assert_eq!(repo.name, "tamada");
-        assert_eq!(repo.url, "git@github.com:tamada/gitignore.git");
+        assert_eq!(repo.url, "https://github.com/tamada/gitignore.git");
 
         let base_path = PathBuf::from("../testdata/boilerplates");
         let boilerplates = repo.iter(&base_path).collect::<Vec<_>>();
