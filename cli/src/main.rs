@@ -5,7 +5,6 @@ use gixor::{Gixor, GixorError, Name, Result};
 
 mod cli;
 mod terminal;
-mod utils;
 
 fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
     let mut store_flag = false;
@@ -71,7 +70,13 @@ fn list_boilerplates(gixor: &Gixor, opts: cli::ListOpts) -> Result<Option<Gixor>
             Ok(list) => print_in_columns_if_needed(list, header),
         }
     }
-    utils::errs_vec_to_result(errs, None)
+    if errs.is_empty() {
+        Ok(None)
+    } else if errs.len() == 1 {
+        Err(errs.into_iter().next().unwrap())
+    } else {
+        Err(GixorError::Array(errs))
+    }
 }
 
 pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<String>) {
@@ -158,7 +163,7 @@ fn remove_repository(gixor: &Gixor, opts: cli::RepoRemoveOpts) -> Result<Option<
     }
 }
 
-fn list_repositories(gixor: &Gixor, _: cli::ListReposOpts) -> Result<Option<Gixor>> {
+fn list_repositories(gixor: &Gixor) -> Result<Option<Gixor>> {
     let base_path = gixor.base_path().to_path_buf();
     for repo in gixor.repositories() {
         println!(
@@ -178,15 +183,20 @@ fn perform_impl(
     store_flag: bool,
 ) -> Result<Option<Gixor>> {
     use cli::GixorCommand::*;
+    let mut store_flag = store_flag;
     let r = match subcmd {
         Dump(opts) => perform_dump(&gixor, opts),
+        Init => {
+            store_flag = true;
+            Ok(None)
+        }
         Entries(opts) => list_entries(&gixor, opts),
         List(opts) => list_boilerplates(&gixor, opts),
         Repository(opts) => {
             use cli::RepositoryOpts::*;
             match opts {
                 Add(opts) => add_repository(&gixor, opts),
-                List(opts) => list_repositories(&gixor, opts),
+                List => list_repositories(&gixor),
                 Remove(opts) => remove_repository(&gixor, opts),
                 Update => update_repositories(&gixor),
             }
@@ -285,4 +295,20 @@ fn main() -> Result<()> {
     let opts = cli::CliOpts::parse();
     init_log(&opts.log);
     perform(opts)
+}
+
+#[cfg(test)]
+mod tests {
+    use gixor::LogLevel;
+
+    use super::*;
+
+    #[test]
+    fn test() {
+        let r = cli::CliOpts::try_parse_from(vec!["gixor", "--log", "trace", "init"]);
+        match r {
+            Ok(opts) => assert_eq!(opts.log, LogLevel::Trace),
+            Err(e) => panic!("failed to parse: {:?}", e),
+        }
+    }
 }

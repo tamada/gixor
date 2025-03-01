@@ -30,6 +30,8 @@ pub(crate) enum GixorCommand {
         about = "List the the current entries in the .gitignore file"
     )]
     Entries(EntriesOpts),
+    #[command(name = "init", about = "Initialize the Gixor", hide = true)]
+    Init,
     #[command(name = "list", about = "List available boilerplates")]
     List(ListOpts),
     #[command(name = "root", about = "Show the root directory of the boilerplate")]
@@ -65,7 +67,7 @@ pub(crate) enum RepositoryOpts {
         name = "list",
         about = "List the current gitignore boilerplate repositories"
     )]
-    List(ListReposOpts),
+    List,
     #[command(name = "remove", about = "Remove a gitignore boilerplate repository")]
     Remove(RepoRemoveOpts),
     #[command(name = "update", about = "Update a gitignore boilerplate repository")]
@@ -106,9 +108,6 @@ pub(crate) struct RepoRemoveOpts {
     )]
     pub(crate) name: String,
 }
-
-#[derive(Parser, Debug)]
-pub(crate) struct ListReposOpts {}
 
 #[derive(Parser, Debug)]
 pub(crate) struct DumpOpts {

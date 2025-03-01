@@ -1,4 +1,8 @@
-# Gixor
+---
+title: "Gixor"
+description: "Git Ignore Management System for Multiple Repositories."
+date: 2025-02-25
+---
 
 [![build](https://github.com/tamada/gixor/actions/workflows/build.yaml/badge.svg)](https://github.com/tamada/gixor/actions/workflows/build.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/tamada/gixor/badge.svg?branch=main)](https://coveralls.io/github/tamada/gixor?branch=main)
@@ -10,24 +14,21 @@
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io/tamada/gixor:${VERSION}-blue?logo=docker)](https://github.com/tamada/gixor/pkgs/container/gixor/)
 [![Homebrew](https://img.shields.io/badge/Homebrew-tamada/tap/gixor-blue?logo=homebrew)](https://github.com/tamada/homebrew-tap)
 
-Git Ignore Managenemnt System for Multiple Repositories.
+Gixor is Git Ignore Managenemnt System for Multiple Repositories.
 This is alternative tool for [gibo](https://github.com/simonwhitaker/gibo).
 
-## :speaking_head: Overview
+## 🗣️ Overview
 
 `gibo` is the great tool to manage the `.gitignore` file.
-However, `gibo` uses [`github.com/github/gitignore`](https://github.com/github/gitignore) as the default and only repository, and we cannot use own `gitignore` boilerplates.
-Then, we needs further configuration aprt from `gibo` if the team want to use their own `gitignore` repository.
-Therefore, I just create a tool named `gixor` to manage `gitignore` files for multiple repositories.
+However, you may want to use your own `gitignore` boilerplate. 
+`gibo` relies on `github.com/github/gitignore` and needs further configuration separately if you want to use your team's own `gitignore` repository.
+Therefore, I just create a tool to manage `gitignore` files for multiple repositories.
 
-`gixor` is also uses [`github.com/github/gitignore`](https://github.com/github/gitignore) as the default repository (no explicit `git clone`).
-Then, the team want to use their own `gitignore` repository, run `gixor repository add <GIT_URL>` to add the repository.
-
-## :runner: Usage
+## 🏃 Usage
 
 ```shell
 git ignore [OPTIONS] [ARGS...]
-    or 
+    or
 gixor [OPTIONS] <COMMAND>
 
 Commands:
@@ -47,18 +48,25 @@ Options:
   -V, --version               Print version
 ```
 
-## About
+Gixor clones and updates the boilerplate repositories into the local root directory if necessary.
+The local root directory is specified in the configuration file.
 
-### Product Name
+## ℹ️ About
 
-Gixor means "GItignore indeX ORganizer," or "Git Ignorizer."
-Pronounce it as "jigsaw" or "gigsor".
+### 👩‍💻 Authors 👨‍💻
 
-### Related Tools and Services
+* Haruaki Tamada [GitHub](https://github.com/tamada) [🌏](https://tamada.github.io/)
 
-- [gibo](https://github.com/simonwhitaker/gibo) (Go lang)
-- [gitignore.io](https://www.gitignore.io/) (Swift, Less, JavaScript, ...)
-- [bliss](https://github.com/ajmwagar/bliss) (Rust)
-- [gitignore-it](https://github.com/christopherkade/gitignore-it) (JavaScript)
-- [gitnr](https://github.com/reemus-dev/gitnr) (Rust)
-- [gig](https://github.com/shihanng/gig) (Go lang)
+### 🎃 Product Name
+
+Gixor means "GitIgnore indeX ORganizer," and
+pronounce it as "jigsaw".
+
+### 🔗 Related Tools and Services
+
+* [gibo](https://github.com/simonwhitaker/gibo)
+* [gitignore.io](https://www.gitignore.io/)
+* [bliss](https://github.com/ajmwagar/bliss)
+* [gitignore-it](https://github.com/christopherkade/gitignore-it)
+* [gitnr](https://github.com/reemus-dev/gitnr)
+* [gig](https://github.com/shihanng/gig)

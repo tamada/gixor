@@ -1,5 +1,5 @@
 {
-    "base-path": "testdata/boilerplates",
+    "base-path": "boilerplates",
     "repositories": [
         {
             "url": "https://github.com/github/gitignore.git",

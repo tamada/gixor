@@ -1,0 +1,21 @@
+[package]
+name = "gixor"
+readme = "README.md"
+categories = ["development tools", "configuration" ]
+description = "An API for managing .gitignore files."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+
+[dependencies]
+clap = { version = "4.5.28", features = ["derive"] }
+dirs = "6.0.0"
+env_logger = "0.11.6"
+git2 = "0.20.0"
+ignore = "0.4.23"
+log = "0.4.25"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"

@@ -1,4 +1,4 @@
-use terminal_size::{Width, Height};
+use terminal_size::{Height, Width};
 /// Represents a terminal that can format strings in columns.
 pub(crate) struct Terminal {
     pub(crate) width: usize,
@@ -78,7 +78,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_print_in_column_string() {
-        let v1 = vec![
+        let v1 = [
             "macOS",
             "Linux",
             "Windows",
@@ -91,7 +91,7 @@ mod tests {
         assert_eq!(r1.len(), 1);
         assert_eq!(r1[0], "macOS            Linux            Windows          Go               VisualStudioCode JetBrains");
 
-        let v2 = vec![
+        let v2 = [
             "macOS",
             "Linux",
             "Windows",

@@ -31,7 +31,7 @@ mod utils;
 pub type Result<T> = std::result::Result<T, GixorError>;
 
 /// Represents the log level.
-#[derive(Parser, Debug, ValueEnum, Clone)]
+#[derive(Parser, Debug, ValueEnum, Clone, PartialEq)]
 pub enum LogLevel {
     Trace,
     Debug,
@@ -73,19 +73,28 @@ impl Display for GixorError {
 
 /// Represents a boilerplate file.
 pub struct Boilerplate<'a> {
+    /// The boilerplate name. It is the stem of the boilerplate file.
     name: String,
+    /// The path of the boilerplate file.
     path: PathBuf,
+    /// The repository of this boilerplate.
     repo: &'a Repository,
+    /// The base path of the boilerplate file.
     base_path: PathBuf,
 }
 
 impl<'a> Boilerplate<'a> {
-    fn new(name: String, path: PathBuf, repo: &'a Repository, base_path: &Path) -> Boilerplate<'a> {
+    fn new<P: AsRef<Path>>(
+        name: String,
+        path: PathBuf,
+        repo: &'a Repository,
+        base_path: P,
+    ) -> Boilerplate<'a> {
         Boilerplate {
             name,
             path,
             repo,
-            base_path: base_path.to_path_buf(),
+            base_path: base_path.as_ref().to_path_buf(),
         }
     }
 
@@ -181,11 +190,22 @@ pub fn find_target_repositories<S: AsRef<str>>(
 }
 
 /// The name of the boilerplate which contains the repository name and the boilerplate name.
-/// The repository name is [Repository::name].
+/// The repository name is [`Repository::name`].
 /// The boilerplate name is the file stem of the boilerplate (gitignore) file.
 pub struct Name {
+    /// The repository name for of the boilerplate. If `None`, the repository name do not care.
     pub repository_name: Option<String>,
+    /// The boilerplate name.
     pub boilerplate_name: String,
+}
+
+impl Display for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.repository_name {
+            Some(repo) => write!(f, "{}/{}", repo, self.boilerplate_name),
+            None => write!(f, "{}", self.boilerplate_name),
+        }
+    }
 }
 
 impl From<&str> for Name {
@@ -198,7 +218,7 @@ impl From<&str> for Name {
 impl Name {
     /// Create a new `Name` instance with boilerplate name.
     /// The repository name is `None` (`None` means don't care).
-    pub fn new_of<S: AsRef<str>>(boilerplate_name: S) -> Self {
+    fn new_of<S: AsRef<str>>(boilerplate_name: S) -> Self {
         Self {
             repository_name: None,
             boilerplate_name: boilerplate_name.as_ref().to_string(),
@@ -299,7 +319,7 @@ impl Gixor {
             }),
             Ok(f) => match serde_json::from_reader(f) {
                 Ok(config) => Ok(Self {
-                    config,
+                    config: update_base_path(config, path),
                     load_from: path.to_path_buf(),
                 }),
                 Err(e) => Err(GixorError::Json(e)),
@@ -472,6 +492,20 @@ impl Gixor {
     }
 }
 
+fn update_base_path(config: Config, path: &Path) -> Config {
+    let parent = path.parent().unwrap();
+    let base_path = config.base_path.clone();
+    let new_base_path = if base_path.is_absolute() || base_path.starts_with(".") {
+        base_path
+    } else {
+        parent.join(base_path)
+    };
+    Config {
+        base_path: new_base_path,
+        repositories: config.repositories,
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 struct Config {
@@ -483,6 +517,7 @@ impl Config {
     fn find(&self, name: Name) -> Result<Boilerplate<'_>> {
         for repo in &self.repositories {
             if let Some(item) = repo.find(&name, &self.base_path) {
+                log::trace!("{}: found from repository {}", name, item.repository_name());
                 return Ok(item);
             }
         }
@@ -510,6 +545,8 @@ pub struct Repository {
     pub repo_name: String,
     /// The owner name of the repository.
     pub owner: String,
+    /// The path of the repository.
+    pub path: PathBuf,
 }
 
 impl Default for Repository {
@@ -521,6 +558,7 @@ impl Default for Repository {
             url: "https://github.com/github/gitignore.git".to_string(),
             repo_name: "gitignore".to_string(),
             owner: "github".to_string(),
+            path: PathBuf::from("default"),
         }
     }
 }
@@ -535,6 +573,7 @@ impl Repository {
             name: owner.clone(),
             url: url.to_string(),
             repo_name,
+            path: PathBuf::from(&owner),
             owner,
         }
     }
@@ -547,17 +586,30 @@ impl Repository {
             url: url.as_ref().to_string(),
             repo_name,
             owner,
+            path: PathBuf::from(name.as_ref()),
+        }
+    }
+
+    fn path<P: AsRef<Path>>(&self, base_path: P) -> PathBuf {
+        if self.path.is_absolute() {
+            self.path.clone()
+        } else {
+            base_path.as_ref().join(&self.path)
         }
     }
 
     fn hash<P: AsRef<Path>>(&self, base_path: P) -> Result<Vec<u8>> {
         let path = base_path.as_ref().join(&self.name);
-        let gitrepo = match git2::Repository::open(path) {
+        log::trace!("try to open the git repository: {}", path.display());
+        let gitrepo = match git2::Repository::open(path.clone()) {
             Ok(repo) => repo,
             Err(_) => {
-                return Err(GixorError::Git(git2::Error::from_str(
-                    format!("{}: Failed to open the repository", self.name).as_str(),
-                )))
+                let message = format!(
+                    "{} ({}): Failed to open the repository",
+                    self.name.as_str(),
+                    path.display()
+                );
+                return Err(GixorError::Git(git2::Error::from_str(message.as_str())));
             }
         };
         let head = gitrepo.head();
@@ -579,8 +631,8 @@ impl Repository {
 
     /// Iterates the boilerplates in the repository.
     pub fn iter<P: AsRef<Path>>(&self, base_path: P) -> impl Iterator<Item = Boilerplate<'_>> {
-        let base_path = base_path.as_ref().to_path_buf();
-        ignore::WalkBuilder::new(base_path.join(&self.name))
+        let bpath = base_path.as_ref().to_path_buf();
+        ignore::WalkBuilder::new(self.path(base_path))
             .standard_filters(true)
             .build()
             .flatten()
@@ -591,7 +643,7 @@ impl Repository {
                     path.file_stem().unwrap().to_string_lossy().to_string(),
                     path,
                     self,
-                    &base_path.clone(),
+                    bpath.clone(),
                 )
             })
     }
@@ -648,12 +700,12 @@ mod tests {
 
     #[test]
     fn parse_gixor() {
-        match Gixor::load(PathBuf::from("testdata/config.json")) {
+        match Gixor::load(PathBuf::from("../testdata/config.json")) {
             Err(e) => panic!("Failed to parse the config file: {}", e),
             Ok(gixor) => {
                 assert_eq!(
                     gixor.config.base_path,
-                    PathBuf::from("testdata/boilerplates")
+                    PathBuf::from("../testdata/boilerplates")
                 );
                 assert_eq!(gixor.config.repositories.len(), 2);
             }
@@ -662,18 +714,18 @@ mod tests {
 
     #[test]
     fn test_repo() {
-        let repo = Repository::new_with("tamada", "git@github.com:tamada/gitignore.git");
+        let repo = Repository::new_with("tamada", "https://github.com/tamada/gitignore.git");
         assert_eq!(repo.name, "tamada");
-        assert_eq!(repo.url, "git@github.com:tamada/gitignore.git");
+        assert_eq!(repo.url, "https://github.com/tamada/gitignore.git");
 
-        let base_path = PathBuf::from("testdata/boilerplates");
+        let base_path = PathBuf::from("../testdata/boilerplates");
         let boilerplates = repo.iter(&base_path).collect::<Vec<_>>();
         assert_eq!(boilerplates.len(), 1);
 
         if let Some(b) = repo.find(&Name::new_of("devcontainer"), &base_path) {
             assert_eq!(
                 b.path,
-                PathBuf::from("testdata/boilerplates/tamada/devcontainer.gitignore")
+                PathBuf::from("../testdata/boilerplates/tamada/devcontainer.gitignore")
             );
         } else {
             panic!("Failed to find the devcontainer.gitignore");

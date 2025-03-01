@@ -10,7 +10,7 @@ fn test_dump() {
             panic!("Failed to initialize Gixor: {}", e);
         }
     };
-    let dest = PathBuf::from("integration/dump");
+    let dest = PathBuf::from("../integration/dump");
     let _ = std::fs::create_dir_all(&dest);
     let r = gixor::dump_boilerplates(
         &gixor,
@@ -34,7 +34,7 @@ fn test_dump() {
 
 #[test]
 fn test_list_entries_not_found() {
-    let r = gixor::list_entries("integration/not_found");
+    let r = gixor::list_entries("../integration/not_found");
     assert!(r.is_err());
     let e = r.unwrap_err();
     assert!(matches!(e, gixor::GixorError::NotFound(_)));

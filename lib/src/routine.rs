@@ -113,10 +113,7 @@ pub(super) fn dump_boilerplates_impl<P: AsRef<Path>>(
     dest: P,
     boilerplates: Vec<super::Boilerplate>,
 ) -> Result<()> {
-    let w = match open_dest(dest) {
-        Ok(w) => w,
-        Err(e) => return Err(e),
-    };
+    let w = open_dest(dest)?;
     let mut w = std::io::BufWriter::new(w);
     let prologue = load_prologue();
     let contents = vec_result_to_result_vec(

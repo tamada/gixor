@@ -27,12 +27,12 @@ async fn test_clone_and_find() -> Result<()> {
 
 #[test]
 fn test_find() {
-    let gixor = Gixor::load("testdata/config.json").unwrap();
-    let result = gixor.find(Name::new_of("devcontainer")).unwrap();
+    let gixor = Gixor::load("../testdata/config.json").unwrap();
+    let result = gixor.find(Name::from("devcontainer")).unwrap();
     assert_eq!(result.boilerplate_name(), "devcontainer");
     assert_eq!(result.repository_name(), "tamada");
 
-    let result = gixor.find(Name::new_of("rust")).unwrap();
+    let result = gixor.find(Name::from("rust")).unwrap();
     assert_eq!(result.boilerplate_name(), "Rust");
     assert_eq!(result.repository_name(), "default");
 
