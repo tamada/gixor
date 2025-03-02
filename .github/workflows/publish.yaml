@@ -44,18 +44,18 @@ jobs:
             target: aarch64-unknown-linux-musl
             artifact_name: ${{ needs.setup.outputs.appname }}
             asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_amd64
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            artifact_name: ${{ needs.setup.outputs.appname }}
-            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_arm64
           # - os: ubuntu-latest
-          #   target: aarch64-pc-windows-gnullvm
-          #   artifact_name: ${{ needs.setup.outputs.appname }}.exe
-          #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_windows_amd64
+          #   target: x86_64-unknown-linux-musl
+          #   artifact_name: ${{ needs.setup.outputs.appname }}
+          #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_arm64
           - os: ubuntu-latest
-            target: x86_64-pc-windows-gnu
+            target: aarch64-pc-windows-gnullvm
             artifact_name: ${{ needs.setup.outputs.appname }}.exe
-            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_windows_arm64
+            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_windows_amd64
+          # - os: ubuntu-latest
+          #   target: x86_64-pc-windows-gnu
+          #   artifact_name: ${{ needs.setup.outputs.appname }}.exe
+          #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_windows_arm64
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: ${{ needs.setup.outputs.appname }}
@@ -80,6 +80,12 @@ jobs:
           DIR=$(echo "${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}")
           echo "dir=$DIR" >> $GITHUB_OUTPUT
   
+      # - name: Cache cargo registry
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ~/.cargo/registry
+      #     key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}        
+
       - name: Setup
         run: rustup update stable
 
