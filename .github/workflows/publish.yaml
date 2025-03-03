@@ -89,22 +89,11 @@ jobs:
       - name: Setup
         run: rustup update stable
 
-      - name: Setup Rust (1/2) (toolchain)
-        uses: taiki-e/setup-cross-toolchain-action@v1
-        if: matrix.os == 'ubuntu-latest'
-        with:
-          target: ${{ matrix.target }}
-
-      - name: Cross build (macOS)
-        if: matrix.os == 'macos-latest'
+      - name: Build
         run: |
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
 
-      - name: Cross build (Linux and Windows)
-        run: |
-          cargo build --release --target ${{ matrix.target }}
-                  
       # publish release
       - name: Create release file
         shell: bash
