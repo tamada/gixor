@@ -40,10 +40,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-20.04
-            target: aarch64-unknown-linux-gnu
-            artifact_name: ${{ needs.setup.outputs.appname }}
-            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_amd64
+          # - os: ubuntu-20.04
+          #   target: aarch64-unknown-linux-gnu
+          #   artifact_name: ${{ needs.setup.outputs.appname }}
+          #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_amd64
           - os: ubuntu-20.04
             target: x86_64-unknown-linux-gnu
             artifact_name: ${{ needs.setup.outputs.appname }}
