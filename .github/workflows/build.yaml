@@ -31,8 +31,13 @@ jobs:
         run:
           sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
 
+      - name: Setup Msys2
+        uses: msys2/setup-msys2@v2
+        if: matrix.os == 'windows-latest'
+  
       - name: Setup for Windows (aarch64 (amd64))
         if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
         run:
           pacman -S mingw-w64-clang-aarch64-openssl
 
