@@ -102,13 +102,13 @@ jobs:
         if: matrix.os == 'windows-latest' && contains(matrix.target, 'x86_64')
         shell: msys2 {0}
         run:
-          pacman -S mingw-w64-x86_64-openssl
+          pacman -Syu mingw-w64-x86_64-openssl
 
       - name: Setup for Windows (aarch64 (amd64))
         if: matrix.os == 'windows-latest' && contains(matrix.target, 'aarch')
         shell: msys2 {0}
         run:
-          pacman -S mingw-w64-clang-aarch64-openssl
+          pacman -Syu mingw-w64-clang-aarch64-openssl
 
       - name: Setup for macOS
         if: matrix.os == 'macos-latest'

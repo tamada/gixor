@@ -14,18 +14,6 @@ jobs:
           - macOS-latest
           - windows-latest
     steps:
-      - name: Checkout project
-        uses: actions/checkout@v4
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: llvm-tools-preview
-
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-      
       - name: Setup for Linux
         if: matrix.os == 'ubuntu-latest'
         run:
@@ -39,13 +27,25 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run:
-          pacman -S mingw-w64-clang-aarch64-openssl
+          pacman -Syu mingw-w64-clang-aarch64-openssl
 
       - name: Setup for macOS
         if: matrix.os == 'macos-latest'
         run:
           brew install openssl@3
         
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      
       - uses: extractions/setup-just@v2
 
       - name: Build and calculate coverages
