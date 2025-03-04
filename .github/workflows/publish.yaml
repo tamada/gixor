@@ -112,8 +112,8 @@ jobs:
           DIST=${{ matrix.target }}
           mkdir -p dist/$DIST/$DIR
           # cp -r site/public dist/$DIST/$DIR/docs
-          cp -r README.md LICENSE assets target/${{ matrix.target }}/release/${{ matrix.artifact_name }} dist/$DIST/$DIR
-          cp target/${{ matrix.target }}/release/gixor-cli dist/$DIST/$DIR/gixor
+          cp -r README.md LICENSE assets dist/$DIST/$DIR
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }}-cli dist/$DIST/$DIR/${{ matrix.artifact_name }}
           tar cvfz dist/${{ matrix.asset_name }}.tar.gz -C dist/$DIST $DIR
         
       - name: Upload release assets
