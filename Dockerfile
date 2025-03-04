@@ -20,7 +20,7 @@ RUN    cargo build --release \
 
 FROM debian:bullseye-slim
 
-ARG VERSION=0.2.4
+ARG VERSION=0.2.5
 
 LABEL   org.opencontainers.image.source=https://github.com/tamada/gixor \
         org.opencontainers.image.version=${VERSION} \
