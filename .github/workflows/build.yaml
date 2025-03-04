@@ -12,8 +12,28 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          - windows-latest
+          # - windows-latest
     steps:
+      - name: Setup for Linux
+        if: matrix.os == 'ubuntu-latest'
+        run:
+          sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+
+      - name: Setup for macOS
+        if: matrix.os == 'macos-latest'
+        run:
+          brew install openssl@3
+
+      # - name: Setup Msys2
+      #   uses: msys2/setup-msys2@v2
+      #   if: matrix.os == 'windows-latest'
+  
+      # - name: Setup for Windows (aarch64 (amd64))
+      #   if: matrix.os == 'windows-latest'
+      #   shell: msys2 {0}
+      #   run:
+      #     pacman -Syu --noconfirm mingw-w64-clang-aarch64-openssl
+        
       - name: Checkout project
         uses: actions/checkout@v4
 
@@ -25,7 +45,7 @@ jobs:
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
-        
+      
       - uses: extractions/setup-just@v2
 
       - name: Build and calculate coverages

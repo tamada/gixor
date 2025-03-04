@@ -40,19 +40,19 @@ jobs:
     strategy:
       matrix:
         include:
-          # - os: ubuntu-20.04
-          #   target: aarch64-unknown-linux-gnu
-          #   artifact_name: ${{ needs.setup.outputs.appname }}
-          #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_amd64
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-gnu
+            artifact_name: ${{ needs.setup.outputs.appname }}
+            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_amd64
           - os: ubuntu-20.04
             target: x86_64-unknown-linux-gnu
             artifact_name: ${{ needs.setup.outputs.appname }}
             asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_arm64
-          # - os: ubuntu-latest
+          # - os: windows-latest
           #   target: aarch64-pc-windows-gnullvm
           #   artifact_name: ${{ needs.setup.outputs.appname }}.exe
           #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_windows_amd64
-          # - os: ubuntu-latest
+          # - os: windows-latest
           #   target: x86_64-pc-windows-gnu
           #   artifact_name: ${{ needs.setup.outputs.appname }}.exe
           #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_windows_arm64
@@ -93,6 +93,22 @@ jobs:
         if: matrix.os == 'ubuntu-20.04'
         run:
           sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+
+      # - name: Setup Msys2
+      #   uses: msys2/setup-msys2@v2
+      #   if: matrix.os == 'windows-latest'
+  
+      # - name: Setup for Windows (x86_64 (arm64))
+      #   if: matrix.os == 'windows-latest' && contains(matrix.target, 'x86_64')
+      #   shell: msys2 {0}
+      #   run:
+      #     pacman -Syu --noconfirm mingw-w64-x86_64-openssl
+
+      # - name: Setup for Windows (aarch64 (amd64))
+      #   if: matrix.os == 'windows-latest' && contains(matrix.target, 'aarch')
+      #   shell: msys2 {0}
+      #   run:
+      #     pacman -Syu --noconfirm mingw-w64-clang-aarch64-openssl
 
       - name: Setup for macOS
         if: matrix.os == 'macos-latest'
