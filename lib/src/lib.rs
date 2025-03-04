@@ -24,6 +24,7 @@ use std::{
 use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
 
+mod alias;
 mod git;
 mod utils;
 
@@ -44,6 +45,7 @@ pub enum LogLevel {
 #[derive(Debug)]
 pub enum GixorError {
     Array(Vec<GixorError>),
+    Alias(String),
     Git(git2::Error),
     IO(std::io::Error),
     Json(serde_json::Error),
@@ -62,6 +64,7 @@ impl Display for GixorError {
                     Ok(())
                 }
             }
+            GixorError::Alias(msg) => write!(f, "{}", msg),
             GixorError::NotFound(name) => write!(f, "{}: not found", name),
             GixorError::Git(e) => write!(f, "Git error: {}", e),
             GixorError::IO(e) => write!(f, "IO error: {}", e),
@@ -192,6 +195,7 @@ pub fn find_target_repositories<S: AsRef<str>>(
 /// The name of the boilerplate which contains the repository name and the boilerplate name.
 /// The repository name is [`Repository::name`].
 /// The boilerplate name is the file stem of the boilerplate (gitignore) file.
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Name {
     /// The repository name for of the boilerplate. If `None`, the repository name do not care.
     pub repository_name: Option<String>,
@@ -282,6 +286,7 @@ impl Default for Gixor {
                 let config = Config {
                     repositories,
                     base_path: dir.join("gixor").join("boilerplates"),
+                    aliases: None,
                 };
                 Self {
                     config,
@@ -314,6 +319,7 @@ impl Gixor {
                 config: Config {
                     repositories: vec![Repository::default()],
                     base_path: path.parent().unwrap().join("boilerplates"),
+                    aliases: None,
                 },
                 load_from: path.to_path_buf(),
             }),
@@ -376,7 +382,7 @@ impl Gixor {
     }
 
     /// Find the boilerplate by the name.
-    pub fn find(&self, name: Name) -> Result<Boilerplate> {
+    pub fn find(&self, name: Name) -> Result<Vec<Boilerplate>> {
         self.config.find(name)
     }
 
@@ -402,6 +408,7 @@ impl Gixor {
                     config: crate::Config {
                         repositories: repos,
                         base_path: self.config.base_path.clone(),
+                        aliases: None,
                     },
                     load_from: self.load_from.clone(),
                 })
@@ -434,6 +441,7 @@ impl Gixor {
                 config: crate::Config {
                     repositories: repos,
                     base_path: self.config.base_path.clone(),
+                    aliases: self.config.aliases.clone(),
                 },
                 load_from: self.load_from.clone(),
             })
@@ -503,6 +511,7 @@ fn update_base_path(config: Config, path: &Path) -> Config {
     Config {
         base_path: new_base_path,
         repositories: config.repositories,
+        aliases: config.aliases,
     }
 }
 
@@ -510,15 +519,16 @@ fn update_base_path(config: Config, path: &Path) -> Config {
 #[serde(rename_all = "kebab-case")]
 struct Config {
     pub(crate) repositories: Vec<Repository>,
+    pub(crate) aliases: Option<Vec<alias::Alias>>,
     pub(crate) base_path: PathBuf,
 }
 
 impl Config {
-    fn find(&self, name: Name) -> Result<Boilerplate<'_>> {
+    fn find(&self, name: Name) -> Result<Vec<Boilerplate<'_>>> {
         for repo in &self.repositories {
             if let Some(item) = repo.find(&name, &self.base_path) {
                 log::trace!("{}: found from repository {}", name, item.repository_name());
-                return Ok(item);
+                return Ok(vec![item]);
             }
         }
         Err(GixorError::NotFound(name.boilerplate_name))
@@ -528,6 +538,28 @@ impl Config {
         self.repositories
             .iter()
             .flat_map(move |repo| repo.iter(&self.base_path))
+    }
+
+    fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias> {
+        self.aliases.as_ref().into_iter().flat_map(|a| a.iter())
+    }
+
+    fn remove_alias<S: AsRef<str>>(&mut self, name: S) {
+        if let Some(aliases) = &mut self.aliases {
+            let name = name.as_ref();
+            let index = aliases.iter().position(|a| a.name == name);
+            if let Some(index) = index {
+                aliases.remove(index);
+            }
+        }
+    }
+
+    fn append_alias(&mut self, alias: alias::Alias) {
+        if let Some(aliases) = &mut self.aliases {
+            aliases.push(alias);
+        } else {
+            self.aliases = Some(vec![alias]);
+        }
     }
 }
 
