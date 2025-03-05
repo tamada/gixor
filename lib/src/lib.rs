@@ -24,7 +24,7 @@ use std::{
 use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Deserializer, Serialize};
 
-mod alias;
+pub mod alias;
 mod git;
 mod utils;
 

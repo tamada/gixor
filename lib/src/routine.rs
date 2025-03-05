@@ -162,7 +162,7 @@ fn load_prologue() -> Vec<String> {
 /// Convert `Vec<Result<T>>` to `Result<Vec<T>>`
 /// If `Vec<Result<T>>` has the multiple errors,
 /// `Result<Vec<T>>` returns `Err(GixorError::Array(Vec<GixorError>))`.
-pub(super) fn vec_result_to_result_vec<T>(result: Vec<Result<T>>) -> Result<Vec<T>> {
+pub(crate) fn vec_result_to_result_vec<T>(result: Vec<Result<T>>) -> Result<Vec<T>> {
     let mut errs = vec![];
     let mut ok_results = vec![];
     for r in result {

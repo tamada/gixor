@@ -14,5 +14,25 @@
             "name": "tamada",
             "path": "tamada"
         }
+    ],
+    "aliases": [
+        {
+            "name": "os-list",
+            "description": "Alias of linux, windows and macos",
+            "boilerplates": [
+                "default/linux",
+                "default/windows",
+                "default/macos"
+            ]
+        }, {
+            "name": "my-default",
+            "description": "Alias of my default settings",
+            "boilerplates": [
+                "alias/os-list",
+                "default/visualstudiocode",
+                "default/emacs",
+                "default/vim"
+            ]
+        }
     ]
 }
