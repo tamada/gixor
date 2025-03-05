@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::Gixor;
+use crate::{Gixor, RepositoryManager};
 
 use super::Result;
 
@@ -42,14 +42,9 @@ pub(super) fn find_boilerplates(
         .map(|name| gixor.find(name))
         .collect::<Vec<_>>();
     match vec_result_to_result_vec(r) {
-        Ok(vv) => 
-            Ok(vv.into_iter()
-                    .flat_map(|v| v)
-                    .collect::<Vec<_>>()
-            ),
+        Ok(vv) => Ok(vv.into_iter().flatten().collect::<Vec<_>>()),
         Err(e) => Err(e),
     }
-
 }
 
 pub(super) fn list_entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
