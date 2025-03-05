@@ -23,6 +23,8 @@ pub(crate) struct CliOpts {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum GixorCommand {
+    #[command(name = "alias", about = "Manage the aliases")]
+    Alias(AliasOpts),
     #[command(name = "dump", about = "Dump the boilerplates")]
     Dump(DumpOpts),
     #[command(
@@ -57,6 +59,31 @@ pub(crate) enum GixorCommand {
         about = "Generate the completion files"
     )]
     CompletionFiles(CompleteOpts),
+}
+
+#[derive(Parser, Debug)]
+pub(crate) struct AliasOpts {
+    #[clap(
+        short,
+        long,
+        help = "Remove the specified alias from the configuration"
+    )]
+    pub(crate) rm: bool,
+
+    #[clap(
+        short,
+        long,
+        default_value = "",
+        help = "Specify the alias description for registration."
+    )]
+    pub(crate) description: String,
+
+    #[clap(
+        index = 1,
+        value_name = "NAME",
+        help = "Specify the alias name and its value"
+    )]
+    pub(crate) args: Vec<String>,
 }
 
 #[derive(Debug, Subcommand)]

@@ -51,8 +51,7 @@ Options:
 
 ### Product Name
 
-Gixor means "GItignore indeX ORganizer," or "Git Ignorizer."
-Pronounce it as "jigsaw" or "gigsor".
+Gixor means "GitIgnore indeX ORganizer," and pronounce it as "jigsaw."
 
 ### Related Tools and Services
 

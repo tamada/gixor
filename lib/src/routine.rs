@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::Gixor;
+use crate::{Gixor, RepositoryManager};
 
 use super::Result;
 
@@ -41,7 +41,10 @@ pub(super) fn find_boilerplates(
         .into_iter()
         .map(|name| gixor.find(name))
         .collect::<Vec<_>>();
-    vec_result_to_result_vec(r)
+    match vec_result_to_result_vec(r) {
+        Ok(vv) => Ok(vv.into_iter().flatten().collect::<Vec<_>>()),
+        Err(e) => Err(e),
+    }
 }
 
 pub(super) fn list_entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
@@ -159,7 +162,7 @@ fn load_prologue() -> Vec<String> {
 /// Convert `Vec<Result<T>>` to `Result<Vec<T>>`
 /// If `Vec<Result<T>>` has the multiple errors,
 /// `Result<Vec<T>>` returns `Err(GixorError::Array(Vec<GixorError>))`.
-pub(super) fn vec_result_to_result_vec<T>(result: Vec<Result<T>>) -> Result<Vec<T>> {
+pub(crate) fn vec_result_to_result_vec<T>(result: Vec<Result<T>>) -> Result<Vec<T>> {
     let mut errs = vec![];
     let mut ok_results = vec![];
     for r in result {
