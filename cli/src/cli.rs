@@ -1,17 +1,18 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use gixor::LogLevel;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, arg_required_else_help = true)]
+#[command(name = "gixor", author, version, about, arg_required_else_help = true)]
 pub(crate) struct CliOpts {
     #[clap(subcommand)]
     pub(crate) subcmd: GixorCommand,
 
     #[arg(short, long, help = "Specify the log level", default_value = "warn")]
-    pub(crate) log: LogLevel,
+    pub(crate) log: crate::LogLevel,
 
+    // #[arg(long = "dry-run", help = "Do not perform the actual operation")]
+    // pub(crate) dry_run: bool,
     #[arg(
         short,
         long,
@@ -29,7 +30,7 @@ pub(crate) enum GixorCommand {
     Dump(DumpOpts),
     #[command(
         name = "entries",
-        about = "List the the current entries in the .gitignore file"
+        about = "List the current entries in the .gitignore file"
     )]
     Entries(EntriesOpts),
     #[command(name = "init", about = "Initialize the Gixor", hide = true)]
