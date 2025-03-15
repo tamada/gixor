@@ -1,10 +1,20 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
 use gixor::{Gixor, GixorError, Name, Result};
 
 mod cli;
 mod terminal;
+
+/// Represents the log level.
+#[derive(Parser, Debug, ValueEnum, Clone, PartialEq)]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
 
 fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
     let mut store_flag = false;
@@ -229,8 +239,8 @@ fn perform(opts: cli::CliOpts) -> Result<()> {
     }
 }
 
-fn init_log(level: &gixor::LogLevel) {
-    use gixor::LogLevel::*;
+fn init_log(level: &LogLevel) {
+    use LogLevel::*;
     match level {
         Error => std::env::set_var("RUST_LOG", "error"),
         Warn => std::env::set_var("RUST_LOG", "warn"),
@@ -261,7 +271,7 @@ mod gencomp {
         match std::fs::File::create(dest) {
             Err(e) => Err(GixorError::IO(e)),
             Ok(mut out) => {
-                clap_complete::generate(shell, app, "totebag", &mut out);
+                clap_complete::generate(shell, app, "gixor", &mut out);
                 Ok(())
             }
         }
@@ -299,7 +309,7 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use gixor::LogLevel;
+    use super::LogLevel;
 
     use super::*;
 

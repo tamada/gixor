@@ -34,6 +34,9 @@ clone_tamada_ignores:
 
 clone_for_test: clone_default_ignores clone_tamada_ignores
 
+gen_complete:
+    
+
 prepare_site_build:
     test -d docs/public || git worktree add -f docs/public gh-pages
 

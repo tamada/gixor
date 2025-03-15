@@ -1,8 +1,8 @@
-#compdef totebag
+#compdef gixor
 
 autoload -U is-at-least
 
-_totebag() {
+_gixor() {
     typeset -A opt_args
     typeset -a _arguments_options
     local ret=1
@@ -23,14 +23,14 @@ _totebag() {
 '--help[Print help]' \
 '-V[Print version]' \
 '--version[Print version]' \
-":: :_totebag_commands" \
-"*::: :->gixor" \
+":: :_gixor_commands" \
+"*::: :->gixor-cli" \
 && ret=0
     case $state in
-    (gixor)
+    (gixor-cli)
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
-        curcontext="${curcontext%:*:*}:totebag-command-$line[1]:"
+        curcontext="${curcontext%:*:*}:gixor-command-$line[1]:"
         case $line[1] in
             (dump)
 _arguments "${_arguments_options[@]}" : \
@@ -47,6 +47,12 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-d+[Specify the directory located the .gitignore file]:DIR:_files' \
 '--dir=[Specify the directory located the .gitignore file]:DIR:_files' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(init)
+_arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -85,7 +91,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
 '--help[Print help]' \
-":: :_totebag__repository_commands" \
+":: :_gixor__repository_commands" \
 "*::: :->repository" \
 && ret=0
 
@@ -93,7 +99,7 @@ _arguments "${_arguments_options[@]}" : \
     (repository)
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
-        curcontext="${curcontext%:*:*}:totebag-repository-command-$line[1]:"
+        curcontext="${curcontext%:*:*}:gixor-repository-command-$line[1]:"
         case $line[1] in
             (add)
 _arguments "${_arguments_options[@]}" : \
@@ -128,7 +134,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_totebag__repository__help_commands" \
+":: :_gixor__repository__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -136,7 +142,7 @@ _arguments "${_arguments_options[@]}" : \
     (help)
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
-        curcontext="${curcontext%:*:*}:totebag-repository-help-command-$line[1]:"
+        curcontext="${curcontext%:*:*}:gixor-repository-help-command-$line[1]:"
         case $line[1] in
             (add)
 _arguments "${_arguments_options[@]}" : \
@@ -175,7 +181,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_totebag__help_commands" \
+":: :_gixor__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -183,13 +189,17 @@ _arguments "${_arguments_options[@]}" : \
     (help)
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
-        curcontext="${curcontext%:*:*}:totebag-help-command-$line[1]:"
+        curcontext="${curcontext%:*:*}:gixor-help-command-$line[1]:"
         case $line[1] in
             (dump)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (entries)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(init)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -211,7 +221,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (repository)
 _arguments "${_arguments_options[@]}" : \
-":: :_totebag__help__repository_commands" \
+":: :_gixor__help__repository_commands" \
 "*::: :->repository" \
 && ret=0
 
@@ -219,7 +229,7 @@ _arguments "${_arguments_options[@]}" : \
     (repository)
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
-        curcontext="${curcontext%:*:*}:totebag-help-repository-command-$line[1]:"
+        curcontext="${curcontext%:*:*}:gixor-help-repository-command-$line[1]:"
         case $line[1] in
             (add)
 _arguments "${_arguments_options[@]}" : \
@@ -258,11 +268,12 @@ esac
 esac
 }
 
-(( $+functions[_totebag_commands] )) ||
-_totebag_commands() {
+(( $+functions[_gixor_commands] )) ||
+_gixor_commands() {
     local commands; commands=(
 'dump:Dump the boilerplates' \
 'entries:List the the current entries in the .gitignore file' \
+'init:Initialize the Gixor' \
 'list:List available boilerplates' \
 'root:Show the root directory of the boilerplate' \
 'search:Search the boilerplates from the query' \
@@ -271,28 +282,29 @@ _totebag_commands() {
 'generate-completion-files:Generate the completion files' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
-    _describe -t commands 'totebag commands' commands "$@"
+    _describe -t commands 'gixor commands' commands "$@"
 }
-(( $+functions[_totebag__dump_commands] )) ||
-_totebag__dump_commands() {
+(( $+functions[_gixor__dump_commands] )) ||
+_gixor__dump_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag dump commands' commands "$@"
+    _describe -t commands 'gixor dump commands' commands "$@"
 }
-(( $+functions[_totebag__entries_commands] )) ||
-_totebag__entries_commands() {
+(( $+functions[_gixor__entries_commands] )) ||
+_gixor__entries_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag entries commands' commands "$@"
+    _describe -t commands 'gixor entries commands' commands "$@"
 }
-(( $+functions[_totebag__generate-completion-files_commands] )) ||
-_totebag__generate-completion-files_commands() {
+(( $+functions[_gixor__generate-completion-files_commands] )) ||
+_gixor__generate-completion-files_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag generate-completion-files commands' commands "$@"
+    _describe -t commands 'gixor generate-completion-files commands' commands "$@"
 }
-(( $+functions[_totebag__help_commands] )) ||
-_totebag__help_commands() {
+(( $+functions[_gixor__help_commands] )) ||
+_gixor__help_commands() {
     local commands; commands=(
 'dump:Dump the boilerplates' \
 'entries:List the the current entries in the .gitignore file' \
+'init:Initialize the Gixor' \
 'list:List available boilerplates' \
 'root:Show the root directory of the boilerplate' \
 'search:Search the boilerplates from the query' \
@@ -301,101 +313,95 @@ _totebag__help_commands() {
 'generate-completion-files:Generate the completion files' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
-    _describe -t commands 'totebag help commands' commands "$@"
+    _describe -t commands 'gixor help commands' commands "$@"
 }
-(( $+functions[_totebag__help__dump_commands] )) ||
-_totebag__help__dump_commands() {
+(( $+functions[_gixor__help__dump_commands] )) ||
+_gixor__help__dump_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help dump commands' commands "$@"
+    _describe -t commands 'gixor help dump commands' commands "$@"
 }
-(( $+functions[_totebag__help__entries_commands] )) ||
-_totebag__help__entries_commands() {
+(( $+functions[_gixor__help__entries_commands] )) ||
+_gixor__help__entries_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help entries commands' commands "$@"
+    _describe -t commands 'gixor help entries commands' commands "$@"
 }
-(( $+functions[_totebag__help__generate-completion-files_commands] )) ||
-_totebag__help__generate-completion-files_commands() {
+(( $+functions[_gixor__help__generate-completion-files_commands] )) ||
+_gixor__help__generate-completion-files_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help generate-completion-files commands' commands "$@"
+    _describe -t commands 'gixor help generate-completion-files commands' commands "$@"
 }
-(( $+functions[_totebag__help__help_commands] )) ||
-_totebag__help__help_commands() {
+(( $+functions[_gixor__help__help_commands] )) ||
+_gixor__help__help_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help help commands' commands "$@"
+    _describe -t commands 'gixor help help commands' commands "$@"
 }
-(( $+functions[_totebag__help__list_commands] )) ||
-_totebag__help__list_commands() {
+(( $+functions[_gixor__help__init_commands] )) ||
+_gixor__help__init_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help list commands' commands "$@"
+    _describe -t commands 'gixor help init commands' commands "$@"
 }
-(( $+functions[_totebag__help__repository_commands] )) ||
-_totebag__help__repository_commands() {
+(( $+functions[_gixor__help__list_commands] )) ||
+_gixor__help__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor help list commands' commands "$@"
+}
+(( $+functions[_gixor__help__repository_commands] )) ||
+_gixor__help__repository_commands() {
     local commands; commands=(
 'add:Add a new gitignore boilerplate repository' \
 'list:List the current gitignore boilerplate repositories' \
 'remove:Remove a gitignore boilerplate repository' \
 'update:Update a gitignore boilerplate repository' \
     )
-    _describe -t commands 'totebag help repository commands' commands "$@"
+    _describe -t commands 'gixor help repository commands' commands "$@"
 }
-(( $+functions[_totebag__help__repository__add_commands] )) ||
-_totebag__help__repository__add_commands() {
+(( $+functions[_gixor__help__repository__add_commands] )) ||
+_gixor__help__repository__add_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help repository add commands' commands "$@"
+    _describe -t commands 'gixor help repository add commands' commands "$@"
 }
-(( $+functions[_totebag__help__repository__list_commands] )) ||
-_totebag__help__repository__list_commands() {
+(( $+functions[_gixor__help__repository__list_commands] )) ||
+_gixor__help__repository__list_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help repository list commands' commands "$@"
+    _describe -t commands 'gixor help repository list commands' commands "$@"
 }
-(( $+functions[_totebag__help__repository__remove_commands] )) ||
-_totebag__help__repository__remove_commands() {
+(( $+functions[_gixor__help__repository__remove_commands] )) ||
+_gixor__help__repository__remove_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help repository remove commands' commands "$@"
+    _describe -t commands 'gixor help repository remove commands' commands "$@"
 }
-(( $+functions[_totebag__help__repository__update_commands] )) ||
-_totebag__help__repository__update_commands() {
+(( $+functions[_gixor__help__repository__update_commands] )) ||
+_gixor__help__repository__update_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help repository update commands' commands "$@"
+    _describe -t commands 'gixor help repository update commands' commands "$@"
 }
-(( $+functions[_totebag__help__root_commands] )) ||
-_totebag__help__root_commands() {
+(( $+functions[_gixor__help__root_commands] )) ||
+_gixor__help__root_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help root commands' commands "$@"
+    _describe -t commands 'gixor help root commands' commands "$@"
 }
-(( $+functions[_totebag__help__search_commands] )) ||
-_totebag__help__search_commands() {
+(( $+functions[_gixor__help__search_commands] )) ||
+_gixor__help__search_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help search commands' commands "$@"
+    _describe -t commands 'gixor help search commands' commands "$@"
 }
-(( $+functions[_totebag__help__update_commands] )) ||
-_totebag__help__update_commands() {
+(( $+functions[_gixor__help__update_commands] )) ||
+_gixor__help__update_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag help update commands' commands "$@"
+    _describe -t commands 'gixor help update commands' commands "$@"
 }
-(( $+functions[_totebag__list_commands] )) ||
-_totebag__list_commands() {
+(( $+functions[_gixor__init_commands] )) ||
+_gixor__init_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag list commands' commands "$@"
+    _describe -t commands 'gixor init commands' commands "$@"
 }
-(( $+functions[_totebag__repository_commands] )) ||
-_totebag__repository_commands() {
-    local commands; commands=(
-'add:Add a new gitignore boilerplate repository' \
-'list:List the current gitignore boilerplate repositories' \
-'remove:Remove a gitignore boilerplate repository' \
-'update:Update a gitignore boilerplate repository' \
-'help:Print this message or the help of the given subcommand(s)' \
-    )
-    _describe -t commands 'totebag repository commands' commands "$@"
-}
-(( $+functions[_totebag__repository__add_commands] )) ||
-_totebag__repository__add_commands() {
+(( $+functions[_gixor__list_commands] )) ||
+_gixor__list_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag repository add commands' commands "$@"
+    _describe -t commands 'gixor list commands' commands "$@"
 }
-(( $+functions[_totebag__repository__help_commands] )) ||
-_totebag__repository__help_commands() {
+(( $+functions[_gixor__repository_commands] )) ||
+_gixor__repository_commands() {
     local commands; commands=(
 'add:Add a new gitignore boilerplate repository' \
 'list:List the current gitignore boilerplate repositories' \
@@ -403,66 +409,82 @@ _totebag__repository__help_commands() {
 'update:Update a gitignore boilerplate repository' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
-    _describe -t commands 'totebag repository help commands' commands "$@"
+    _describe -t commands 'gixor repository commands' commands "$@"
 }
-(( $+functions[_totebag__repository__help__add_commands] )) ||
-_totebag__repository__help__add_commands() {
+(( $+functions[_gixor__repository__add_commands] )) ||
+_gixor__repository__add_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag repository help add commands' commands "$@"
+    _describe -t commands 'gixor repository add commands' commands "$@"
 }
-(( $+functions[_totebag__repository__help__help_commands] )) ||
-_totebag__repository__help__help_commands() {
-    local commands; commands=()
-    _describe -t commands 'totebag repository help help commands' commands "$@"
+(( $+functions[_gixor__repository__help_commands] )) ||
+_gixor__repository__help_commands() {
+    local commands; commands=(
+'add:Add a new gitignore boilerplate repository' \
+'list:List the current gitignore boilerplate repositories' \
+'remove:Remove a gitignore boilerplate repository' \
+'update:Update a gitignore boilerplate repository' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'gixor repository help commands' commands "$@"
 }
-(( $+functions[_totebag__repository__help__list_commands] )) ||
-_totebag__repository__help__list_commands() {
+(( $+functions[_gixor__repository__help__add_commands] )) ||
+_gixor__repository__help__add_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag repository help list commands' commands "$@"
+    _describe -t commands 'gixor repository help add commands' commands "$@"
 }
-(( $+functions[_totebag__repository__help__remove_commands] )) ||
-_totebag__repository__help__remove_commands() {
+(( $+functions[_gixor__repository__help__help_commands] )) ||
+_gixor__repository__help__help_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag repository help remove commands' commands "$@"
+    _describe -t commands 'gixor repository help help commands' commands "$@"
 }
-(( $+functions[_totebag__repository__help__update_commands] )) ||
-_totebag__repository__help__update_commands() {
+(( $+functions[_gixor__repository__help__list_commands] )) ||
+_gixor__repository__help__list_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag repository help update commands' commands "$@"
+    _describe -t commands 'gixor repository help list commands' commands "$@"
 }
-(( $+functions[_totebag__repository__list_commands] )) ||
-_totebag__repository__list_commands() {
+(( $+functions[_gixor__repository__help__remove_commands] )) ||
+_gixor__repository__help__remove_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag repository list commands' commands "$@"
+    _describe -t commands 'gixor repository help remove commands' commands "$@"
 }
-(( $+functions[_totebag__repository__remove_commands] )) ||
-_totebag__repository__remove_commands() {
+(( $+functions[_gixor__repository__help__update_commands] )) ||
+_gixor__repository__help__update_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag repository remove commands' commands "$@"
+    _describe -t commands 'gixor repository help update commands' commands "$@"
 }
-(( $+functions[_totebag__repository__update_commands] )) ||
-_totebag__repository__update_commands() {
+(( $+functions[_gixor__repository__list_commands] )) ||
+_gixor__repository__list_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag repository update commands' commands "$@"
+    _describe -t commands 'gixor repository list commands' commands "$@"
 }
-(( $+functions[_totebag__root_commands] )) ||
-_totebag__root_commands() {
+(( $+functions[_gixor__repository__remove_commands] )) ||
+_gixor__repository__remove_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag root commands' commands "$@"
+    _describe -t commands 'gixor repository remove commands' commands "$@"
 }
-(( $+functions[_totebag__search_commands] )) ||
-_totebag__search_commands() {
+(( $+functions[_gixor__repository__update_commands] )) ||
+_gixor__repository__update_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag search commands' commands "$@"
+    _describe -t commands 'gixor repository update commands' commands "$@"
 }
-(( $+functions[_totebag__update_commands] )) ||
-_totebag__update_commands() {
+(( $+functions[_gixor__root_commands] )) ||
+_gixor__root_commands() {
     local commands; commands=()
-    _describe -t commands 'totebag update commands' commands "$@"
+    _describe -t commands 'gixor root commands' commands "$@"
+}
+(( $+functions[_gixor__search_commands] )) ||
+_gixor__search_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor search commands' commands "$@"
+}
+(( $+functions[_gixor__update_commands] )) ||
+_gixor__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor update commands' commands "$@"
 }
 
-if [ "$funcstack[1]" = "_totebag" ]; then
-    _totebag "$@"
+if [ "$funcstack[1]" = "_gixor" ]; then
+    _gixor "$@"
 else
-    compdef _totebag totebag
+    compdef _gixor gixor
 fi

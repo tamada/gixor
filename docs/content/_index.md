@@ -33,7 +33,7 @@ gixor [OPTIONS] <COMMAND>
 
 Commands:
   dump        Dump the boilerplates
-  entries     List the the current entries in the .gitignore file
+  entries     List the current entries in the .gitignore file
   list        List available boilerplates
   root        Show the root directory of the boilerplate
   search      Search the boilerplates from the query

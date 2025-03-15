@@ -2,12 +2,12 @@
 using namespace System.Management.Automation
 using namespace System.Management.Automation.Language
 
-Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
+Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
     $commandElements = $commandAst.CommandElements
     $command = @(
-        'totebag'
+        'gixor'
         for ($i = 1; $i -lt $commandElements.Count; $i++) {
             $element = $commandElements[$i]
             if ($element -isnot [StringConstantExpressionAst] -or
@@ -20,7 +20,7 @@ Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
     }) -join ';'
 
     $completions = @(switch ($command) {
-        'totebag' {
+        'gixor' {
             [CompletionResult]::new('-l', '-l', [CompletionResultType]::ParameterName, 'Specify the log level')
             [CompletionResult]::new('--log', '--log', [CompletionResultType]::ParameterName, 'Specify the log level')
             [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Specify the configuration file')
@@ -31,6 +31,7 @@ Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
             [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
             [CompletionResult]::new('dump', 'dump', [CompletionResultType]::ParameterValue, 'Dump the boilerplates')
             [CompletionResult]::new('entries', 'entries', [CompletionResultType]::ParameterValue, 'List the the current entries in the .gitignore file')
+            [CompletionResult]::new('init', 'init', [CompletionResultType]::ParameterValue, 'Initialize the Gixor')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List available boilerplates')
             [CompletionResult]::new('root', 'root', [CompletionResultType]::ParameterValue, 'Show the root directory of the boilerplate')
             [CompletionResult]::new('search', 'search', [CompletionResultType]::ParameterValue, 'Search the boilerplates from the query')
@@ -40,7 +41,7 @@ Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
-        'totebag;dump' {
+        'gixor;dump' {
             [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the destination directory. "-" means stdout.')
             [CompletionResult]::new('--dest', '--dest', [CompletionResultType]::ParameterName, 'Specify the destination directory. "-" means stdout.')
             [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Clear the current content of gitignore')
@@ -49,38 +50,43 @@ Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;entries' {
+        'gixor;entries' {
             [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the directory located the .gitignore file')
             [CompletionResult]::new('--dir', '--dir', [CompletionResultType]::ParameterName, 'Specify the directory located the .gitignore file')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;list' {
+        'gixor;init' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'gixor;list' {
             [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'Show header')
             [CompletionResult]::new('--header', '--header', [CompletionResultType]::ParameterName, 'Show header')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;root' {
+        'gixor;root' {
             [CompletionResult]::new('-o', '-o', [CompletionResultType]::ParameterName, 'Open the folder in the GUI file manager')
             [CompletionResult]::new('--open', '--open', [CompletionResultType]::ParameterName, 'Open the folder in the GUI file manager')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;search' {
+        'gixor;search' {
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;update' {
+        'gixor;update' {
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;repository' {
+        'gixor;repository' {
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
@@ -90,31 +96,31 @@ Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
-        'totebag;repository;add' {
+        'gixor;repository;add' {
             [CompletionResult]::new('-n', '-n', [CompletionResultType]::ParameterName, 'Specify the name of the gitignore boilerplate repository')
             [CompletionResult]::new('--name', '--name', [CompletionResultType]::ParameterName, 'Specify the name of the gitignore boilerplate repository')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;repository;list' {
+        'gixor;repository;list' {
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;repository;remove' {
+        'gixor;repository;remove' {
             [CompletionResult]::new('-k', '-k', [CompletionResultType]::ParameterName, 'Do not remove the directory of corresponding repository')
             [CompletionResult]::new('--keep-dir', '--keep-dir', [CompletionResultType]::ParameterName, 'Do not remove the directory of corresponding repository')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;repository;update' {
+        'gixor;repository;update' {
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;repository;help' {
+        'gixor;repository;help' {
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
             [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
@@ -122,30 +128,31 @@ Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
-        'totebag;repository;help;add' {
+        'gixor;repository;help;add' {
             break
         }
-        'totebag;repository;help;list' {
+        'gixor;repository;help;list' {
             break
         }
-        'totebag;repository;help;remove' {
+        'gixor;repository;help;remove' {
             break
         }
-        'totebag;repository;help;update' {
+        'gixor;repository;help;update' {
             break
         }
-        'totebag;repository;help;help' {
+        'gixor;repository;help;help' {
             break
         }
-        'totebag;generate-completion-files' {
+        'gixor;generate-completion-files' {
             [CompletionResult]::new('--completion-out-dir', '--completion-out-dir', [CompletionResultType]::ParameterName, 'Output directory of completion files')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
         }
-        'totebag;help' {
+        'gixor;help' {
             [CompletionResult]::new('dump', 'dump', [CompletionResultType]::ParameterValue, 'Dump the boilerplates')
             [CompletionResult]::new('entries', 'entries', [CompletionResultType]::ParameterValue, 'List the the current entries in the .gitignore file')
+            [CompletionResult]::new('init', 'init', [CompletionResultType]::ParameterValue, 'Initialize the Gixor')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List available boilerplates')
             [CompletionResult]::new('root', 'root', [CompletionResultType]::ParameterValue, 'Show the root directory of the boilerplate')
             [CompletionResult]::new('search', 'search', [CompletionResultType]::ParameterValue, 'Search the boilerplates from the query')
@@ -155,47 +162,50 @@ Register-ArgumentCompleter -Native -CommandName 'totebag' -ScriptBlock {
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
-        'totebag;help;dump' {
+        'gixor;help;dump' {
             break
         }
-        'totebag;help;entries' {
+        'gixor;help;entries' {
             break
         }
-        'totebag;help;list' {
+        'gixor;help;init' {
             break
         }
-        'totebag;help;root' {
+        'gixor;help;list' {
             break
         }
-        'totebag;help;search' {
+        'gixor;help;root' {
             break
         }
-        'totebag;help;update' {
+        'gixor;help;search' {
             break
         }
-        'totebag;help;repository' {
+        'gixor;help;update' {
+            break
+        }
+        'gixor;help;repository' {
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
             [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
             [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update a gitignore boilerplate repository')
             break
         }
-        'totebag;help;repository;add' {
+        'gixor;help;repository;add' {
             break
         }
-        'totebag;help;repository;list' {
+        'gixor;help;repository;list' {
             break
         }
-        'totebag;help;repository;remove' {
+        'gixor;help;repository;remove' {
             break
         }
-        'totebag;help;repository;update' {
+        'gixor;help;repository;update' {
             break
         }
-        'totebag;help;generate-completion-files' {
+        'gixor;help;generate-completion-files' {
             break
         }
-        'totebag;help;help' {
+        'gixor;help;help' {
             break
         }
     })

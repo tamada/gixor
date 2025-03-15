@@ -2,14 +2,14 @@
 use builtin;
 use str;
 
-set edit:completion:arg-completer[totebag] = {|@words|
+set edit:completion:arg-completer[gixor] = {|@words|
     fn spaces {|n|
         builtin:repeat $n ' ' | str:join ''
     }
     fn cand {|text desc|
         edit:complex-candidate $text &display=$text' '(spaces (- 14 (wcswidth $text)))$desc
     }
-    var command = 'totebag'
+    var command = 'gixor'
     for word $words[1..-1] {
         if (str:has-prefix $word '-') {
             break
@@ -17,7 +17,7 @@ set edit:completion:arg-completer[totebag] = {|@words|
         set command = $command';'$word
     }
     var completions = [
-        &'totebag'= {
+        &'gixor'= {
             cand -l 'Specify the log level'
             cand --log 'Specify the log level'
             cand -c 'Specify the configuration file'
@@ -28,6 +28,7 @@ set edit:completion:arg-completer[totebag] = {|@words|
             cand --version 'Print version'
             cand dump 'Dump the boilerplates'
             cand entries 'List the the current entries in the .gitignore file'
+            cand init 'Initialize the Gixor'
             cand list 'List available boilerplates'
             cand root 'Show the root directory of the boilerplate'
             cand search 'Search the boilerplates from the query'
@@ -36,7 +37,7 @@ set edit:completion:arg-completer[totebag] = {|@words|
             cand generate-completion-files 'Generate the completion files'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
-        &'totebag;dump'= {
+        &'gixor;dump'= {
             cand -d 'Specify the destination directory. "-" means stdout.'
             cand --dest 'Specify the destination directory. "-" means stdout.'
             cand -c 'Clear the current content of gitignore'
@@ -44,33 +45,37 @@ set edit:completion:arg-completer[totebag] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;entries'= {
+        &'gixor;entries'= {
             cand -d 'Specify the directory located the .gitignore file'
             cand --dir 'Specify the directory located the .gitignore file'
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;list'= {
+        &'gixor;init'= {
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
+        &'gixor;list'= {
             cand -H 'Show header'
             cand --header 'Show header'
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;root'= {
+        &'gixor;root'= {
             cand -o 'Open the folder in the GUI file manager'
             cand --open 'Open the folder in the GUI file manager'
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;search'= {
+        &'gixor;search'= {
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;update'= {
+        &'gixor;update'= {
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;repository'= {
+        &'gixor;repository'= {
             cand -h 'Print help'
             cand --help 'Print help'
             cand add 'Add a new gitignore boilerplate repository'
@@ -79,51 +84,52 @@ set edit:completion:arg-completer[totebag] = {|@words|
             cand update 'Update a gitignore boilerplate repository'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
-        &'totebag;repository;add'= {
+        &'gixor;repository;add'= {
             cand -n 'Specify the name of the gitignore boilerplate repository'
             cand --name 'Specify the name of the gitignore boilerplate repository'
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;repository;list'= {
+        &'gixor;repository;list'= {
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;repository;remove'= {
+        &'gixor;repository;remove'= {
             cand -k 'Do not remove the directory of corresponding repository'
             cand --keep-dir 'Do not remove the directory of corresponding repository'
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;repository;update'= {
+        &'gixor;repository;update'= {
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;repository;help'= {
+        &'gixor;repository;help'= {
             cand add 'Add a new gitignore boilerplate repository'
             cand list 'List the current gitignore boilerplate repositories'
             cand remove 'Remove a gitignore boilerplate repository'
             cand update 'Update a gitignore boilerplate repository'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
-        &'totebag;repository;help;add'= {
+        &'gixor;repository;help;add'= {
         }
-        &'totebag;repository;help;list'= {
+        &'gixor;repository;help;list'= {
         }
-        &'totebag;repository;help;remove'= {
+        &'gixor;repository;help;remove'= {
         }
-        &'totebag;repository;help;update'= {
+        &'gixor;repository;help;update'= {
         }
-        &'totebag;repository;help;help'= {
+        &'gixor;repository;help;help'= {
         }
-        &'totebag;generate-completion-files'= {
+        &'gixor;generate-completion-files'= {
             cand --completion-out-dir 'Output directory of completion files'
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'totebag;help'= {
+        &'gixor;help'= {
             cand dump 'Dump the boilerplates'
             cand entries 'List the the current entries in the .gitignore file'
+            cand init 'Initialize the Gixor'
             cand list 'List available boilerplates'
             cand root 'Show the root directory of the boilerplate'
             cand search 'Search the boilerplates from the query'
@@ -132,35 +138,37 @@ set edit:completion:arg-completer[totebag] = {|@words|
             cand generate-completion-files 'Generate the completion files'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
-        &'totebag;help;dump'= {
+        &'gixor;help;dump'= {
         }
-        &'totebag;help;entries'= {
+        &'gixor;help;entries'= {
         }
-        &'totebag;help;list'= {
+        &'gixor;help;init'= {
         }
-        &'totebag;help;root'= {
+        &'gixor;help;list'= {
         }
-        &'totebag;help;search'= {
+        &'gixor;help;root'= {
         }
-        &'totebag;help;update'= {
+        &'gixor;help;search'= {
         }
-        &'totebag;help;repository'= {
+        &'gixor;help;update'= {
+        }
+        &'gixor;help;repository'= {
             cand add 'Add a new gitignore boilerplate repository'
             cand list 'List the current gitignore boilerplate repositories'
             cand remove 'Remove a gitignore boilerplate repository'
             cand update 'Update a gitignore boilerplate repository'
         }
-        &'totebag;help;repository;add'= {
+        &'gixor;help;repository;add'= {
         }
-        &'totebag;help;repository;list'= {
+        &'gixor;help;repository;list'= {
         }
-        &'totebag;help;repository;remove'= {
+        &'gixor;help;repository;remove'= {
         }
-        &'totebag;help;repository;update'= {
+        &'gixor;help;repository;update'= {
         }
-        &'totebag;help;generate-completion-files'= {
+        &'gixor;help;generate-completion-files'= {
         }
-        &'totebag;help;help'= {
+        &'gixor;help;help'= {
         }
     ]
     $completions[$command]

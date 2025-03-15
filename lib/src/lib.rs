@@ -21,7 +21,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
 
 mod git;
@@ -29,16 +28,6 @@ mod utils;
 
 /// Represents the result of Gixor.
 pub type Result<T> = std::result::Result<T, GixorError>;
-
-/// Represents the log level.
-#[derive(Parser, Debug, ValueEnum, Clone, PartialEq)]
-pub enum LogLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-}
 
 /// Represents an error of Gixor.
 #[derive(Debug)]
@@ -96,6 +85,10 @@ impl<'a> Boilerplate<'a> {
             repo,
             base_path: base_path.as_ref().to_path_buf(),
         }
+    }
+
+    pub fn name(&self) -> Name {
+        Name::new(self.repository_name(), self.boilerplate_name())
     }
 
     /// Returns the boilerplate name of this instance.

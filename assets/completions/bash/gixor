@@ -1,4 +1,4 @@
-_totebag() {
+_gixor() {
     local i cur prev opts cmd
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -10,97 +10,109 @@ _totebag() {
     do
         case "${cmd},${i}" in
             ",$1")
-                cmd="totebag"
+                cmd="gixor"
                 ;;
-            totebag,dump)
-                cmd="totebag__dump"
+            gixor,dump)
+                cmd="gixor__dump"
                 ;;
-            totebag,entries)
-                cmd="totebag__entries"
+            gixor,entries)
+                cmd="gixor__entries"
                 ;;
-            totebag,help)
-                cmd="totebag__help"
+            gixor,generate-completion-files)
+                cmd="gixor__generate__completion__files"
                 ;;
-            totebag,list)
-                cmd="totebag__list"
+            gixor,help)
+                cmd="gixor__help"
                 ;;
-            totebag,repository)
-                cmd="totebag__repository"
+            gixor,init)
+                cmd="gixor__init"
                 ;;
-            totebag,root)
-                cmd="totebag__root"
+            gixor,list)
+                cmd="gixor__list"
                 ;;
-            totebag,search)
-                cmd="totebag__search"
+            gixor,repository)
+                cmd="gixor__repository"
                 ;;
-            totebag,update)
-                cmd="totebag__update"
+            gixor,root)
+                cmd="gixor__root"
                 ;;
-            totebag__help,dump)
-                cmd="totebag__help__dump"
+            gixor,search)
+                cmd="gixor__search"
                 ;;
-            totebag__help,entries)
-                cmd="totebag__help__entries"
+            gixor,update)
+                cmd="gixor__update"
                 ;;
-            totebag__help,help)
-                cmd="totebag__help__help"
+            gixor__help,dump)
+                cmd="gixor__help__dump"
                 ;;
-            totebag__help,list)
-                cmd="totebag__help__list"
+            gixor__help,entries)
+                cmd="gixor__help__entries"
                 ;;
-            totebag__help,repository)
-                cmd="totebag__help__repository"
+            gixor__help,generate-completion-files)
+                cmd="gixor__help__generate__completion__files"
                 ;;
-            totebag__help,root)
-                cmd="totebag__help__root"
+            gixor__help,help)
+                cmd="gixor__help__help"
                 ;;
-            totebag__help,search)
-                cmd="totebag__help__search"
+            gixor__help,init)
+                cmd="gixor__help__init"
                 ;;
-            totebag__help,update)
-                cmd="totebag__help__update"
+            gixor__help,list)
+                cmd="gixor__help__list"
                 ;;
-            totebag__help__repository,add)
-                cmd="totebag__help__repository__add"
+            gixor__help,repository)
+                cmd="gixor__help__repository"
                 ;;
-            totebag__help__repository,list)
-                cmd="totebag__help__repository__list"
+            gixor__help,root)
+                cmd="gixor__help__root"
                 ;;
-            totebag__help__repository,remove)
-                cmd="totebag__help__repository__remove"
+            gixor__help,search)
+                cmd="gixor__help__search"
                 ;;
-            totebag__help__repository,update)
-                cmd="totebag__help__repository__update"
+            gixor__help,update)
+                cmd="gixor__help__update"
                 ;;
-            totebag__repository,add)
-                cmd="totebag__repository__add"
+            gixor__help__repository,add)
+                cmd="gixor__help__repository__add"
                 ;;
-            totebag__repository,help)
-                cmd="totebag__repository__help"
+            gixor__help__repository,list)
+                cmd="gixor__help__repository__list"
                 ;;
-            totebag__repository,list)
-                cmd="totebag__repository__list"
+            gixor__help__repository,remove)
+                cmd="gixor__help__repository__remove"
                 ;;
-            totebag__repository,remove)
-                cmd="totebag__repository__remove"
+            gixor__help__repository,update)
+                cmd="gixor__help__repository__update"
                 ;;
-            totebag__repository,update)
-                cmd="totebag__repository__update"
+            gixor__repository,add)
+                cmd="gixor__repository__add"
                 ;;
-            totebag__repository__help,add)
-                cmd="totebag__repository__help__add"
+            gixor__repository,help)
+                cmd="gixor__repository__help"
                 ;;
-            totebag__repository__help,help)
-                cmd="totebag__repository__help__help"
+            gixor__repository,list)
+                cmd="gixor__repository__list"
                 ;;
-            totebag__repository__help,list)
-                cmd="totebag__repository__help__list"
+            gixor__repository,remove)
+                cmd="gixor__repository__remove"
                 ;;
-            totebag__repository__help,remove)
-                cmd="totebag__repository__help__remove"
+            gixor__repository,update)
+                cmd="gixor__repository__update"
                 ;;
-            totebag__repository__help,update)
-                cmd="totebag__repository__help__update"
+            gixor__repository__help,add)
+                cmd="gixor__repository__help__add"
+                ;;
+            gixor__repository__help,help)
+                cmd="gixor__repository__help__help"
+                ;;
+            gixor__repository__help,list)
+                cmd="gixor__repository__help__list"
+                ;;
+            gixor__repository__help,remove)
+                cmd="gixor__repository__help__remove"
+                ;;
+            gixor__repository__help,update)
+                cmd="gixor__repository__help__update"
                 ;;
             *)
                 ;;
@@ -108,8 +120,8 @@ _totebag() {
     done
 
     case "${cmd}" in
-        totebag)
-            opts="-l -c -h -V --log --config --help --version dump entries list root search update repository help"
+        gixor)
+            opts="-l -c -h -V --log --config --help --version dump entries init list root search update repository generate-completion-files help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -138,7 +150,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__dump)
+        gixor__dump)
             opts="-d -c -h --dest --clean --help [NAMES...]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -160,7 +172,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__entries)
+        gixor__entries)
             opts="-d -h --dir --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -182,8 +194,26 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help)
-            opts="dump entries list root search update repository help"
+        gixor__generate__completion__files)
+            opts="-h --completion-out-dir --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --completion-out-dir)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__help)
+            opts="dump entries init list root search update repository generate-completion-files help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -196,7 +226,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__dump)
+        gixor__help__dump)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -210,7 +240,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__entries)
+        gixor__help__entries)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -224,7 +254,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__generate__completion__files)
+        gixor__help__generate__completion__files)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -238,7 +268,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__help)
+        gixor__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -252,7 +282,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__list)
+        gixor__help__init)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -266,7 +296,21 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__repository)
+        gixor__help__list)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__help__repository)
             opts="add list remove update"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -280,7 +324,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__repository__add)
+        gixor__help__repository__add)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -294,7 +338,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__repository__list)
+        gixor__help__repository__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -308,7 +352,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__repository__remove)
+        gixor__help__repository__remove)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -322,7 +366,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__repository__update)
+        gixor__help__repository__update)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -336,7 +380,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__root)
+        gixor__help__root)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -350,7 +394,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__search)
+        gixor__help__search)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -364,7 +408,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__help__update)
+        gixor__help__update)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -378,7 +422,21 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__list)
+        gixor__init)
+            opts="-h --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__list)
             opts="-H -h --header --help [REPO_NAMEs]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -392,7 +450,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository)
+        gixor__repository)
             opts="-h --help add list remove update help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -406,7 +464,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__add)
+        gixor__repository__add)
             opts="-n -h --name --help <URL|NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -428,7 +486,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__help)
+        gixor__repository__help)
             opts="add list remove update help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -442,7 +500,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__help__add)
+        gixor__repository__help__add)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -456,7 +514,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__help__help)
+        gixor__repository__help__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -470,7 +528,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__help__list)
+        gixor__repository__help__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -484,7 +542,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__help__remove)
+        gixor__repository__help__remove)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -498,7 +556,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__help__update)
+        gixor__repository__help__update)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -512,7 +570,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__list)
+        gixor__repository__list)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -526,7 +584,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__remove)
+        gixor__repository__remove)
             opts="-k -h --keep-dir --help <NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -540,7 +598,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__repository__update)
+        gixor__repository__update)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -554,7 +612,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__root)
+        gixor__root)
             opts="-o -h --open --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -568,7 +626,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__search)
+        gixor__search)
             opts="-h --help [QUERIES...]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -582,7 +640,7 @@ _totebag() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        totebag__update)
+        gixor__update)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -600,7 +658,7 @@ _totebag() {
 }
 
 if [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 4 || "${BASH_VERSINFO[0]}" -gt 4 ]]; then
-    complete -F _totebag -o nosort -o bashdefault -o default totebag
+    complete -F _gixor -o nosort -o bashdefault -o default gixor
 else
-    complete -F _totebag -o bashdefault -o default totebag
+    complete -F _gixor -o bashdefault -o default gixor
 fi
