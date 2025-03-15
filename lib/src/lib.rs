@@ -21,8 +21,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
+pub mod alias;
 mod git;
 mod utils;
 
@@ -33,6 +34,7 @@ pub type Result<T> = std::result::Result<T, GixorError>;
 #[derive(Debug)]
 pub enum GixorError {
     Array(Vec<GixorError>),
+    Alias(String),
     Git(git2::Error),
     IO(std::io::Error),
     Json(serde_json::Error),
@@ -51,6 +53,7 @@ impl Display for GixorError {
                     Ok(())
                 }
             }
+            GixorError::Alias(msg) => write!(f, "{}", msg),
             GixorError::NotFound(name) => write!(f, "{}: not found", name),
             GixorError::Git(e) => write!(f, "Git error: {}", e),
             GixorError::IO(e) => write!(f, "IO error: {}", e),
@@ -185,11 +188,31 @@ pub fn find_target_repositories<S: AsRef<str>>(
 /// The name of the boilerplate which contains the repository name and the boilerplate name.
 /// The repository name is [`Repository::name`].
 /// The boilerplate name is the file stem of the boilerplate (gitignore) file.
+#[derive(Debug, Clone)]
 pub struct Name {
     /// The repository name for of the boilerplate. If `None`, the repository name do not care.
     pub repository_name: Option<String>,
     /// The boilerplate name.
     pub boilerplate_name: String,
+}
+
+impl Serialize for Name {
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Name {
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(Name::parse(s))
+    }
 }
 
 impl Display for Name {
@@ -257,6 +280,22 @@ pub struct Gixor {
     load_from: PathBuf,
 }
 
+pub trait RepositoryManager {
+    fn repositories(&self) -> impl Iterator<Item = &Repository>;
+    fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository>;
+    fn add_repository(&mut self, repo: Repository) -> Result<()>;
+    fn add_repository_of<S: AsRef<str>>(&mut self, url: S) -> Result<()>;
+    fn remove_repository_with<S: AsRef<str>>(&mut self, name: S, keep_repo_dir: bool)
+        -> Result<()>;
+    fn remove_repository<S: AsRef<str>>(&mut self, name: S) -> Result<()>;
+}
+
+pub trait AliasManager {
+    fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias>;
+    fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()>;
+    fn add_alias(&mut self, alias: alias::Alias) -> Result<()>;
+}
+
 impl Default for Gixor {
     /// Create a default instance of Gixor.
     /// The default configuration is as follows:
@@ -275,6 +314,7 @@ impl Default for Gixor {
                 let config = Config {
                     repositories,
                     base_path: dir.join("gixor").join("boilerplates"),
+                    aliases: None,
                 };
                 Self {
                     config,
@@ -307,6 +347,7 @@ impl Gixor {
                 config: Config {
                     repositories: vec![Repository::default()],
                     base_path: path.parent().unwrap().join("boilerplates"),
+                    aliases: None,
                 },
                 load_from: path.to_path_buf(),
             }),
@@ -349,27 +390,13 @@ impl Gixor {
         }
     }
 
-    /// Find the repository by the name.
-    pub fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository> {
-        let name = name.as_ref();
-        self.config
-            .repositories
-            .iter()
-            .find(|repo| repo.name == name)
-    }
-
-    /// Iterate the repositories in the configuration.
-    pub fn repositories(&self) -> impl Iterator<Item = &Repository> {
-        self.config.repositories.iter()
-    }
-
     /// Iterate the boilerplate paths in the configuration.
     pub fn iter(&self) -> impl Iterator<Item = Boilerplate<'_>> {
         self.config.iter()
     }
 
     /// Find the boilerplate by the name.
-    pub fn find(&self, name: Name) -> Result<Boilerplate> {
+    pub fn find(&self, name: Name) -> Result<Vec<Boilerplate>> {
         self.config.find(name)
     }
 
@@ -383,62 +410,26 @@ impl Gixor {
         }
         utils::errs_vec_to_result(errs, ())
     }
-
-    /// Add the given new repository and returns the new instance of Gixor.
-    pub fn add_repository(&self, repo: Repository) -> Result<Gixor> {
-        match self.clone_repository(&repo) {
-            Err(e) => Err(e),
-            Ok(_) => {
-                let mut repos = self.config.repositories.clone();
-                repos.push(repo);
-                Ok(Gixor {
-                    config: crate::Config {
-                        repositories: repos,
-                        base_path: self.config.base_path.clone(),
-                    },
-                    load_from: self.load_from.clone(),
-                })
+    /// Clone all of the repositories in the configuration.
+    pub fn clone_all(&self) -> Result<()> {
+        let mut errs = vec![];
+        for repo in self.repositories() {
+            if let Err(e) = self.clone_repository(repo) {
+                errs.push(e);
             }
         }
+        utils::errs_vec_to_result(errs, ())
     }
 
-    /// Add a repository build from the given url and returns the new instance of Gixor.
-    pub fn add_repository_of<S: AsRef<str>>(&self, url: S) -> Result<Gixor> {
-        let repo = Repository::new(url);
-        self.add_repository(repo)
-    }
-
-    /// Remove the repository which has the given name, and returns the new instance of Gixor.
-    /// If `keep_repo_dir` is `true`, the directory of the removed repository will be remained.
-    pub fn remove_repository_with<S: AsRef<str>>(
-        &self,
-        name: S,
-        keep_repo_dir: bool,
-    ) -> Result<Gixor> {
-        let name = name.as_ref();
-        let mut repos = self.config.repositories.clone();
-        let index = repos.iter().position(|repo| repo.name == name);
-        if let Some(index) = index {
-            let repo = repos.remove(index);
-            if !keep_repo_dir {
-                remove_repo_dir(&self.config.base_path, repo)?;
-            }
-            Ok(Gixor {
-                config: crate::Config {
-                    repositories: repos,
-                    base_path: self.config.base_path.clone(),
-                },
-                load_from: self.load_from.clone(),
-            })
-        } else {
-            Err(GixorError::Fatal(format!("{}: repository not found", name)))
+    fn clone_repository(&self, repo: &Repository) -> Result<()> {
+        let base_path = self.config.base_path.clone();
+        let path = base_path.join(&repo.name);
+        if path.exists() {
+            log::trace!("{}: repository exists", path.display());
+            return Ok(());
         }
-    }
-
-    /// Remove the repository which has the given name, and returns the new instance of Gixor.
-    /// The directory of the removed repository will be deleted.
-    pub fn remove_repository<S: AsRef<str>>(&self, name: S) -> Result<Gixor> {
-        self.remove_repository_with(name, false)
+        log::info!("Cloning {} to {}", repo.url, path.display());
+        git::clone(&repo.url, &path)
     }
 
     /// Runs `git update` for each repository in the configuration.
@@ -461,27 +452,82 @@ impl Gixor {
             self.clone_repository(repo)
         }
     }
+}
 
-    /// Clone all of the repositories in the configuration.
-    pub fn clone_all(&self) -> Result<()> {
-        let mut errs = vec![];
-        for repo in self.repositories() {
-            if let Err(e) = self.clone_repository(repo) {
-                errs.push(e);
-            }
-        }
-        utils::errs_vec_to_result(errs, ())
+impl AliasManager for Gixor {
+    fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias> {
+        self.config.iter_aliases()
     }
 
-    fn clone_repository(&self, repo: &Repository) -> Result<()> {
-        let base_path = self.config.base_path.clone();
-        let path = base_path.join(&repo.name);
-        if path.exists() {
-            log::trace!("{}: repository exists", path.display());
-            return Ok(());
+    fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()> {
+        self.config.remove_alias(name)
+    }
+
+    fn add_alias(&mut self, alias: alias::Alias) -> Result<()> {
+        self.config.add_alias(alias)
+    }
+}
+
+impl RepositoryManager for Gixor {
+    /// Find the repository by the name.
+    fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository> {
+        let name = name.as_ref();
+        self.config
+            .repositories
+            .iter()
+            .find(|repo| repo.name == name)
+    }
+
+    /// Iterate the repositories in the configuration.
+    fn repositories(&self) -> impl Iterator<Item = &Repository> {
+        self.config.repositories.iter()
+    }
+
+    /// Add the given new repository and returns the new instance of Gixor.
+    fn add_repository(&mut self, repo: Repository) -> Result<()> {
+        match self.clone_repository(&repo) {
+            Err(e) => Err(e),
+            Ok(_) => {
+                self.config.repositories.push(repo);
+                Ok(())
+            }
         }
-        log::info!("Cloning {} to {}", repo.url, path.display());
-        git::clone(&repo.url, &path)
+    }
+
+    /// Add a repository build from the given url and returns the new instance of Gixor.
+    fn add_repository_of<S: AsRef<str>>(&mut self, url: S) -> Result<()> {
+        let repo = Repository::new(url);
+        self.add_repository(repo)
+    }
+
+    /// Remove the repository which has the given name, and returns the new instance of Gixor.
+    /// If `keep_repo_dir` is `true`, the directory of the removed repository will be remained.
+    fn remove_repository_with<S: AsRef<str>>(
+        &mut self,
+        name: S,
+        keep_repo_dir: bool,
+    ) -> Result<()> {
+        let name = name.as_ref();
+        let index = self
+            .config
+            .repositories
+            .iter()
+            .position(|repo| repo.name == name);
+        if let Some(index) = index {
+            let repo = self.config.repositories.remove(index);
+            if !keep_repo_dir {
+                remove_repo_dir(&self.config.base_path, repo)?;
+            }
+            Ok(())
+        } else {
+            Err(GixorError::Fatal(format!("{}: repository not found", name)))
+        }
+    }
+
+    /// Remove the repository which has the given name, and returns the new instance of Gixor.
+    /// The directory of the removed repository will be deleted.
+    fn remove_repository<S: AsRef<str>>(&mut self, name: S) -> Result<()> {
+        self.remove_repository_with(name, false)
     }
 }
 
@@ -496,6 +542,7 @@ fn update_base_path(config: Config, path: &Path) -> Config {
     Config {
         base_path: new_base_path,
         repositories: config.repositories,
+        aliases: config.aliases,
     }
 }
 
@@ -503,24 +550,69 @@ fn update_base_path(config: Config, path: &Path) -> Config {
 #[serde(rename_all = "kebab-case")]
 struct Config {
     pub(crate) repositories: Vec<Repository>,
+    pub(crate) aliases: Option<Vec<alias::Alias>>,
     pub(crate) base_path: PathBuf,
 }
 
 impl Config {
-    fn find(&self, name: Name) -> Result<Boilerplate<'_>> {
-        for repo in &self.repositories {
-            if let Some(item) = repo.find(&name, &self.base_path) {
-                log::trace!("{}: found from repository {}", name, item.repository_name());
-                return Ok(item);
+    fn find(&self, name: Name) -> Result<Vec<Boilerplate<'_>>> {
+        if let Some(r) = alias::extract_alias(self, &name) {
+            Ok(r)
+        } else {
+            for repo in &self.repositories {
+                if let Some(item) = repo.find(&name, &self.base_path) {
+                    log::trace!("{}: found from repository {}", name, item.repository_name());
+                    return Ok(vec![item]);
+                }
             }
+            Err(GixorError::NotFound(name.boilerplate_name))
         }
-        Err(GixorError::NotFound(name.boilerplate_name))
+    }
+
+    fn find_all(&self, names: Vec<Name>) -> Result<Vec<Boilerplate<'_>>> {
+        let r = names
+            .into_iter()
+            .map(|name| self.find(name))
+            .collect::<Result<Vec<_>>>();
+        match r {
+            Ok(v) => Ok(v.into_iter().flatten().collect::<Vec<_>>()),
+            Err(e) => Err(e),
+        }
     }
 
     fn iter(&self) -> impl Iterator<Item = Boilerplate<'_>> {
         self.repositories
             .iter()
             .flat_map(move |repo| repo.iter(&self.base_path))
+    }
+}
+
+impl AliasManager for Config {
+    fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias> {
+        self.aliases.iter().flat_map(|a| a.iter())
+    }
+
+    fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()> {
+        let name = name.as_ref();
+        let aliases = self.aliases.as_mut().unwrap();
+        let index = aliases.iter().position(|a| a.name == name);
+        if let Some(index) = index {
+            aliases.remove(index);
+            Ok(())
+        } else {
+            Err(GixorError::Alias(format!("{}: alias not found", name)))
+        }
+    }
+
+    fn add_alias(&mut self, alias: alias::Alias) -> Result<()> {
+        let aliases = self.aliases.as_mut().unwrap();
+        let index = aliases.iter().position(|a| a.name == alias.name);
+        if let Some(index) = index {
+            aliases[index] = alias;
+        } else {
+            aliases.push(alias);
+        }
+        Ok(())
     }
 }
 
@@ -770,5 +862,22 @@ mod tests {
         let target = Name::parse("devcontainer");
         assert_eq!(target.repository_name, None);
         assert_eq!(target.boilerplate_name, "devcontainer");
+    }
+
+    #[test]
+    fn test_name_serialize_deserialize() {
+        let name: Name = serde_json::from_str("\"os-list\"").unwrap();
+        assert_eq!(name.repository_name, None);
+        assert_eq!(name.boilerplate_name, "os-list");
+
+        let str = serde_json::to_string(&name).unwrap();
+        assert_eq!(str, "\"os-list\"");
+
+        let name: Name = serde_json::from_str("\"alias/os-list\"").unwrap();
+        assert_eq!(name.repository_name, Some("alias".to_string()));
+        assert_eq!(name.boilerplate_name, "os-list");
+
+        let str = serde_json::to_string(&name).unwrap();
+        assert_eq!(str, "\"alias/os-list\"");
     }
 }

@@ -16,6 +16,8 @@ async fn test_clone_and_find() -> Result<()> {
     gixor.update_all()?; // clone all repositories
 
     let result = gixor.find(Name::parse("rust")).unwrap();
+    assert_eq!(result.len(), 1);
+    let result = result.first().unwrap();
     assert_eq!(result.boilerplate_name(), "Rust".to_string());
     assert_eq!(result.repository_name(), "default");
 
@@ -28,15 +30,21 @@ async fn test_clone_and_find() -> Result<()> {
 #[test]
 fn test_find() {
     let gixor = Gixor::load("../testdata/config.json").unwrap();
-    let result = gixor.find(Name::from("devcontainer")).unwrap();
+    let results = gixor.find(Name::from("devcontainer")).unwrap();
+    assert_eq!(results.len(), 1);
+    let result = results.first().unwrap();
     assert_eq!(result.boilerplate_name(), "devcontainer");
     assert_eq!(result.repository_name(), "tamada");
 
-    let result = gixor.find(Name::from("rust")).unwrap();
+    let results = gixor.find(Name::from("rust")).unwrap();
+    assert_eq!(results.len(), 1);
+    let result = results.first().unwrap();
     assert_eq!(result.boilerplate_name(), "Rust");
     assert_eq!(result.repository_name(), "default");
 
-    let result = gixor.find(Name::new("tamada", "devcontainer")).unwrap();
+    let results = gixor.find(Name::new("tamada", "devcontainer")).unwrap();
+    assert_eq!(results.len(), 1);
+    let result = results.first().unwrap();
     assert_eq!(result.boilerplate_name(), "devcontainer");
     assert_eq!(result.repository_name(), "tamada");
 
