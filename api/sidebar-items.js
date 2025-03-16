@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["GixorError"],"fn":["dump_boilerplates","find_target_repositories","list_entries"],"mod":["alias"],"struct":["Boilerplate","Gixor","Name","Repository"],"trait":["AliasManager","RepositoryManager"],"type":["Result"]};
