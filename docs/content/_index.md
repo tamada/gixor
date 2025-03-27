@@ -8,10 +8,10 @@ date: 2025-02-25
 [![Coverage Status](https://coveralls.io/repos/github/tamada/gixor/badge.svg?branch=main)](https://coveralls.io/github/tamada/gixor?branch=main)
 [![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/tamada/gixor)](https://rust-reportcard.xuri.me/report/github.com/tamada/gixor)
 
-[![Version](https://img.shields.io/badge/Version-v0.3.0-green)](https://github.com/tamada/gixor/releases/tag/v0.3.0)
+[![Version](https://img.shields.io/badge/Version-v0.3.1-green)](https://github.com/tamada/gixor/releases/tag/v0.3.1)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/tamada/gixor/blob/main/LICENSE)
 
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io/tamada/gixor:0.3.0-blue?logo=docker)](https://github.com/tamada/gixor/pkgs/container/gixor/)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io/tamada/gixor:0.3.1-blue?logo=docker)](https://github.com/tamada/gixor/pkgs/container/gixor/)
 [![Homebrew](https://img.shields.io/badge/Homebrew-tamada/tap/gixor-blue?logo=homebrew)](https://github.com/tamada/homebrew-tap)
 
 Gixor is Git Ignore Managenemnt System for Multiple Repositories.
@@ -19,16 +19,10 @@ This is alternative tool for [gibo](https://github.com/simonwhitaker/gibo).
 
 ## 🗣️ Overview
 
-The `gibo` is an excellent tool for managing the `.gitignore` file.
-However, `gibo` uses [`github.com/github/gitignore`](https://github.com/github/gitignore) as the default and only repository, and we cannot use our own `gitignore` boilerplates.
-Then, we need further configuration apart from gibo if the team wants to use their gitignore ` repository`.
-Therefore, I created a new tool, `gixor`, to manage `gitignore` files for multiple repositories.
-
-The `gixor` also uses [`github.com/github/gitignore`](https://github.com/github/gitignore) as the default repository (no need for an explicit `git clone`).
-Then, the team wants to use their own `gitignore` repository, run `gixor repository add <GIT_URL>` to add the repository.
-
-Note that I formerly created the [wrapper of `gibo`](https://github.com/tamada/gibo-wrapper), which lists the entries of the `.gitignore` file and supports updating the `.gitignore` file. The `gixor` is the successor of the `gibo-wrapper`, and `gibo-wrapper` is now archived.
-
+`gibo` is the great tool to manage the `.gitignore` file.
+However, you may want to use your own `gitignore` boilerplate. 
+`gibo` relies on `github.com/github/gitignore` and needs further configuration separately if you want to use your team's own `gitignore` repository.
+Therefore, I just create a tool to manage `gitignore` files for multiple repositories.
 
 ## 🏃 Usage
 
