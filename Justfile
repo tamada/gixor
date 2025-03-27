@@ -42,7 +42,7 @@ prepare_site_build:
 
 # Generate the document site with Hugo
 site: prepare_site_build
-    docker run --rm -it -v $PWD:/src hugomods/hugo:exts-non-root hugo
+    docker run --rm -it -v $PWD/docs:/src hugomods/hugo:exts-non-root hugo
     rm -f docs/public/favicon* docs/public/{android-chome-*,apple-touch-icon}.png
 
     rm -rf docs/public/coverage
@@ -52,10 +52,11 @@ site: prepare_site_build
     # Generate API document with cargo doc
     cargo doc
     cp -r target/doc/gixor docs/public/api
+    cp -r target/doc/static.files docs/public/
 
 # Start hugo server with Docker
 start:
-    docker run --name gixorwww --rm -it -p 1313:1313 -v $PWD:/src hugomods/hugo:exts-non-root hugo server
+    docker run --name gixorwww --rm -it -p 1313:1313 -v $PWD/docs:/src hugomods/hugo:exts-non-root hugo server
 
 # Stop the running hugo server
 stop:

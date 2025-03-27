@@ -280,6 +280,7 @@ pub struct Gixor {
     load_from: PathBuf,
 }
 
+/// Provides the functions for management of the boilerplate repositories.
 pub trait RepositoryManager {
     fn repositories(&self) -> impl Iterator<Item = &Repository>;
     fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository>;
@@ -290,6 +291,7 @@ pub trait RepositoryManager {
     fn remove_repository<S: AsRef<str>>(&mut self, name: S) -> Result<()>;
 }
 
+/// Provides the functions for management of the aliases.
 pub trait AliasManager {
     fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias>;
     fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()>;
@@ -328,7 +330,7 @@ impl Default for Gixor {
 
 impl Gixor {
     /// load the configuration file from the location.
-    /// The default configuration is see [`Gixor::default`].
+    /// The default configuration see [`Gixor::default`].
     pub fn load_or_default() -> Self {
         match dirs::config_dir() {
             Some(dir) => {

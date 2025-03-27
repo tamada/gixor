@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{AliasManager, Name};
 
+/// Represents an alias of boilerplates.
+/// The alias gives another name to a set of boilerplates.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Alias {
     pub name: String,
@@ -10,11 +12,11 @@ pub struct Alias {
 }
 
 impl Alias {
-    pub fn new(name: String, description: String, boilerplates: Vec<Name>) -> Self {
+    pub fn new(name: String, description: String, boilerplates: impl IntoIterator<Item = impl Into<Name>>) -> Self {
         Alias {
             name,
             description,
-            boilerplates,
+            boilerplates: boilerplates.into_iter().map(|n| n.into()).collect(),
         }
     }
 }
