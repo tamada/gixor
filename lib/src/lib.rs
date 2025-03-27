@@ -282,19 +282,28 @@ pub struct Gixor {
 
 /// Provides the functions for management of the boilerplate repositories.
 pub trait RepositoryManager {
+    /// Iterate the repositories in the configuration.
     fn repositories(&self) -> impl Iterator<Item = &Repository>;
+    /// Find the repository by the name.
     fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository>;
+    /// Add the given new repository and returns the new instance of Gixor.
     fn add_repository(&mut self, repo: Repository) -> Result<()>;
+    /// Add a repository build from the given url and returns the new instance of Gixor.
     fn add_repository_of<S: AsRef<str>>(&mut self, url: S) -> Result<()>;
+    /// Remove the repository which has the given name, and returns the new instance of Gixor.
     fn remove_repository_with<S: AsRef<str>>(&mut self, name: S, keep_repo_dir: bool)
         -> Result<()>;
+    /// Remove the repository which has the given name, and returns the new instance of Gixor.
     fn remove_repository<S: AsRef<str>>(&mut self, name: S) -> Result<()>;
 }
 
 /// Provides the functions for management of the aliases.
 pub trait AliasManager {
+    /// Iterate the aliases in the configuration.
     fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias>;
+    /// Remove the alias which has the given name.
     fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()>;
+    /// Add the given alias.
     fn add_alias(&mut self, alias: alias::Alias) -> Result<()>;
 }
 
@@ -330,7 +339,7 @@ impl Default for Gixor {
 
 impl Gixor {
     /// load the configuration file from the location.
-    /// The default configuration see [`Gixor::default`].
+    /// The default configuration is provided by [`Gixor::default`].
     pub fn load_or_default() -> Self {
         match dirs::config_dir() {
             Some(dir) => {
@@ -849,6 +858,10 @@ mod tests {
             .to_string(),
             "Fatal error: hoge1Fatal error: hoge2"
         );
+        assert_eq!(
+            GixorError::Alias("hoge: alias not found".to_string()).to_string(),
+            "hoge: alias not found"
+        )
     }
 
     #[test]

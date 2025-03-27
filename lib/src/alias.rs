@@ -6,16 +6,19 @@ use crate::{AliasManager, Name};
 /// The alias gives another name to a set of boilerplates.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Alias {
+    /// The name of the alias.
     pub name: String,
+    /// The description of the alias.
     pub description: String,
+    /// The boilerplates that the alias refers to.
     pub boilerplates: Vec<Name>,
 }
 
 impl Alias {
-    pub fn new(name: String, description: String, boilerplates: impl IntoIterator<Item = impl Into<Name>>) -> Self {
+    pub fn new<S: AsRef<str>>(name: S, description: S, boilerplates: impl IntoIterator<Item = impl Into<Name>>) -> Self {
         Alias {
-            name,
-            description,
+            name: name.as_ref().to_string(),
+            description: description.as_ref().to_string(),
             boilerplates: boilerplates.into_iter().map(|n| n.into()).collect(),
         }
     }
