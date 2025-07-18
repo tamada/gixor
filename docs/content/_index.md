@@ -4,6 +4,7 @@ description: "Git Ignore Management System for Multiple Repositories."
 date: 2025-02-25
 ---
 
+{{% badges %}}
 [![build](https://github.com/tamada/gixor/actions/workflows/build.yaml/badge.svg)](https://github.com/tamada/gixor/actions/workflows/build.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/tamada/gixor/badge.svg?branch=main)](https://coveralls.io/github/tamada/gixor?branch=main)
 [![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/tamada/gixor)](https://rust-reportcard.xuri.me/report/github.com/tamada/gixor)
@@ -13,8 +14,9 @@ date: 2025-02-25
 
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io/tamada/gixor:0.3.1-blue?logo=docker)](https://github.com/tamada/gixor/pkgs/container/gixor/)
 [![Homebrew](https://img.shields.io/badge/Homebrew-tamada/tap/gixor-blue?logo=homebrew)](https://github.com/tamada/homebrew-tap)
+{{% /badges %}}
 
-Gixor is Git Ignore Managenemnt System for Multiple Repositories.
+Gixor is Git Ignore Management System for Multiple Repositories.
 This is alternative tool for [gibo](https://github.com/simonwhitaker/gibo).
 
 ## 🗣️ Overview
