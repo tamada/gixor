@@ -328,7 +328,7 @@ impl Default for Gixor {
 
 impl Gixor {
     /// load the configuration file from the location.
-    /// The default configuration is see [`Gixor::default`].
+    /// The default configuration is provided by [`Gixor::default`].
     pub fn load_or_default() -> Self {
         match dirs::config_dir() {
             Some(dir) => {
