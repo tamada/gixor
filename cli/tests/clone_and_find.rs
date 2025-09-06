@@ -1,4 +1,4 @@
-use gixor::{GixorBuilder, Name, Result, RepositoryManager};
+use gixor::{GixorBuilder, Name, RepositoryManager, Result};
 
 mod common;
 
@@ -9,7 +9,7 @@ async fn test_clone_and_find() -> Result<()> {
     let gixor = match common::setup() {
         Ok(gixor) => gixor,
         Err(e) => {
-            panic!("Failed to initialize Gixor: {}", e);
+            panic!("Failed to initialize Gixor: {e}");
         }
     };
     assert_eq!(gixor.len(), 1);

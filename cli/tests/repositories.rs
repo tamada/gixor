@@ -5,7 +5,7 @@ fn test_find_target_directories() {
     let gixor = match common::setup() {
         Ok(gixor) => gixor,
         Err(e) => {
-            panic!("Failed to initialize Gixor: {}", e);
+            panic!("Failed to initialize Gixor: {e}");
         }
     };
     let r = gixor::find_target_repositories(&gixor, vec!["default"]).unwrap();

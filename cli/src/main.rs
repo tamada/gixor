@@ -198,9 +198,7 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<&Gixor>> {
     if opts.open {
         match opener::open(path) {
             Ok(_) => Ok(None),
-            Err(e) => Err(GixorError::Fatal(
-                format!("failed to open {path:?}: {e:?}"),
-            )),
+            Err(e) => Err(GixorError::Fatal(format!("failed to open {path:?}: {e:?}"))),
         }
     } else {
         println!("{}", path.to_string_lossy());
@@ -384,7 +382,7 @@ mod tests {
         let r = cli::CliOpts::try_parse_from(vec!["gixor", "--log", "trace", "init"]);
         match r {
             Ok(opts) => assert_eq!(opts.log, LogLevel::Trace),
-            Err(e) => panic!("failed to parse: {:?}", e),
+            Err(e) => panic!("failed to parse: {e:?}"),
         }
     }
 }

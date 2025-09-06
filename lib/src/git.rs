@@ -213,7 +213,9 @@ pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()
     } else if is_ssh_url(Some(url)) {
         clone_with_ssh(url, path)
     } else {
-        Err(crate::GixorError::Fatal(format!("{url}: Unsupported protocol")))
+        Err(crate::GixorError::Fatal(format!(
+            "{url}: Unsupported protocol"
+        )))
     }
 }
 

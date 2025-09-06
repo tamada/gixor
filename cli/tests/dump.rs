@@ -7,7 +7,7 @@ fn test_dump() {
     let gixor = match common::setup() {
         Ok(gixor) => gixor,
         Err(e) => {
-            panic!("Failed to initialize Gixor: {}", e);
+            panic!("Failed to initialize Gixor: {e}");
         }
     };
     let dest = PathBuf::from("../integration/dump");
@@ -21,7 +21,7 @@ fn test_dump() {
         ],
         &dest_path,
     );
-    log::info!("dump result: {:?}", r);
+    log::info!("dump result: {r:?}");
     assert!(r.is_ok());
 
     let r = gixor::list_entries(&dest_path);

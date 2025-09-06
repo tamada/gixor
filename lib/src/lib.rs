@@ -331,8 +331,7 @@ impl Default for Gixor {
     }
 }
 
-pub struct GixorBuilder {
-}
+pub struct GixorBuilder {}
 
 impl GixorBuilder {
     /// load the configuration file from the location.
@@ -342,7 +341,7 @@ impl GixorBuilder {
             Some(dir) => {
                 let path = dir.join("gixor").join("config.json");
                 GixorBuilder::load(path).unwrap_or_default()
-            },
+            }
             None => panic!("Failed to get the config directory"),
         }
     }
@@ -357,12 +356,12 @@ impl GixorBuilder {
                     base_path: path.parent().unwrap().join("boilerplates"),
                     aliases: None,
                 },
-                path.to_path_buf()
+                path.to_path_buf(),
             )),
             Ok(f) => match serde_json::from_reader(f) {
                 Ok(config) => Ok(Gixor::new(
                     update_base_path(config, path),
-                    path.to_path_buf()
+                    path.to_path_buf(),
                 )),
                 Err(e) => Err(GixorError::Json(e)),
             },
@@ -419,7 +418,7 @@ impl Gixor {
     }
 
     /// Find the boilerplate by the name.
-    pub fn find(&self, name: Name) -> Result<Vec<Boilerplate>> {
+    pub fn find(&self, name: Name) -> Result<Vec<Boilerplate<'_>>> {
         self.config.find(name)
     }
 }
@@ -823,7 +822,7 @@ mod tests {
     #[test]
     fn parse_gixor() {
         match GixorBuilder::load(PathBuf::from("../testdata/config.json")) {
-            Err(e) => panic!("Failed to parse the config file: {}", e),
+            Err(e) => panic!("Failed to parse the config file: {e}"),
             Ok(gixor) => {
                 assert_eq!(
                     gixor.config.base_path,
@@ -842,7 +841,7 @@ mod tests {
 
         let base_path = PathBuf::from("../testdata/boilerplates");
         if let Err(e) = repo.prepare(&base_path) {
-            panic!("Failed to prepare the repository: {}", e);
+            panic!("Failed to prepare the repository: {e}");
         }
         let boilerplates = repo.iter(&base_path).collect::<Vec<_>>();
         assert_eq!(boilerplates.len(), 1);
