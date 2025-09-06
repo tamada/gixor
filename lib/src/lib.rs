@@ -54,12 +54,12 @@ impl Display for GixorError {
                     Ok(())
                 }
             }
-            GixorError::Alias(msg) => write!(f, "{}", msg),
-            GixorError::NotFound(name) => write!(f, "{}: not found", name),
-            GixorError::Git(e) => write!(f, "Git error: {}", e),
-            GixorError::IO(e) => write!(f, "IO error: {}", e),
-            GixorError::Json(e) => write!(f, "JSON error: {}", e),
-            GixorError::Fatal(msg) => write!(f, "Fatal error: {}", msg),
+            GixorError::Alias(msg) => write!(f, "{msg}"),
+            GixorError::NotFound(name) => write!(f, "{name}: not found"),
+            GixorError::Git(e) => write!(f, "Git error: {e}"),
+            GixorError::IO(e) => write!(f, "IO error: {e}"),
+            GixorError::Json(e) => write!(f, "JSON error: {e}"),
+            GixorError::Fatal(msg) => write!(f, "Fatal error: {msg}"),
         }
     }
 }
@@ -112,7 +112,7 @@ impl<'a> Boilerplate<'a> {
 
     pub fn content_url(&self) -> Result<String> {
         let hash = self.repo.hash(&self.base_path)?;
-        log::info!("hash: {:02x?}", hash);
+        log::info!("hash: {hash:02x?}");
         let hash_string = hash.iter().fold(String::new(), |mut output, b| {
             let _ = write!(output, "{b:02X}");
             output
@@ -384,9 +384,6 @@ impl Gixor {
     }
 
     /// Write the the content of boilerplate corresponding the given names to the destination.
-    /// If the destination is `"-"`, the content is written to the stdout, and
-    /// the `dest` is a directory, the content is written to the `${dest}/.gitignore`.
-    /// Otherwise, the content is written to the file of `dest`.
     pub fn dump(&self, names: Vec<Name>, dest: impl std::io::Write) -> Result<()> {
         match routine::find_boilerplates(self, names) {
             Err(e) => Err(e),
@@ -394,11 +391,12 @@ impl Gixor {
         }
     }
 
+    /// If the destination is `"-"`, the content is written to the stdout, and
+    /// the `dest` is a directory, the content is written to the `${dest}/.gitignore`.
+    /// Otherwise, the content is written to the file of `dest`.
     pub fn dump_to<P: AsRef<Path>>(&self, names: Vec<Name>, dest: P) -> Result<()> {
-        match std::fs::File::create(dest.as_ref()) {
-            Err(e) => Err(GixorError::IO(e)),
-            Ok(f) => self.dump(names, f),
-        }
+        let out = routine::open_dest(dest.as_ref())?;
+        self.dump(names, out)
     }
 
     /// Store the configuration to the configuration path.
@@ -502,7 +500,7 @@ impl RepositoryManager for Gixor {
             }
             Ok(())
         } else {
-            Err(GixorError::Fatal(format!("{}: repository not found", name)))
+            Err(GixorError::Fatal(format!("{name}: repository not found")))
         }
     }
 
@@ -592,7 +590,7 @@ impl AliasManager for Config {
             aliases.remove(index);
             Ok(())
         } else {
-            Err(GixorError::Alias(format!("{}: alias not found", name)))
+            Err(GixorError::Alias(format!("{name}: alias not found")))
         }
     }
 

@@ -172,13 +172,13 @@ pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<Stri
         }
         term.format_in_column(items)
             .iter()
-            .for_each(|line| println!("{}", line));
+            .for_each(|line| println!("{line}"));
     } else {
         if let Some(header) = header {
-            println!("========== {} ==========", header)
+            println!("========== {header} ==========")
         }
         for entry in items {
-            println!("{}", entry);
+            println!("{entry}");
         }
     }
 }
@@ -198,10 +198,9 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<&Gixor>> {
     if opts.open {
         match opener::open(path) {
             Ok(_) => Ok(None),
-            Err(e) => Err(GixorError::Fatal(format!(
-                "failed to open {:?}: {:?}",
-                path, e
-            ))),
+            Err(e) => Err(GixorError::Fatal(
+                format!("failed to open {path:?}: {e:?}"),
+            )),
         }
     } else {
         println!("{}", path.to_string_lossy());
@@ -318,7 +317,7 @@ fn init_log(level: &LogLevel) {
     env_logger::try_init().unwrap_or_else(|_| {
         eprintln!("failed to initialize logger. set RUST_LOG to see logs.");
     });
-    log::info!("set log level to {:?}", level);
+    log::info!("set log level to {level:?}");
 }
 
 #[cfg(debug_assertions)]
@@ -331,7 +330,7 @@ mod gencomp {
     use std::path::PathBuf;
 
     fn generate_impl(app: &mut Command, shell: Shell, dest: PathBuf) -> Result<()> {
-        log::info!("generate completion for {:?} to {:?}", shell, dest);
+        log::info!("generate completion for {shell:?} to {dest:?}");
         if let Err(e) = std::fs::create_dir_all(dest.parent().unwrap()) {
             return Err(GixorError::IO(e));
         }

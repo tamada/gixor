@@ -82,10 +82,7 @@ pub(super) fn extract_alias<'a>(
 
 fn extract_alias_impl<S: AsRef<str>>(config: &super::Config, name: S) -> Option<Vec<super::Boilerplate<'_>>> {
     match find_alias_impl(config, name) {
-        Some(boilerplate_names) => match config.find_all(boilerplate_names) {
-            Ok(boilerplates) => Some(boilerplates),
-            Err(_) => None,
-        },
+        Some(boilerplate_names) => config.find_all(boilerplate_names).ok(),
         None => None,
     }
 }
