@@ -702,7 +702,7 @@ impl Repository {
     }
 
     /// Finds the boilerplate by the name.
-    pub fn find<P: AsRef<Path>>(&self, name: &Name, base_path: P) -> Option<Boilerplate> {
+    pub fn find<P: AsRef<Path>>(&self, name: &Name, base_path: P) -> Option<Boilerplate<'_>> {
         self.iter(base_path).find(|b| name.matches(b))
     }
 
