@@ -7,14 +7,15 @@
 //! # Example of Dump the boilerplate
 //!
 //! ```rust
-//! use gixor::{Gixor, Name, Result};
+//! use gixor::{Gixor, GixorBuilder, Name, Result};
 //!
-//! let gixor = Gixor::load("testdata/config.json").unwrap();
-//! gixor.update_all().unwrap(); // clone or update all repositories, if needed.
-//! let r = gixor::dump_boilerplates(&gixor, "-", // dump the boilerplate of rust, macos, linux, and windows into stdout.
-//!     vec![Name::parse("rust"), Name::parse("macos"), Name::parse("linux"), Name::parse("windows")]);
+//! let gixor = GixorBuilder::load("testdata/config.json").unwrap();
+//! gixor.prepare().unwrap(); // clone or update all repositories, if needed.
+//! let names = vec!["rust", "macos", "linux", "windows"]
+//!     .iter().map(|s| Name::parse(s)).collect();
+//! // dump the boilerplate of rust, macos, linux, and windows into stdout.
+//! let r = gixor.dump(names, std::io::stdout());
 //! ```
-//!
 use std::{
     fmt::{Display, Write},
     io::BufRead,
@@ -167,17 +168,6 @@ pub fn list_entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
     routine::list_entries(path)
 }
 
-/// Write the the content of boilerplate corresponding the given names to the destination.
-/// If the destination is `"-"`, the content is written to the stdout, and
-/// the `dest` is a directory, the content is written to the `${dest}/.gitignore`.
-/// Otherwise, the content is written to the file of `dest`.
-pub fn dump_boilerplates<P: AsRef<Path>>(gixor: &Gixor, dest: P, names: Vec<Name>) -> Result<()> {
-    match routine::find_boilerplates(gixor, names) {
-        Err(e) => Err(e),
-        Ok(boilerplates) => routine::dump_boilerplates_impl(dest, boilerplates),
-    }
-}
-
 pub fn find_target_repositories<S: AsRef<str>>(
     gixor: &Gixor,
     repository_names: Vec<S>,
@@ -282,7 +272,11 @@ pub struct Gixor {
 
 /// Provides the functions for management of the boilerplate repositories.
 pub trait RepositoryManager {
-    /// Iterate the repositories in the configuration.
+    /// Returns the length of the repositories in the container.
+    fn len(&self) -> usize;
+    /// Returns `true` if the repositories in the container is empty.
+    fn is_empty(&self) -> bool;
+    /// Iterate the repositories in the container.
     fn repositories(&self) -> impl Iterator<Item = &Repository>;
     /// Find the repository by the name.
     fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository>;
@@ -337,54 +331,74 @@ impl Default for Gixor {
     }
 }
 
-impl Gixor {
+pub struct GixorBuilder {
+}
+
+impl GixorBuilder {
     /// load the configuration file from the location.
     /// The default configuration is provided by [`Gixor::default`].
-    pub fn load_or_default() -> Self {
+    pub fn load_or_default() -> Gixor {
         match dirs::config_dir() {
             Some(dir) => {
                 let path = dir.join("gixor").join("config.json");
-                Gixor::load(path).unwrap_or_default()
-            }
+                GixorBuilder::load(path).unwrap_or_default()
+            },
             None => panic!("Failed to get the config directory"),
         }
     }
 
     /// Parse the configuration file from the given path.
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Gixor> {
         let path = path.as_ref();
         match std::fs::File::open(path) {
-            Err(_) => Ok(Self {
-                config: Config {
+            Err(_) => Ok(Gixor::new(
+                Config {
                     repositories: vec![Repository::default()],
                     base_path: path.parent().unwrap().join("boilerplates"),
                     aliases: None,
                 },
-                load_from: path.to_path_buf(),
-            }),
+                path.to_path_buf()
+            )),
             Ok(f) => match serde_json::from_reader(f) {
-                Ok(config) => Ok(Self {
-                    config: update_base_path(config, path),
-                    load_from: path.to_path_buf(),
-                }),
+                Ok(config) => Ok(Gixor::new(
+                    update_base_path(config, path),
+                    path.to_path_buf()
+                )),
                 Err(e) => Err(GixorError::Json(e)),
             },
         }
     }
+}
 
-    /// Returns the length of the repositories in the configuration.
-    pub fn len(&self) -> usize {
-        self.config.repositories.len()
+impl Gixor {
+    fn new(config: Config, load_from: PathBuf) -> Self {
+        Gixor { config, load_from }
     }
-
-    /// Returns `true` if the repositories in the configuration is empty.
-    pub fn is_empty(&self) -> bool {
-        self.config.repositories.is_empty()
-    }
-
     /// Returns the base path of this configuration.
     pub fn base_path(&self) -> &Path {
         &self.config.base_path
+    }
+
+    pub fn prepare(&self) -> Result<()> {
+        self.config.prepare()
+    }
+
+    /// Write the the content of boilerplate corresponding the given names to the destination.
+    /// If the destination is `"-"`, the content is written to the stdout, and
+    /// the `dest` is a directory, the content is written to the `${dest}/.gitignore`.
+    /// Otherwise, the content is written to the file of `dest`.
+    pub fn dump(&self, names: Vec<Name>, dest: impl std::io::Write) -> Result<()> {
+        match routine::find_boilerplates(self, names) {
+            Err(e) => Err(e),
+            Ok(boilerplates) => routine::dump_boilerplates_impl(dest, boilerplates),
+        }
+    }
+
+    pub fn dump_to<P: AsRef<Path>>(&self, names: Vec<Name>, dest: P) -> Result<()> {
+        match std::fs::File::create(dest.as_ref()) {
+            Err(e) => Err(GixorError::IO(e)),
+            Ok(f) => self.dump(names, f),
+        }
     }
 
     /// Store the configuration to the configuration path.
@@ -410,59 +424,6 @@ impl Gixor {
     pub fn find(&self, name: Name) -> Result<Vec<Boilerplate>> {
         self.config.find(name)
     }
-
-    /// Update the all of boilerplate repositories.
-    pub fn update_all(&self) -> Result<()> {
-        let mut errs = vec![];
-        for repo in &self.config.repositories {
-            if let Err(e) = self.update_repository(repo) {
-                errs.push(e);
-            }
-        }
-        utils::errs_vec_to_result(errs, ())
-    }
-    /// Clone all of the repositories in the configuration.
-    pub fn clone_all(&self) -> Result<()> {
-        let mut errs = vec![];
-        for repo in self.repositories() {
-            if let Err(e) = self.clone_repository(repo) {
-                errs.push(e);
-            }
-        }
-        utils::errs_vec_to_result(errs, ())
-    }
-
-    fn clone_repository(&self, repo: &Repository) -> Result<()> {
-        let base_path = self.config.base_path.clone();
-        let path = base_path.join(&repo.name);
-        if path.exists() {
-            log::trace!("{}: repository exists", path.display());
-            return Ok(());
-        }
-        log::info!("Cloning {} to {}", repo.url, path.display());
-        git::clone(&repo.url, &path)
-    }
-
-    /// Runs `git update` for each repository in the configuration.
-    fn update_repository(&self, repo: &Repository) -> Result<()> {
-        let path = self.config.base_path.join(&repo.name);
-        let dot_git = path.join(".git");
-        if path.exists() {
-            if dot_git.exists() {
-                match git::pull(&path, "origin", "main") {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(GixorError::Git(e)),
-                }
-            } else {
-                Err(GixorError::Fatal(format!(
-                    "{}: The repository is not a git repository",
-                    path.display()
-                )))
-            }
-        } else {
-            self.clone_repository(repo)
-        }
-    }
 }
 
 impl AliasManager for Gixor {
@@ -481,6 +442,16 @@ impl AliasManager for Gixor {
 
 impl RepositoryManager for Gixor {
     /// Find the repository by the name.
+    /// Returns the length of the repositories in the configuration.
+    fn len(&self) -> usize {
+        self.config.repositories.len()
+    }
+
+    /// Returns `true` if the repositories in the configuration is empty.
+    fn is_empty(&self) -> bool {
+        self.config.repositories.is_empty()
+    }
+
     fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository> {
         let name = name.as_ref();
         self.config
@@ -496,7 +467,7 @@ impl RepositoryManager for Gixor {
 
     /// Add the given new repository and returns the new instance of Gixor.
     fn add_repository(&mut self, repo: Repository) -> Result<()> {
-        match self.clone_repository(&repo) {
+        match repo.clone(&self.config.base_path) {
             Err(e) => Err(e),
             Ok(_) => {
                 self.config.repositories.push(repo);
@@ -596,6 +567,16 @@ impl Config {
             .iter()
             .flat_map(move |repo| repo.iter(&self.base_path))
     }
+
+    fn prepare(&self) -> Result<()> {
+        let mut errs = vec![];
+        self.repositories.iter().for_each(|repo| {
+            if let Err(e) = repo.prepare(&self.base_path) {
+                errs.push(e);
+            }
+        });
+        utils::errs_vec_to_result(errs, ())
+    }
 }
 
 impl AliasManager for Config {
@@ -632,15 +613,15 @@ impl AliasManager for Config {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct Repository {
-    /// The name of the repository.
+    /// The name of the repository. The default name is the owner name of the repository.
     pub name: String,
     /// The url of remote repository. The `url` should be formatted in the GitHub repository URL
     /// which should has owner name and repository name.
     pub url: String,
-    /// The repository name.
-    pub repo_name: String,
     /// The owner name of the repository.
     pub owner: String,
+    /// The repository name.
+    pub repo_name: String,
     /// The path of the repository.
     pub path: PathBuf,
 }
@@ -665,24 +646,27 @@ impl Repository {
     pub fn new<S: AsRef<str>>(url: S) -> Self {
         let url = url.as_ref();
         let (owner, repo_name) = url_to_owner_and_repo_name(url);
+        let path = PathBuf::from(&owner);
         Self {
             name: owner.clone(),
             url: url.to_string(),
-            repo_name,
-            path: PathBuf::from(&owner),
             owner,
+            repo_name,
+            path,
         }
     }
 
     /// Creates an instance of Repository with the given name and url.
     pub fn new_with<S: AsRef<str>>(name: S, url: S) -> Self {
-        let (owner, repo_name) = url_to_owner_and_repo_name(url.as_ref());
+        let url = url.as_ref();
+        let name = name.as_ref();
+        let (owner, repo_name) = url_to_owner_and_repo_name(url);
         Self {
-            name: name.as_ref().to_string(),
-            url: url.as_ref().to_string(),
+            name: name.to_string(),
+            url: url.to_string(),
             repo_name,
             owner,
-            path: PathBuf::from(name.as_ref()),
+            path: PathBuf::from(name),
         }
     }
 
@@ -728,7 +712,9 @@ impl Repository {
     /// Iterates the boilerplates in the repository.
     pub fn iter<P: AsRef<Path>>(&self, base_path: P) -> impl Iterator<Item = Boilerplate<'_>> {
         let bpath = base_path.as_ref().to_path_buf();
-        ignore::WalkBuilder::new(self.path(base_path))
+        let path = self.path(base_path);
+        println!("{:?}", std::path::absolute(path.clone()));
+        ignore::WalkBuilder::new(path)
             .standard_filters(true)
             .build()
             .flatten()
@@ -742,6 +728,48 @@ impl Repository {
                     bpath.clone(),
                 )
             })
+    }
+
+    /// Prepare the repository by cloning or pulling the remote repository.
+    /// If the repository already exists, do `git pull origin main`.
+    /// Otherwise, execute `git clone` and store the repository into the `[self.path(base_path)]`.
+    pub fn prepare<P: AsRef<Path>>(&self, base_path: P) -> Result<()> {
+        // TODO: implement
+        let path = self.path(&base_path);
+        if path.exists() {
+            let dot_git = path.join(".git");
+            if dot_git.exists() {
+                log::trace!("{}: repository exists", path.display());
+                match git::pull(&path, "origin", "main") {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(GixorError::Git(e)),
+                }
+            } else {
+                log::info!("Cloning {} to {}", self.url, path.display());
+                git::clone(&self.url, &path)
+            }
+        } else {
+            self.clone(base_path)
+        }
+    }
+
+    /// Clone the repository into the `[self.path(base_path)]`.
+    /// If the repository already exists, do nothing and returns `Ok(())`.
+    fn clone<P: AsRef<Path>>(&self, base_path: P) -> Result<()> {
+        let path = self.path(base_path);
+        if path.exists() {
+            let dot_git = path.join(".git");
+            if dot_git.exists() {
+                log::trace!("{}: repository exists", path.display());
+                Ok(())
+            } else {
+                log::info!("Cloning {} to {}", self.url, path.display());
+                git::clone(&self.url, &path)
+            }
+        } else {
+            log::info!("Cloning {} to {}", self.url, path.display());
+            git::clone(&self.url, &path)
+        }
     }
 }
 
@@ -796,7 +824,7 @@ mod tests {
 
     #[test]
     fn parse_gixor() {
-        match Gixor::load(PathBuf::from("../testdata/config.json")) {
+        match GixorBuilder::load(PathBuf::from("../testdata/config.json")) {
             Err(e) => panic!("Failed to parse the config file: {}", e),
             Ok(gixor) => {
                 assert_eq!(
@@ -815,6 +843,9 @@ mod tests {
         assert_eq!(repo.url, "https://github.com/tamada/gitignore.git");
 
         let base_path = PathBuf::from("../testdata/boilerplates");
+        if let Err(e) = repo.prepare(&base_path) {
+            panic!("Failed to prepare the repository: {}", e);
+        }
         let boilerplates = repo.iter(&base_path).collect::<Vec<_>>();
         assert_eq!(boilerplates.len(), 1);
 

@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
-use gixor::{AliasManager, Gixor, GixorError, Name, RepositoryManager, Result};
+use gixor::{AliasManager, Gixor, GixorBuilder, GixorError, Name, RepositoryManager, Result};
 
 mod cli;
 mod terminal;
@@ -24,7 +24,7 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
             store_flag = true;
             Gixor::default()
         }
-        Some(path) => match Gixor::load(path.clone()) {
+        Some(path) => match GixorBuilder::load(path.clone()) {
             Ok(g) => {
                 log::trace!("configuration load from {}", path.display());
                 g
@@ -43,7 +43,7 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
         Ok(gixor)
     };
     match gixor {
-        Ok(g) => match g.clone_all() {
+        Ok(g) => match g.prepare() {
             Err(e) => Err(e),
             _ => Ok((g, store_flag)),
         },
@@ -126,7 +126,7 @@ fn merge_errors(r: Vec<Result<()>>) -> Result<()> {
 fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
     let dest = opts.dest.clone();
     let names = opts.names.iter().map(Name::parse).collect::<Vec<_>>();
-    match gixor::dump_boilerplates(gixor, dest, names) {
+    match gixor.dump_to(names, dest) {
         Ok(_) => Ok(None),
         Err(e) => Err(e),
     }
@@ -210,7 +210,7 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<&Gixor>> {
 }
 
 fn update_repositories(gixor: &Gixor) -> Result<Option<&Gixor>> {
-    match gixor.update_all() {
+    match gixor.prepare() {
         Ok(_) => Ok(None),
         Err(e) => Err(e),
     }
