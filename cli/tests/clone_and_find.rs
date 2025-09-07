@@ -1,4 +1,4 @@
-use gixor::{Gixor, Name, Result};
+use gixor::{GixorBuilder, Name, RepositoryManager, Result};
 
 mod common;
 
@@ -9,11 +9,11 @@ async fn test_clone_and_find() -> Result<()> {
     let gixor = match common::setup() {
         Ok(gixor) => gixor,
         Err(e) => {
-            panic!("Failed to initialize Gixor: {}", e);
+            panic!("Failed to initialize Gixor: {e}");
         }
     };
     assert_eq!(gixor.len(), 1);
-    gixor.update_all()?; // clone all repositories
+    gixor.prepare()?; // clone all repositories
 
     let result = gixor.find(Name::parse("rust")).unwrap();
     assert_eq!(result.len(), 1);
@@ -29,7 +29,7 @@ async fn test_clone_and_find() -> Result<()> {
 
 #[test]
 fn test_find() {
-    let gixor = Gixor::load("../testdata/config.json").unwrap();
+    let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
     let results = gixor.find(Name::from("devcontainer")).unwrap();
     assert_eq!(results.len(), 1);
     let result = results.first().unwrap();

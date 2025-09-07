@@ -39,7 +39,7 @@ impl Terminal {
         let deco_len = self.width - header.len() - 2;
         let deco_prefix = "=".repeat(deco_len / 2);
         let deco_suffix = "=".repeat(deco_len - deco_prefix.len());
-        format!("{} {} {}", deco_prefix, header, deco_suffix)
+        format!("{deco_prefix} {header} {deco_suffix}")
     }
 
     pub(crate) fn format_in_column(&self, items: Vec<String>) -> Vec<String> {

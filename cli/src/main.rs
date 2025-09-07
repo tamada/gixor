@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
-use gixor::{AliasManager, Gixor, GixorError, Name, RepositoryManager, Result};
+use gixor::{AliasManager, Gixor, GixorBuilder, GixorError, Name, RepositoryManager, Result};
 
 mod cli;
 mod terminal;
@@ -24,7 +24,7 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
             store_flag = true;
             Gixor::default()
         }
-        Some(path) => match Gixor::load(path.clone()) {
+        Some(path) => match GixorBuilder::load(path.clone()) {
             Ok(g) => {
                 log::trace!("configuration load from {}", path.display());
                 g
@@ -43,7 +43,7 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
         Ok(gixor)
     };
     match gixor {
-        Ok(g) => match g.clone_all() {
+        Ok(g) => match g.prepare() {
             Err(e) => Err(e),
             _ => Ok((g, store_flag)),
         },
@@ -126,7 +126,7 @@ fn merge_errors(r: Vec<Result<()>>) -> Result<()> {
 fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
     let dest = opts.dest.clone();
     let names = opts.names.iter().map(Name::parse).collect::<Vec<_>>();
-    match gixor::dump_boilerplates(gixor, dest, names) {
+    match gixor.dump_to(names, dest) {
         Ok(_) => Ok(None),
         Err(e) => Err(e),
     }
@@ -172,13 +172,13 @@ pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<Stri
         }
         term.format_in_column(items)
             .iter()
-            .for_each(|line| println!("{}", line));
+            .for_each(|line| println!("{line}"));
     } else {
         if let Some(header) = header {
-            println!("========== {} ==========", header)
+            println!("========== {header} ==========")
         }
         for entry in items {
-            println!("{}", entry);
+            println!("{entry}");
         }
     }
 }
@@ -198,10 +198,7 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<&Gixor>> {
     if opts.open {
         match opener::open(path) {
             Ok(_) => Ok(None),
-            Err(e) => Err(GixorError::Fatal(format!(
-                "failed to open {:?}: {:?}",
-                path, e
-            ))),
+            Err(e) => Err(GixorError::Fatal(format!("failed to open {path:?}: {e:?}"))),
         }
     } else {
         println!("{}", path.to_string_lossy());
@@ -210,7 +207,7 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<&Gixor>> {
 }
 
 fn update_repositories(gixor: &Gixor) -> Result<Option<&Gixor>> {
-    match gixor.update_all() {
+    match gixor.prepare() {
         Ok(_) => Ok(None),
         Err(e) => Err(e),
     }
@@ -318,7 +315,7 @@ fn init_log(level: &LogLevel) {
     env_logger::try_init().unwrap_or_else(|_| {
         eprintln!("failed to initialize logger. set RUST_LOG to see logs.");
     });
-    log::info!("set log level to {:?}", level);
+    log::info!("set log level to {level:?}");
 }
 
 #[cfg(debug_assertions)]
@@ -331,7 +328,7 @@ mod gencomp {
     use std::path::PathBuf;
 
     fn generate_impl(app: &mut Command, shell: Shell, dest: PathBuf) -> Result<()> {
-        log::info!("generate completion for {:?} to {:?}", shell, dest);
+        log::info!("generate completion for {shell:?} to {dest:?}");
         if let Err(e) = std::fs::create_dir_all(dest.parent().unwrap()) {
             return Err(GixorError::IO(e));
         }
@@ -385,7 +382,7 @@ mod tests {
         let r = cli::CliOpts::try_parse_from(vec!["gixor", "--log", "trace", "init"]);
         match r {
             Ok(opts) => assert_eq!(opts.log, LogLevel::Trace),
-            Err(e) => panic!("failed to parse: {:?}", e),
+            Err(e) => panic!("failed to parse: {e:?}"),
         }
     }
 }
