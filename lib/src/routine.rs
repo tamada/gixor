@@ -95,7 +95,7 @@ fn find_gitignore<P: AsRef<Path>>(path: P) -> PathBuf {
     }
 }
 
-fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
+pub(super) fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
     let path = dest.as_ref().to_path_buf();
     if path == PathBuf::from("-") {
         Ok(Box::new(std::io::stdout()))
@@ -112,12 +112,11 @@ fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
     }
 }
 
-pub(super) fn dump_boilerplates_impl<P: AsRef<Path>>(
-    dest: P,
+pub(super) fn dump_boilerplates_impl(
+    dest: impl std::io::Write,
     boilerplates: Vec<super::Boilerplate>,
 ) -> Result<()> {
-    let w = open_dest(dest)?;
-    let mut w = std::io::BufWriter::new(w);
+    let mut w = std::io::BufWriter::new(dest);
     let prologue = load_prologue();
     let contents = vec_result_to_result_vec(
         boilerplates
@@ -130,7 +129,7 @@ pub(super) fn dump_boilerplates_impl<P: AsRef<Path>>(
             let r = prologue
                 .iter()
                 .chain(content.iter())
-                .map(|line| writeln!(w, "{}", line).map_err(super::GixorError::IO))
+                .map(|line| writeln!(w, "{line}").map_err(super::GixorError::IO))
                 .collect::<Vec<_>>();
             match vec_result_to_result_vec(r) {
                 Ok(_) => Ok(()),

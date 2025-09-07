@@ -1,9 +1,9 @@
-use gixor::{Gixor, Result};
+use gixor::{Gixor, GixorBuilder, Result};
 
 pub fn setup() -> Result<Gixor> {
     let _ = std::fs::create_dir_all("../integration");
-    let gixor = Gixor::load("../integration/config.json")?;
+    let gixor = GixorBuilder::load("../integration/config.json")?;
 
-    gixor.update_all()?; // clone all repositories
+    gixor.prepare()?; // clone all repositories
     Ok(gixor)
 }

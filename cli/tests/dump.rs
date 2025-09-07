@@ -7,23 +7,24 @@ fn test_dump() {
     let gixor = match common::setup() {
         Ok(gixor) => gixor,
         Err(e) => {
-            panic!("Failed to initialize Gixor: {}", e);
+            panic!("Failed to initialize Gixor: {e}");
         }
     };
     let dest = PathBuf::from("../integration/dump");
     let _ = std::fs::create_dir_all(&dest);
-    let r = gixor::dump_boilerplates(
-        &gixor,
-        dest.clone(),
+    let dest_path = dest.join(".gitignore");
+    let r = gixor.dump_to(
         vec![
             gixor::Name::parse("rust"),
             gixor::Name::parse("python"),
             gixor::Name::parse("c"),
         ],
+        &dest_path,
     );
+    log::info!("dump result: {r:?}");
     assert!(r.is_ok());
 
-    let r = gixor::list_entries(dest);
+    let r = gixor::list_entries(&dest_path);
     assert!(r.is_ok());
     let entries = r.unwrap();
     assert_eq!(entries.len(), 3);

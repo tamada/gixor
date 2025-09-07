@@ -97,8 +97,8 @@ fn fast_forward(
         Some(s) => s.to_string(),
         None => String::from_utf8_lossy(lb.name_bytes()).to_string(),
     };
-    let msg = format!("Fast-Forward: Setting {} to id: {}", name, rc.id());
-    log::info!("{}", msg);
+    let msg = format!("Fast-Forward: Setting {name} to id: {}", rc.id());
+    log::info!("{msg}");
     lb.set_target(rc.id(), &msg)?;
     repo.set_head(&name)?;
     repo.checkout_head(Some(
@@ -160,7 +160,7 @@ fn do_merge<'a>(
     if analysis.0.is_fast_forward() {
         log::info!("Doing a fast forward");
         // do a fast forward
-        let refname = format!("refs/heads/{}", remote_branch);
+        let refname = format!("refs/heads/{remote_branch}");
         match repo.find_reference(&refname) {
             Ok(mut r) => {
                 fast_forward(repo, &mut r, &fetch_commit)?;
@@ -214,8 +214,7 @@ pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()
         clone_with_ssh(url, path)
     } else {
         Err(crate::GixorError::Fatal(format!(
-            "{}: Unsupported protocol",
-            url
+            "{url}: Unsupported protocol"
         )))
     }
 }

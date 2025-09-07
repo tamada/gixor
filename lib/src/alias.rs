@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{AliasManager, Name};
+use crate::{AliasManager, GixorError, Name, Result};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Alias {
@@ -19,15 +19,60 @@ impl Alias {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Aliases {
+    aliases: Vec<Alias>,
+}
+
+impl Aliases {
+    /// Find an instance of Alias by its name.
+    pub fn find<S: AsRef<str>>(&self, name: S) -> Option<&Alias> {
+        let name = name.as_ref();
+        self.aliases.iter().find(|&a| a.name == name)
+    }
+
+    /// Merge two instances of Aliases, avoiding duplicates by alias name, and returns a new instance.
+    pub fn merge(&self, other: &Aliases) -> Self {
+        let mut merged = self.aliases.clone();
+        for alias in &other.aliases {
+            if !merged.iter().any(|a| a.name == alias.name) {
+                merged.push(alias.clone());
+            }
+        }
+        Aliases { aliases: merged }
+    }
+}
+
+impl AliasManager for Aliases {
+    fn iter_aliases(&self) -> impl Iterator<Item = &Alias> {
+        self.aliases.iter()
+    }
+
+    fn add_alias(&mut self, alias: Alias) -> Result<()> {
+        self.aliases.push(alias);
+        Ok(())
+    }
+
+    fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()> {
+        let name = name.as_ref();
+        if let Some(pos) = self.aliases.iter().position(|a| a.name == name) {
+            self.aliases.remove(pos);
+            Ok(())
+        } else {
+            Err(GixorError::Alias(name.to_string()))
+        }
+    }
+}
+
 pub(super) fn extract_alias<'a>(
     config: &'a super::Config,
     name: &super::Name,
 ) -> Option<Vec<super::Boilerplate<'a>>> {
     match (&name.repository_name, &name.boilerplate_name) {
-        (None, b_name) => extract_alias_impl(config, b_name.clone()),
+        (None, b_name) => extract_alias_impl(config, b_name),
         (Some(t), b_name) => {
             if t == "alias" {
-                extract_alias_impl(config, b_name.clone())
+                extract_alias_impl(config, b_name)
             } else {
                 None
             }
@@ -35,17 +80,18 @@ pub(super) fn extract_alias<'a>(
     }
 }
 
-fn extract_alias_impl(config: &super::Config, name: String) -> Option<Vec<super::Boilerplate<'_>>> {
+fn extract_alias_impl<S: AsRef<str>>(
+    config: &super::Config,
+    name: S,
+) -> Option<Vec<super::Boilerplate<'_>>> {
     match find_alias_impl(config, name) {
-        Some(boilerplate_names) => match config.find_all(boilerplate_names) {
-            Ok(boilerplates) => Some(boilerplates),
-            Err(_) => None,
-        },
+        Some(boilerplate_names) => config.find_all(boilerplate_names).ok(),
         None => None,
     }
 }
 
-fn find_alias_impl(config: &super::Config, name: String) -> Option<Vec<Name>> {
+fn find_alias_impl<S: AsRef<str>>(config: &super::Config, name: S) -> Option<Vec<Name>> {
+    let name = name.as_ref();
     for alias in config.iter_aliases() {
         if alias.name == name {
             log::debug!("found alias: {}: {:?}", name, alias.boilerplates);
@@ -58,11 +104,11 @@ fn find_alias_impl(config: &super::Config, name: String) -> Option<Vec<Name>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Gixor;
+    use crate::GixorBuilder;
 
     #[test]
     fn test_predefined_alias() {
-        let gixor = Gixor::load("../testdata/config.json").unwrap();
+        let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
         let binding = gixor.config.aliases.unwrap();
         let alias = binding.first().unwrap();
         assert_eq!(alias.name, "os-list");
@@ -70,7 +116,8 @@ mod tests {
 
     #[test]
     fn test_alias() {
-        let gixor = Gixor::load("../testdata/config.json").unwrap();
+        let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
+        gixor.prepare().unwrap();
         let results = gixor.find(Name::from("os-list")).unwrap();
         assert_eq!(results.len(), 3);
 
@@ -84,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_alias_with_repository_name() {
-        let gixor = Gixor::load("../testdata/config.json").unwrap();
+        let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
         let results = gixor.find(Name::from("alias/os-list")).unwrap();
         assert_eq!(results.len(), 3);
 
@@ -98,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_nexted_alias() {
-        let gixor = Gixor::load("../testdata/config.json").unwrap();
+        let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
         let results = gixor.find(Name::from("my-default")).unwrap();
         assert_eq!(results.len(), 6);
 
