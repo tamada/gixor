@@ -68,48 +68,48 @@ fn list_aliases(gixor: &Gixor) -> Result<Option<&Gixor>> {
     Ok(None)
 }
 
-fn remove_aliases(gixor: &mut Gixor, args: Vec<String>) -> Result<()> {
+fn remove_aliases(gixor: &mut Gixor, args: Vec<String>) -> Result<Option<&Gixor>> {
     use gixor::AliasManager;
     let r = args
         .iter()
         .map(|name| gixor.remove_alias(name))
         .collect::<Vec<_>>();
-    merge_errors(r)
+    match merge_errors(r) {
+        Ok(_) => Ok(Some(gixor)),
+        Err(e) => Err(e),
+    }
 }
 
-fn add_alias(gixor: &mut Gixor, name: String, desc: String, args: Vec<String>) -> Result<()> {
+fn add_alias(gixor: &mut Gixor, name: String, desc: String, args: Vec<String>) -> Result<Option<&Gixor>> {
     let names = args.iter().map(Name::parse).collect::<Vec<_>>();
     let alias = gixor::alias::Alias::new(name, desc, names);
-    gixor.add_alias(alias)
+    match gixor.add_alias(alias) {
+        Err(e) => Err(e),
+        Ok(_) => Ok(Some(gixor)),
+    }
 }
 
 fn perform_alias(gixor: &mut Gixor, opts: cli::AliasOpts) -> Result<Option<&Gixor>> {
     match opts.cmd {
         None => list_aliases(gixor),
         Some(cli::AliasCmd::List(_)) => list_aliases(gixor),
-        Some(cli::AliasCmd::Add(opts)) => {
-            match add_alias(gixor, opts.name, opts.description, opts.boilerplates) {
-                Err(e) => Err(e),
-                Ok(_) => Ok(Some(gixor)),
-            }
-        }
-        Some(cli::AliasCmd::Remove(opts)) => match remove_aliases(gixor, opts.args) {
-            Ok(_) => Ok(Some(gixor)),
-            Err(e) => Err(e),
-        },
+        Some(cli::AliasCmd::Add(opts)) => 
+            add_alias(gixor, opts.name, opts.description, opts.boilerplates),
+        Some(cli::AliasCmd::Remove(opts)) => remove_aliases(gixor, opts.args),
     }
 }
 
-fn merge_errors(r: Vec<Result<()>>) -> Result<()> {
+fn merge_errors<T>(r: Vec<Result<T>>) -> Result<Vec<T>> {
     let mut errs = vec![];
+    let mut items = vec![];
     for e in r {
         match e {
-            Ok(_) => {}
+            Ok(item) => items.push(item),
             Err(e) => errs.push(e),
         }
     }
     if errs.is_empty() {
-        Ok(())
+        Ok(items)
     } else if errs.len() == 1 {
         Err(errs.into_iter().next().unwrap())
     } else {

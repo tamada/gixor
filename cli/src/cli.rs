@@ -24,7 +24,10 @@ pub(crate) struct CliOpts {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum GixorCommand {
-    #[command(name = "alias", about = "Manage the aliases. If no command is given, list the aliases.")]
+    #[command(
+        name = "alias",
+        about = "Manage the aliases. If no command is given, list the aliases."
+    )]
     Alias(AliasOpts),
     #[command(name = "dump", about = "Dump the boilerplates")]
     Dump(DumpOpts),
@@ -39,7 +42,11 @@ pub(crate) enum GixorCommand {
     List(ListOpts),
     #[command(name = "root", about = "Show the root directory of the boilerplates")]
     Root(RootOpts),
-    #[command(name = "search", alias = "find", about = "Search the boilerplates from the query")]
+    #[command(
+        name = "search",
+        alias = "find",
+        about = "Search the boilerplates from the query"
+    )]
     Search(SearchOpts),
     #[command(
         name = "update",

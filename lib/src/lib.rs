@@ -451,7 +451,7 @@ impl RepositoryManager for Gixor {
         self.config.repositories.is_empty()
     }
 
-    // Find the repository by the name.
+    /// Find the repository by the name.
     fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository> {
         let name = name.as_ref();
         self.config
@@ -537,7 +537,7 @@ struct Config {
 }
 
 impl Config {
-    /// find the related boilerplates by the names from the all of repositories.
+    /// find the related boilerplates by the names from all of repositories.
     /// The method matches the given name with an alias and, the boilerplate name in the repository..
     fn find(&self, name: Name) -> Result<Vec<Boilerplate<'_>>> {
         if let Some(r) = alias::extract_alias(self, &name) {
@@ -553,7 +553,7 @@ impl Config {
         }
     }
 
-    /// Find all related boilerplates of the given names from the all of repositories.
+    /// Find all related boilerplates of the given names from all of repositories.
     /// The method matches the given name with an alias and, the boilerplate name in the repository..
     fn find_all(&self, names: Vec<Name>) -> Result<Vec<Boilerplate<'_>>> {
         let r = names
@@ -566,7 +566,7 @@ impl Config {
         }
     }
 
-    /// Iterate the boilerplates from the all repositories.
+    /// Iterate the boilerplates from all repositories.
     fn iter(&self) -> impl Iterator<Item = Boilerplate<'_>> {
         self.repositories
             .iter()
