@@ -51,7 +51,7 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
     }
 }
 
-fn list_aliases(gixor: &Gixor) {
+fn list_aliases(gixor: &Gixor) -> Result<Option<&Gixor>> {
     use gixor::AliasManager;
     for alias in gixor.iter_aliases() {
         println!(
@@ -65,9 +65,10 @@ fn list_aliases(gixor: &Gixor) {
                 .join(", ")
         );
     }
+    Ok(None)
 }
 
-fn remove_alias(gixor: &mut Gixor, args: Vec<String>) -> Result<()> {
+fn remove_aliases(gixor: &mut Gixor, args: Vec<String>) -> Result<()> {
     use gixor::AliasManager;
     let r = args
         .iter()
@@ -76,33 +77,26 @@ fn remove_alias(gixor: &mut Gixor, args: Vec<String>) -> Result<()> {
     merge_errors(r)
 }
 
-fn add_alias(gixor: &mut Gixor, desc: String, args: Vec<String>) -> Result<()> {
-    if let Some((alias_name, alias_values)) = args.split_first() {
-        let names = alias_values.iter().map(Name::parse).collect::<Vec<_>>();
-        let alias = gixor::alias::Alias::new(alias_name.clone(), desc, names);
-        gixor.add_alias(alias)
-    } else {
-        Err(GixorError::Alias(format!(
-            "alias name and boilerplate names are required: {}",
-            args.join(", ")
-        )))
-    }
+fn add_alias(gixor: &mut Gixor, name: String, desc: String, args: Vec<String>) -> Result<()> {
+    let names = args.iter().map(Name::parse).collect::<Vec<_>>();
+    let alias = gixor::alias::Alias::new(name, desc, names);
+    gixor.add_alias(alias)
 }
 
 fn perform_alias(gixor: &mut Gixor, opts: cli::AliasOpts) -> Result<Option<&Gixor>> {
-    if opts.args.is_empty() {
-        list_aliases(gixor);
-        Ok(None)
-    } else if opts.rm {
-        match remove_alias(gixor, opts.args) {
+    match opts.cmd {
+        None => list_aliases(gixor),
+        Some(cli::AliasCmd::List(_)) => list_aliases(gixor),
+        Some(cli::AliasCmd::Add(opts)) => {
+            match add_alias(gixor, opts.name, opts.description, opts.boilerplates) {
+                Err(e) => Err(e),
+                Ok(_) => Ok(Some(gixor)),
+            }
+        }
+        Some(cli::AliasCmd::Remove(opts)) => match remove_aliases(gixor, opts.args) {
             Ok(_) => Ok(Some(gixor)),
             Err(e) => Err(e),
-        }
-    } else {
-        match add_alias(gixor, opts.description, opts.args) {
-            Err(e) => Err(e),
-            Ok(_) => Ok(Some(gixor)),
-        }
+        },
     }
 }
 

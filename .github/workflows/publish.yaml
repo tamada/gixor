@@ -28,7 +28,7 @@ jobs:
         with:
           tag_name: v${{ steps.vars.outputs.tag }}
           name: Release v${{ steps.vars.outputs.tag }}
-          draft: false
+          draft: true
           prerelease: false
 
   publish:
@@ -142,6 +142,15 @@ jobs:
           asset_name: ${{ matrix.asset_name }}.tar.gz
           asset_content_type: application/x-gzip
           upload_url: ${{ needs.setup.outputs.upload_url }}
+      
+      - name: Publish the release
+        id: publish_release
+        if: matrix.os == 'macos-latest'
+        run: |
+          gh release edit --draft=false --repo $GITHUB_REPOSITORY v${{ needs.setup.outputs.tag }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   docker:
     needs: publish

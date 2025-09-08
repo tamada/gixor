@@ -331,10 +331,11 @@ impl Default for Gixor {
     }
 }
 
+/// The builder of [`Gixor`].
 pub struct GixorBuilder {}
 
 impl GixorBuilder {
-    /// load the configuration file from the location.
+    /// load the configuration file from the default location.
     /// The default configuration is provided by [`Gixor::default`].
     pub fn load_or_default() -> Gixor {
         match dirs::config_dir() {
@@ -378,6 +379,7 @@ impl Gixor {
         &self.config.base_path
     }
 
+    /// Prepare the repositories in the local environment by cloning or updating them.
     pub fn prepare(&self) -> Result<()> {
         self.config.prepare()
     }
@@ -449,6 +451,7 @@ impl RepositoryManager for Gixor {
         self.config.repositories.is_empty()
     }
 
+    // Find the repository by the name.
     fn repository<N: AsRef<str>>(&self, name: N) -> Option<&Repository> {
         let name = name.as_ref();
         self.config
@@ -534,6 +537,8 @@ struct Config {
 }
 
 impl Config {
+    /// find the related boilerplates by the names from the all of repositories.
+    /// The method matches the given name with an alias and, the boilerplate name in the repository..
     fn find(&self, name: Name) -> Result<Vec<Boilerplate<'_>>> {
         if let Some(r) = alias::extract_alias(self, &name) {
             Ok(r)
@@ -548,6 +553,8 @@ impl Config {
         }
     }
 
+    /// Find all related boilerplates of the given names from the all of repositories.
+    /// The method matches the given name with an alias and, the boilerplate name in the repository..
     fn find_all(&self, names: Vec<Name>) -> Result<Vec<Boilerplate<'_>>> {
         let r = names
             .into_iter()
@@ -559,12 +566,14 @@ impl Config {
         }
     }
 
+    /// Iterate the boilerplates from the all repositories.
     fn iter(&self) -> impl Iterator<Item = Boilerplate<'_>> {
         self.repositories
             .iter()
             .flat_map(move |repo| repo.iter(&self.base_path))
     }
 
+    /// Prepare the repositories in the local environment by cloning or updating them.
     fn prepare(&self) -> Result<()> {
         let mut errs = vec![];
         self.repositories.iter().for_each(|repo| {
