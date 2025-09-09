@@ -164,7 +164,7 @@ fn dump_path(path: PathBuf) -> Result<String> {
 mod routine;
 
 /// Finds the entries of `.gitignore` file in the given path.
-/// The given path should be a directory contains `.gitignore` file or a `.gitignore` file directly.
+/// The given path should be a directory containing a `.gitignore` file or a `.gitignore` file directly.
 /// If the `.gitignore` file is not found, returns error.
 pub fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
     routine::entries(path)
@@ -337,7 +337,7 @@ impl Default for Gixor {
 pub struct GixorBuilder {}
 
 impl GixorBuilder {
-    /// load the configuration file from the default location.
+    /// Load the configuration file from the default location.
     /// The default configuration is provided by [`Gixor::default`].
     pub fn load_or_default() -> Gixor {
         match dirs::config_dir() {
@@ -539,7 +539,7 @@ struct Config {
 }
 
 impl Config {
-    /// find the related boilerplates by the names from all of repositories.
+    /// Find the related boilerplates by the names from all of repositories.
     /// The method matches the given name with an alias and, the boilerplate name in the repository..
     fn find(&self, name: Name) -> Result<Vec<Boilerplate<'_>>> {
         if let Some(r) = alias::extract_alias(self, &name) {
@@ -556,7 +556,7 @@ impl Config {
     }
 
     /// Find all related boilerplates of the given names from all of repositories.
-    /// The method matches the given name with an alias and, the boilerplate name in the repository..
+    /// The method matches the given name with an alias and the boilerplate name in the repository.
     fn find_all(&self, names: Vec<Name>) -> Result<Vec<Boilerplate<'_>>> {
         let r = names
             .into_iter()

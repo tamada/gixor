@@ -48,7 +48,7 @@ pub(super) fn find_boilerplates(
 }
 
 /// Finds the entries of `.gitignore` file in the given path.
-/// The given path should be a directory contains `.gitignore` file or a `.gitignore` file directly.
+/// The given path should be a directory containing a `.gitignore` file or a `.gitignore` file directly.
 /// If the `.gitignore` file is not found, returns error.
 pub(super) fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
     let gitignore_path = find_gitignore(path);
