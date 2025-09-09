@@ -142,7 +142,10 @@ pub(crate) enum RepositoryOpts {
     List,
     #[command(name = "remove", about = "Remove a gitignore boilerplate repository")]
     Remove(RepoRemoveOpts),
-    #[command(name = "update", about = "Update a gitignore boilerplate repository")]
+    #[command(
+        name = "update",
+        about = "Run `git update` for updating a gitignore boilerplate repository"
+    )]
     Update,
 }
 

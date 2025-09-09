@@ -124,13 +124,23 @@ impl<'a> Boilerplate<'a> {
             let _ = write!(output, "{b:02X}");
             output
         });
-        Ok(format!(
-            "https://raw.github.com/{}/{}/{}/{}",
-            self.repo.owner,
-            self.repo.repo_name,
-            hash_string,
-            to_relative_path(&self.path, self.base_path.join(&self.repo.name))
-        ))
+        let url = &self.repo.url;
+        let relative_path = to_relative_path(&self.path, self.base_path.join(&self.repo.name));
+        if url.contains("github.com") {
+            Ok(format!("https://raw.github.com/{0}/{1}/{2}/{3}", 
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path))
+        } else if url.contains("gitlab.com") {
+            Ok(format!("https://gitlab.com/{0}/{1}/-/raw/{2}/{3}",
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path))
+        } else if url.contains("bitbucket.org") {
+            Ok(format!("https://bitbucket.org/{0}/{1}/raw/{2}/{3}",
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path))
+        } else {
+            Err(GixorError::Fatal(format!(
+                "{}: Unsupported repository host",
+                url
+            )))
+        }
     }
 
     /// Returns the content of the boilerplate file.
@@ -770,7 +780,7 @@ impl Repository {
         if path.exists() {
             let dot_git = path.join(".git");
             if dot_git.exists() {
-                log::trace!("{}: repository exists", path.display());
+                log::info!("{}: repository exists", path.display());
                 Ok(())
             } else {
                 log::info!("Cloning {} to {}", self.url, path.display());
@@ -794,10 +804,24 @@ fn is_gitignore_file(name: Option<&std::ffi::OsStr>) -> bool {
 fn url_to_owner_and_repo_name(url: &str) -> (String, String) {
     let items = url.split('/').collect::<Vec<_>>();
     match (items.get(items.len() - 2), items.last()) {
-        (Some(&owner), Some(&name)) => (owner.into(), strip_dot_git(name)),
+        (Some(&owner), Some(&name)) => (to_owner(owner), strip_dot_git(name)),
         (None, Some(&name)) => ("unknown".into(), strip_dot_git(name)),
-        (Some(&owner), None) => (owner.to_string(), "gitignore".into()),
+        (Some(&owner), None) => (to_owner(owner), "gitignore".into()),
         _ => ("unknown".into(), "gitignore".into()),
+    }
+}
+
+fn to_owner<S: AsRef<str>>(s: S) -> String {
+    let s = s.as_ref();
+    if s.contains(':') {
+        let items = s.split(':').collect::<Vec<_>>();
+        if let Some(&owner) = items.last() {
+            owner.to_string()
+        } else {
+            "unknown".to_string()
+        }
+    } else {
+        s.to_string()
     }
 }
 
@@ -833,6 +857,14 @@ mod tests {
     }
 
     #[test]
+    fn test_url_to_name2() {
+        let url = "git@github.com:tamada/gitignore.git";
+        let (owner, name) = url_to_owner_and_repo_name(url);
+        assert_eq!(owner, "tamada");
+        assert_eq!(name, "gitignore");
+    }
+
+    #[test]
     fn parse_gixor() {
         match GixorBuilder::load(PathBuf::from("../testdata/config.json")) {
             Err(e) => panic!("Failed to parse the config file: {e}"),
@@ -841,7 +873,7 @@ mod tests {
                     gixor.config.base_path,
                     PathBuf::from("../testdata/boilerplates")
                 );
-                assert_eq!(gixor.config.repositories.len(), 2);
+                assert_eq!(gixor.config.repositories.len(), 3);
             }
         }
     }
