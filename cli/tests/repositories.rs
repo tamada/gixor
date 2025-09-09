@@ -14,7 +14,7 @@ fn test_find_target_directories() {
 
     let r = gixor::find_target_repositories(&gixor, vec!["not_found"]);
     assert!(r.is_err());
-    if let gixor::GixorError::NotFound(name) = r.unwrap_err() {
+    if let gixor::GixorError::RepositoryNotFound(name) = r.unwrap_err() {
         assert_eq!(name, "not_found");
     } else {
         panic!("Unexpected error");

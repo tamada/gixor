@@ -16,7 +16,7 @@ pub enum LogLevel {
     Error,
 }
 
-fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
+fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, bool)> {
     let mut store_flag = false;
     let mut gixor = match config_path {
         None => {
@@ -43,7 +43,7 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
         Ok(gixor)
     };
     match gixor {
-        Ok(g) => match g.prepare() {
+        Ok(g) => match g.prepare(no_network) {
             Err(e) => Err(e),
             _ => Ok((g, store_flag)),
         },
@@ -207,7 +207,7 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<&Gixor>> {
 }
 
 fn update_repositories(gixor: &Gixor) -> Result<Option<&Gixor>> {
-    match gixor.prepare() {
+    match gixor.prepare(false) {
         Ok(_) => Ok(None),
         Err(e) => Err(e),
     }
@@ -290,7 +290,7 @@ fn perform_impl(gixor: &mut Gixor, subcmd: cli::GixorCommand, store_flag: bool) 
 }
 
 fn perform(opts: cli::CliOpts) -> Result<()> {
-    let (mut gixor, store_flag) = load_gixor(opts.config)?;
+    let (mut gixor, store_flag) = load_gixor(opts.config, opts.no_network)?;
     match perform_impl(&mut gixor, opts.subcmd, store_flag) {
         Ok(flag) => {
             if flag {
@@ -365,10 +365,13 @@ mod gencomp {
     }
 }
 
-fn main() -> Result<()> {
+fn main() {
     let opts = cli::CliOpts::parse();
     init_log(&opts.log);
-    perform(opts)
+    if let Err(e) = perform(opts) {
+        println!("Error: {e}");
+        std::process::exit(1);
+    }
 }
 
 #[cfg(test)]

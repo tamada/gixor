@@ -11,6 +11,13 @@ pub(crate) struct CliOpts {
     #[arg(short, long, help = "Specify the log level", default_value = "warn")]
     pub(crate) log: crate::LogLevel,
 
+    #[arg(
+        long = "no-network",
+        help = "Disable network access",
+        default_value_t = false
+    )]
+    pub(crate) no_network: bool,
+
     // #[arg(long = "dry-run", help = "Do not perform the actual operation")]
     // pub(crate) dry_run: bool,
     #[arg(

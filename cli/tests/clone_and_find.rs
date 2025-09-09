@@ -13,7 +13,7 @@ async fn test_clone_and_find() -> Result<()> {
         }
     };
     assert_eq!(gixor.len(), 1);
-    gixor.prepare()?; // clone all repositories
+    gixor.prepare(false)?; // clone all repositories
 
     let result = gixor.find(Name::parse("rust")).unwrap();
     assert_eq!(result.len(), 1);
