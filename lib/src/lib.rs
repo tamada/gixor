@@ -163,9 +163,11 @@ fn dump_path(path: PathBuf) -> Result<String> {
 
 mod routine;
 
-/// Returns the boilerplate names listed in the given path (`.gitignore`).
-pub fn list_entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
-    routine::list_entries(path)
+/// Finds the entries of `.gitignore` file in the given path.
+/// The given path should be a directory contains `.gitignore` file or a `.gitignore` file directly.
+/// If the `.gitignore` file is not found, returns error.
+pub fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
+    routine::entries(path)
 }
 
 pub fn find_target_repositories<S: AsRef<str>>(

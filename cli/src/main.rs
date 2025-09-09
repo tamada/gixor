@@ -80,7 +80,12 @@ fn remove_aliases(gixor: &mut Gixor, args: Vec<String>) -> Result<Option<&Gixor>
     }
 }
 
-fn add_alias(gixor: &mut Gixor, name: String, desc: String, args: Vec<String>) -> Result<Option<&Gixor>> {
+fn add_alias(
+    gixor: &mut Gixor,
+    name: String,
+    desc: String,
+    args: Vec<String>,
+) -> Result<Option<&Gixor>> {
     let names = args.iter().map(Name::parse).collect::<Vec<_>>();
     let alias = gixor::alias::Alias::new(name, desc, names);
     match gixor.add_alias(alias) {
@@ -93,8 +98,9 @@ fn perform_alias(gixor: &mut Gixor, opts: cli::AliasOpts) -> Result<Option<&Gixo
     match opts.cmd {
         None => list_aliases(gixor),
         Some(cli::AliasCmd::List(_)) => list_aliases(gixor),
-        Some(cli::AliasCmd::Add(opts)) => 
-            add_alias(gixor, opts.name, opts.description, opts.boilerplates),
+        Some(cli::AliasCmd::Add(opts)) => {
+            add_alias(gixor, opts.name, opts.description, opts.boilerplates)
+        }
         Some(cli::AliasCmd::Remove(opts)) => remove_aliases(gixor, opts.args),
     }
 }
@@ -178,7 +184,7 @@ pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<Stri
 }
 
 fn list_entries(_: &Gixor, opts: cli::EntriesOpts) -> Result<Option<&Gixor>> {
-    match gixor::list_entries(opts.dir) {
+    match gixor::entries(opts.dir) {
         Err(e) => Err(e),
         Ok(entries) => {
             print_in_columns_if_needed(entries, None);

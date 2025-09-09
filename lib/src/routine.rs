@@ -47,7 +47,10 @@ pub(super) fn find_boilerplates(
     }
 }
 
-pub(super) fn list_entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
+/// Finds the entries of `.gitignore` file in the given path.
+/// The given path should be a directory contains `.gitignore` file or a `.gitignore` file directly.
+/// If the `.gitignore` file is not found, returns error.
+pub(super) fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
     let gitignore_path = find_gitignore(path);
     if !gitignore_path.exists() {
         Err(super::GixorError::NotFound(

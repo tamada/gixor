@@ -24,7 +24,7 @@ fn test_dump() {
     log::info!("dump result: {r:?}");
     assert!(r.is_ok());
 
-    let r = gixor::list_entries(&dest_path);
+    let r = gixor::entries(&dest_path);
     assert!(r.is_ok());
     let entries = r.unwrap();
     assert_eq!(entries.len(), 3);
@@ -35,7 +35,7 @@ fn test_dump() {
 
 #[test]
 fn test_list_entries_not_found() {
-    let r = gixor::list_entries("../integration/not_found");
+    let r = gixor::entries("../integration/not_found");
     assert!(r.is_err());
     let e = r.unwrap_err();
     assert!(matches!(e, gixor::GixorError::NotFound(_)));
