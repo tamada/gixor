@@ -110,14 +110,14 @@ mod tests {
     fn test_predefined_alias() {
         let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
         let binding = gixor.config.aliases.unwrap();
-        let alias = binding.first().unwrap();
+        let alias = binding.find("os-list").unwrap();
         assert_eq!(alias.name, "os-list");
     }
 
     #[test]
     fn test_alias() {
         let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
-        gixor.prepare().unwrap();
+        gixor.prepare(false).unwrap();
         let results = gixor.find(Name::from("os-list")).unwrap();
         assert_eq!(results.len(), 3);
 

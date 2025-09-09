@@ -22,7 +22,7 @@ pub(super) fn find_target_repositories<S: AsRef<str>>(
             let errs = r
                 .iter()
                 .filter(|(_, repo)| repo.is_none())
-                .map(|(n, _)| super::GixorError::NotFound(n.as_ref().to_string()))
+                .map(|(n, _)| super::GixorError::RepositoryNotFound(n.as_ref().to_string()))
                 .collect::<Vec<_>>();
             super::utils::single_err_or_errs_array::<Vec<&crate::Repository>>(errs)
         } else {
@@ -53,9 +53,7 @@ pub(super) fn find_boilerplates(
 pub(super) fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
     let gitignore_path = find_gitignore(path);
     if !gitignore_path.exists() {
-        Err(super::GixorError::NotFound(
-            gitignore_path.display().to_string(),
-        ))
+        Err(super::GixorError::FileNotFound(gitignore_path))
     } else {
         match std::fs::File::open(gitignore_path) {
             Err(e) => Err(super::GixorError::IO(e)),

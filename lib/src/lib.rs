@@ -36,17 +36,21 @@ pub type Result<T> = std::result::Result<T, GixorError>;
 pub enum GixorError {
     Array(Vec<GixorError>),
     Alias(String),
+    AliasNotFound(String),
+    BoilerplateNotFound(String),
+    FileNotFound(PathBuf),
+    Fatal(String),
     Git(git2::Error),
     IO(std::io::Error),
     Json(serde_json::Error),
-    Fatal(String),
-    NotFound(String),
+    RepositoryNotFound(String),
 }
 
 impl Display for GixorError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use GixorError::*;
         match self {
-            GixorError::Array(errs) => {
+            Array(errs) => {
                 let result = errs.iter().map(|e| e.fmt(f)).collect::<Vec<_>>();
                 if result.iter().any(|r| r.is_err()) {
                     Err(std::fmt::Error)
@@ -54,12 +58,15 @@ impl Display for GixorError {
                     Ok(())
                 }
             }
-            GixorError::Alias(msg) => write!(f, "{msg}"),
-            GixorError::NotFound(name) => write!(f, "{name}: not found"),
-            GixorError::Git(e) => write!(f, "Git error: {e}"),
-            GixorError::IO(e) => write!(f, "IO error: {e}"),
-            GixorError::Json(e) => write!(f, "JSON error: {e}"),
-            GixorError::Fatal(msg) => write!(f, "Fatal error: {msg}"),
+            Alias(msg) => write!(f, "{msg}"),
+            AliasNotFound(name) => write!(f, "{name}: alias not found"),
+            BoilerplateNotFound(name) => write!(f, "{name}: boilerplate not found"),
+            FileNotFound(path) => write!(f, "{}: file not found", path.display()),
+            Git(e) => write!(f, "Git error: {e}"),
+            IO(e) => write!(f, "IO error: {e}"),
+            Json(e) => write!(f, "JSON error: {e}"),
+            Fatal(msg) => write!(f, "Fatal error: {msg}"),
+            RepositoryNotFound(name) => write!(f, "{name}: repository not found"),
         }
     }
 }
@@ -117,13 +124,28 @@ impl<'a> Boilerplate<'a> {
             let _ = write!(output, "{b:02X}");
             output
         });
-        Ok(format!(
-            "https://raw.github.com/{}/{}/{}/{}",
-            self.repo.owner,
-            self.repo.repo_name,
-            hash_string,
-            to_relative_path(&self.path, self.base_path.join(&self.repo.name))
-        ))
+        let url = &self.repo.url;
+        let relative_path = to_relative_path(&self.path, self.base_path.join(&self.repo.name));
+        if url.contains("github.com") {
+            Ok(format!(
+                "https://raw.github.com/{0}/{1}/{2}/{3}",
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path
+            ))
+        } else if url.contains("gitlab.com") {
+            Ok(format!(
+                "https://gitlab.com/{0}/{1}/-/raw/{2}/{3}",
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path
+            ))
+        } else if url.contains("bitbucket.org") {
+            Ok(format!(
+                "https://bitbucket.org/{0}/{1}/raw/{2}/{3}",
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path
+            ))
+        } else {
+            Err(GixorError::Fatal(format!(
+                "{url}: Unsupported repository host"
+            )))
+        }
     }
 
     /// Returns the content of the boilerplate file.
@@ -382,8 +404,8 @@ impl Gixor {
     }
 
     /// Prepare the repositories in the local environment by cloning or updating them.
-    pub fn prepare(&self) -> Result<()> {
-        self.config.prepare()
+    pub fn prepare(&self, no_network: bool) -> Result<()> {
+        self.config.prepare(no_network)
     }
 
     /// Write the the content of boilerplate corresponding the given names to the destination.
@@ -534,7 +556,8 @@ fn update_base_path(config: Config, path: &Path) -> Config {
 #[serde(rename_all = "kebab-case")]
 struct Config {
     pub(crate) repositories: Vec<Repository>,
-    pub(crate) aliases: Option<Vec<alias::Alias>>,
+    #[serde(flatten)]
+    pub(crate) aliases: Option<alias::Aliases>,
     pub(crate) base_path: PathBuf,
 }
 
@@ -551,7 +574,7 @@ impl Config {
                     return Ok(vec![item]);
                 }
             }
-            Err(GixorError::NotFound(name.boilerplate_name))
+            Err(GixorError::BoilerplateNotFound(name.boilerplate_name))
         }
     }
 
@@ -576,43 +599,37 @@ impl Config {
     }
 
     /// Prepare the repositories in the local environment by cloning or updating them.
-    fn prepare(&self) -> Result<()> {
+    fn prepare(&self, no_network: bool) -> Result<()> {
         let mut errs = vec![];
-        self.repositories.iter().for_each(|repo| {
-            if let Err(e) = repo.prepare(&self.base_path) {
-                errs.push(e);
-            }
-        });
-        utils::errs_vec_to_result(errs, ())
+        if no_network {
+            log::info!("Network access is disabled.");
+            Ok(())
+        } else {
+            self.repositories.iter().for_each(|repo| {
+                if let Err(e) = repo.prepare(&self.base_path) {
+                    errs.push(e);
+                }
+            });
+            utils::errs_vec_to_result(errs, ())
+        }
     }
 }
 
 impl AliasManager for Config {
     fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias> {
-        self.aliases.iter().flat_map(|a| a.iter())
+        self.aliases.iter().flat_map(|a| a.iter_aliases())
     }
 
     fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()> {
-        let name = name.as_ref();
-        let aliases = self.aliases.as_mut().unwrap();
-        let index = aliases.iter().position(|a| a.name == name);
-        if let Some(index) = index {
-            aliases.remove(index);
-            Ok(())
-        } else {
-            Err(GixorError::Alias(format!("{name}: alias not found")))
-        }
+        self.aliases.as_mut().map_or(
+            Err(GixorError::AliasNotFound(name.as_ref().to_string())),
+            |aliases| aliases.remove_alias(name),
+        )
     }
 
     fn add_alias(&mut self, alias: alias::Alias) -> Result<()> {
         let aliases = self.aliases.as_mut().unwrap();
-        let index = aliases.iter().position(|a| a.name == alias.name);
-        if let Some(index) = index {
-            aliases[index] = alias;
-        } else {
-            aliases.push(alias);
-        }
-        Ok(())
+        aliases.add_alias(alias)
     }
 }
 
@@ -721,7 +738,6 @@ impl Repository {
     pub fn iter<P: AsRef<Path>>(&self, base_path: P) -> impl Iterator<Item = Boilerplate<'_>> {
         let bpath = base_path.as_ref().to_path_buf();
         let path = self.path(base_path);
-        println!("{:?}", std::path::absolute(path.clone()));
         ignore::WalkBuilder::new(path)
             .standard_filters(true)
             .build()
@@ -748,6 +764,7 @@ impl Repository {
             let dot_git = path.join(".git");
             if dot_git.exists() {
                 log::trace!("{}: repository exists", path.display());
+                log::info!("Pulling {} to {}", self.url, path.display());
                 match git::pull(&path, "origin", "main") {
                     Ok(_) => Ok(()),
                     Err(e) => Err(GixorError::Git(e)),
@@ -768,7 +785,7 @@ impl Repository {
         if path.exists() {
             let dot_git = path.join(".git");
             if dot_git.exists() {
-                log::trace!("{}: repository exists", path.display());
+                log::info!("{}: repository exists", path.display());
                 Ok(())
             } else {
                 log::info!("Cloning {} to {}", self.url, path.display());
@@ -792,10 +809,24 @@ fn is_gitignore_file(name: Option<&std::ffi::OsStr>) -> bool {
 fn url_to_owner_and_repo_name(url: &str) -> (String, String) {
     let items = url.split('/').collect::<Vec<_>>();
     match (items.get(items.len() - 2), items.last()) {
-        (Some(&owner), Some(&name)) => (owner.into(), strip_dot_git(name)),
+        (Some(&owner), Some(&name)) => (to_owner(owner), strip_dot_git(name)),
         (None, Some(&name)) => ("unknown".into(), strip_dot_git(name)),
-        (Some(&owner), None) => (owner.to_string(), "gitignore".into()),
+        (Some(&owner), None) => (to_owner(owner), "gitignore".into()),
         _ => ("unknown".into(), "gitignore".into()),
+    }
+}
+
+fn to_owner<S: AsRef<str>>(s: S) -> String {
+    let s = s.as_ref();
+    if s.contains(':') {
+        let items = s.split(':').collect::<Vec<_>>();
+        if let Some(&owner) = items.last() {
+            owner.to_string()
+        } else {
+            "unknown".to_string()
+        }
+    } else {
+        s.to_string()
     }
 }
 
@@ -831,6 +862,14 @@ mod tests {
     }
 
     #[test]
+    fn test_url_to_name2() {
+        let url = "git@github.com:tamada/gitignore.git";
+        let (owner, name) = url_to_owner_and_repo_name(url);
+        assert_eq!(owner, "tamada");
+        assert_eq!(name, "gitignore");
+    }
+
+    #[test]
     fn parse_gixor() {
         match GixorBuilder::load(PathBuf::from("../testdata/config.json")) {
             Err(e) => panic!("Failed to parse the config file: {e}"),
@@ -839,7 +878,7 @@ mod tests {
                     gixor.config.base_path,
                     PathBuf::from("../testdata/boilerplates")
                 );
-                assert_eq!(gixor.config.repositories.len(), 2);
+                assert_eq!(gixor.config.repositories.len(), 3);
             }
         }
     }
@@ -878,12 +917,24 @@ mod tests {
             "IO error: hoge"
         );
         assert_eq!(
-            GixorError::NotFound("name".to_string()).to_string(),
-            "name: not found"
+            GixorError::BoilerplateNotFound("name".to_string()).to_string(),
+            "name: boilerplate not found"
         );
         assert_eq!(
             GixorError::Git(git2::Error::from_str("hoge")).to_string(),
             "Git error: hoge"
+        );
+        assert_eq!(
+            GixorError::AliasNotFound("hoge".into()).to_string(),
+            "hoge: alias not found"
+        );
+        assert_eq!(
+            GixorError::FileNotFound("hoge".into()).to_string(),
+            "hoge: file not found"
+        );
+        assert_eq!(
+            GixorError::RepositoryNotFound("hoge".into()).to_string(),
+            "hoge: repository not found"
         );
         assert_eq!(
             GixorError::Fatal("message".to_string()).to_string(),

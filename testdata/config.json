@@ -13,6 +13,12 @@
             "owner": "tamada",
             "name": "tamada",
             "path": "tamada"
+        }, {
+            "name": "htamada",
+            "url": "https://gitlab.com/htamada/gitignore.git",
+            "repo-name": "gitignore",
+            "owner": "htamada",
+            "path": "htamada"
         }
     ],
     "aliases": [

@@ -38,5 +38,5 @@ fn test_list_entries_not_found() {
     let r = gixor::entries("../integration/not_found");
     assert!(r.is_err());
     let e = r.unwrap_err();
-    assert!(matches!(e, gixor::GixorError::NotFound(_)));
+    assert!(matches!(e, gixor::GixorError::FileNotFound(_)));
 }
