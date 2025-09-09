@@ -127,18 +127,23 @@ impl<'a> Boilerplate<'a> {
         let url = &self.repo.url;
         let relative_path = to_relative_path(&self.path, self.base_path.join(&self.repo.name));
         if url.contains("github.com") {
-            Ok(format!("https://raw.github.com/{0}/{1}/{2}/{3}", 
-                self.repo.owner, self.repo.repo_name, hash_string, relative_path))
+            Ok(format!(
+                "https://raw.github.com/{0}/{1}/{2}/{3}",
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path
+            ))
         } else if url.contains("gitlab.com") {
-            Ok(format!("https://gitlab.com/{0}/{1}/-/raw/{2}/{3}",
-                self.repo.owner, self.repo.repo_name, hash_string, relative_path))
+            Ok(format!(
+                "https://gitlab.com/{0}/{1}/-/raw/{2}/{3}",
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path
+            ))
         } else if url.contains("bitbucket.org") {
-            Ok(format!("https://bitbucket.org/{0}/{1}/raw/{2}/{3}",
-                self.repo.owner, self.repo.repo_name, hash_string, relative_path))
+            Ok(format!(
+                "https://bitbucket.org/{0}/{1}/raw/{2}/{3}",
+                self.repo.owner, self.repo.repo_name, hash_string, relative_path
+            ))
         } else {
             Err(GixorError::Fatal(format!(
-                "{}: Unsupported repository host",
-                url
+                "{url}: Unsupported repository host"
             )))
         }
     }
