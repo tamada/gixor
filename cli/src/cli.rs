@@ -24,22 +24,29 @@ pub(crate) struct CliOpts {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum GixorCommand {
-    #[command(name = "alias", about = "Manage the aliases")]
+    #[command(
+        name = "alias",
+        about = "Manage the aliases. If no command is given, list the aliases."
+    )]
     Alias(AliasOpts),
     #[command(name = "dump", about = "Dump the boilerplates")]
     Dump(DumpOpts),
     #[command(
-        name = "entries",
+        name = "entries", aliases = ["entry"],
         about = "List the current entries in the .gitignore file"
     )]
     Entries(EntriesOpts),
     #[command(name = "init", about = "Initialize the Gixor", hide = true)]
     Init,
-    #[command(name = "list", about = "List available boilerplates")]
+    #[command(name = "list", alias = "ls", about = "List available boilerplates")]
     List(ListOpts),
-    #[command(name = "root", about = "Show the root directory of the boilerplate")]
+    #[command(name = "root", about = "Show the root directory of the boilerplates")]
     Root(RootOpts),
-    #[command(name = "search", about = "Search the boilerplates from the query")]
+    #[command(
+        name = "search",
+        alias = "find",
+        about = "Search the boilerplates from the query"
+    )]
     Search(SearchOpts),
     #[command(
         name = "update",
@@ -64,13 +71,24 @@ pub(crate) enum GixorCommand {
 
 #[derive(Parser, Debug)]
 pub(crate) struct AliasOpts {
-    #[clap(
-        short,
-        long,
-        help = "Remove the specified alias from the configuration"
-    )]
-    pub(crate) rm: bool,
+    #[clap(subcommand)]
+    pub(crate) cmd: Option<AliasCmd>,
+}
 
+#[derive(Parser, Debug)]
+pub(crate) enum AliasCmd {
+    #[command(name = "add", aliases = ["append", "register"], about = "Add a new alias")]
+    Add(AliasAddOpts),
+
+    #[command(name = "remove", aliases = ["delete"], about = "Remove an existing alias")]
+    Remove(AliasRemoveOpts),
+
+    #[command(name = "list", aliases = ["ls"], about = "List all aliases")]
+    List(AliasListOpts),
+}
+
+#[derive(Parser, Debug)]
+pub(crate) struct AliasAddOpts {
     #[clap(
         short,
         long,
@@ -79,12 +97,31 @@ pub(crate) struct AliasOpts {
     )]
     pub(crate) description: String,
 
+    #[clap(index = 1, value_name = "NAME", help = "Specify the alias name")]
+    pub(crate) name: String,
+
+    #[clap(
+        index = 2,
+        value_name = "BOILERPLATE_NAMES...",
+        help = "Specify the boilerplate names for the alias"
+    )]
+    pub(crate) boilerplates: Vec<String>,
+}
+
+#[derive(Parser, Debug)]
+pub(crate) struct AliasRemoveOpts {
     #[clap(
         index = 1,
         value_name = "NAME",
-        help = "Specify the alias name and its value"
+        help = "Specify the alias name for removal"
     )]
     pub(crate) args: Vec<String>,
+}
+
+#[derive(Parser, Debug)]
+pub(crate) struct AliasListOpts {
+    #[clap(short = 'H', long, help = "Show header", default_value_t = true)]
+    pub(crate) header: bool,
 }
 
 #[derive(Debug, Subcommand)]

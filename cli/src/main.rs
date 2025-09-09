@@ -51,7 +51,7 @@ fn load_gixor(config_path: Option<PathBuf>) -> Result<(Gixor, bool)> {
     }
 }
 
-fn list_aliases(gixor: &Gixor) {
+fn list_aliases(gixor: &Gixor) -> Result<Option<&Gixor>> {
     use gixor::AliasManager;
     for alias in gixor.iter_aliases() {
         println!(
@@ -65,57 +65,57 @@ fn list_aliases(gixor: &Gixor) {
                 .join(", ")
         );
     }
+    Ok(None)
 }
 
-fn remove_alias(gixor: &mut Gixor, args: Vec<String>) -> Result<()> {
+fn remove_aliases(gixor: &mut Gixor, args: Vec<String>) -> Result<Option<&Gixor>> {
     use gixor::AliasManager;
     let r = args
         .iter()
         .map(|name| gixor.remove_alias(name))
         .collect::<Vec<_>>();
-    merge_errors(r)
+    match merge_errors(r) {
+        Ok(_) => Ok(Some(gixor)),
+        Err(e) => Err(e),
+    }
 }
 
-fn add_alias(gixor: &mut Gixor, desc: String, args: Vec<String>) -> Result<()> {
-    if let Some((alias_name, alias_values)) = args.split_first() {
-        let names = alias_values.iter().map(Name::parse).collect::<Vec<_>>();
-        let alias = gixor::alias::Alias::new(alias_name.clone(), desc, names);
-        gixor.add_alias(alias)
-    } else {
-        Err(GixorError::Alias(format!(
-            "alias name and boilerplate names are required: {}",
-            args.join(", ")
-        )))
+fn add_alias(
+    gixor: &mut Gixor,
+    name: String,
+    desc: String,
+    args: Vec<String>,
+) -> Result<Option<&Gixor>> {
+    let names = args.iter().map(Name::parse).collect::<Vec<_>>();
+    let alias = gixor::alias::Alias::new(name, desc, names);
+    match gixor.add_alias(alias) {
+        Err(e) => Err(e),
+        Ok(_) => Ok(Some(gixor)),
     }
 }
 
 fn perform_alias(gixor: &mut Gixor, opts: cli::AliasOpts) -> Result<Option<&Gixor>> {
-    if opts.args.is_empty() {
-        list_aliases(gixor);
-        Ok(None)
-    } else if opts.rm {
-        match remove_alias(gixor, opts.args) {
-            Ok(_) => Ok(Some(gixor)),
-            Err(e) => Err(e),
+    match opts.cmd {
+        None => list_aliases(gixor),
+        Some(cli::AliasCmd::List(_)) => list_aliases(gixor),
+        Some(cli::AliasCmd::Add(opts)) => {
+            add_alias(gixor, opts.name, opts.description, opts.boilerplates)
         }
-    } else {
-        match add_alias(gixor, opts.description, opts.args) {
-            Err(e) => Err(e),
-            Ok(_) => Ok(Some(gixor)),
-        }
+        Some(cli::AliasCmd::Remove(opts)) => remove_aliases(gixor, opts.args),
     }
 }
 
-fn merge_errors(r: Vec<Result<()>>) -> Result<()> {
+fn merge_errors<T>(r: Vec<Result<T>>) -> Result<Vec<T>> {
     let mut errs = vec![];
+    let mut items = vec![];
     for e in r {
         match e {
-            Ok(_) => {}
+            Ok(item) => items.push(item),
             Err(e) => errs.push(e),
         }
     }
     if errs.is_empty() {
-        Ok(())
+        Ok(items)
     } else if errs.len() == 1 {
         Err(errs.into_iter().next().unwrap())
     } else {
@@ -184,7 +184,7 @@ pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<Stri
 }
 
 fn list_entries(_: &Gixor, opts: cli::EntriesOpts) -> Result<Option<&Gixor>> {
-    match gixor::list_entries(opts.dir) {
+    match gixor::entries(opts.dir) {
         Err(e) => Err(e),
         Ok(entries) => {
             print_in_columns_if_needed(entries, None);
