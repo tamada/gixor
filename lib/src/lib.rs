@@ -119,7 +119,7 @@ impl<'a> Boilerplate<'a> {
 
     pub fn content_url(&self) -> Result<String> {
         let hash = self.repo.hash(&self.base_path)?;
-        log::info!("hash: {hash:02x?}");
+        log::trace!("hash: {hash:02x?}");
         let hash_string = hash.iter().fold(String::new(), |mut output, b| {
             let _ = write!(output, "{b:02X}");
             output
@@ -189,6 +189,7 @@ mod routine;
 /// The given path should be a directory containing a `.gitignore` file or a `.gitignore` file directly.
 /// If the `.gitignore` file is not found, returns error.
 pub fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
+    log::info!("Find current entries from {}", path.as_ref().display());
     routine::entries(path)
 }
 
@@ -409,19 +410,35 @@ impl Gixor {
     }
 
     /// Write the the content of boilerplate corresponding the given names to the destination.
-    pub fn dump(&self, names: Vec<Name>, dest: impl std::io::Write) -> Result<()> {
+    pub fn dump(
+        &self,
+        names: Vec<Name>,
+        dest: impl std::io::Write,
+        clear_flag: bool,
+    ) -> Result<()> {
         match routine::find_boilerplates(self, names) {
             Err(e) => Err(e),
-            Ok(boilerplates) => routine::dump_boilerplates_impl(dest, boilerplates),
+            Ok(boilerplates) => routine::dump_boilerplates_impl(dest, boilerplates, clear_flag),
         }
     }
 
     /// If the destination is `"-"`, the content is written to the stdout, and
     /// the `dest` is a directory, the content is written to the `${dest}/.gitignore`.
     /// Otherwise, the content is written to the file of `dest`.
-    pub fn dump_to<P: AsRef<Path>>(&self, names: Vec<Name>, dest: P) -> Result<()> {
-        let out = routine::open_dest(dest.as_ref())?;
-        self.dump(names, out)
+    pub fn dump_to<P: AsRef<Path>>(
+        &self,
+        names: Vec<Name>,
+        dest: P,
+        clear_flag: bool,
+    ) -> Result<()> {
+        let p = dest.as_ref();
+        log::info!(
+            "dump {} entries into {} with clear_flag: {clear_flag}.",
+            names.len(),
+            p.display()
+        );
+        let out = routine::open_dest(p)?;
+        self.dump(names, out, clear_flag)
     }
 
     /// Store the configuration to the configuration path.

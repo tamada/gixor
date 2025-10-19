@@ -116,9 +116,10 @@ pub(super) fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
 pub(super) fn dump_boilerplates_impl(
     dest: impl std::io::Write,
     boilerplates: Vec<super::Boilerplate>,
+    clear_flag: bool,
 ) -> Result<()> {
     let mut w = std::io::BufWriter::new(dest);
-    let prologue = load_prologue();
+    let prologue = if clear_flag { vec![] } else { load_prologue() };
     let contents = vec_result_to_result_vec(
         boilerplates
             .into_iter()
