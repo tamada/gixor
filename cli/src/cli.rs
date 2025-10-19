@@ -234,11 +234,9 @@ impl DumpOpts {
         mut v: Vec<String>,
     ) -> Vec<String> {
         for name in names {
-            if name.starts_with("-") {
-                if let Some(trunk) = name.strip_prefix("-") {
-                    let t = trunk.to_lowercase();
-                    v.retain(|item| item.to_lowercase() != t);
-                }
+            if let Some(trunk) = name.strip_prefix("-") {
+                let t = trunk.to_lowercase();
+                v.retain(|item| item.to_lowercase() != t);
             } else {
                 v.push(name.clone());
             }
