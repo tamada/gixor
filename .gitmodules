@@ -4,3 +4,6 @@
 [submodule "docs/themes/juice"]
 	path = docs/themes/juice
 	url = https://github.com/huhu/juice
+[submodule "lib/testdata/boilerplates/default"]
+	path = lib/testdata/boilerplates/default
+	url = https://github.com/github/gitignore

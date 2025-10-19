@@ -1,6 +1,7 @@
 ---
 title: "🦏 Inside of Gixor"
 description: "The inside of Gixor."
+date: "2025-09-27"
 ---
 
 ## 🚶 Process of Dump

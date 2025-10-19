@@ -51,18 +51,7 @@ Options:
 Gixor clones and updates the boilerplate repositories into the local root directory if necessary.
 The local root directory is specified in the configuration file.
 
-## ℹ️ About
-
-### 👩‍💻 Authors 👨‍💻
-
-* Haruaki Tamada [GitHub](https://github.com/tamada) [🌏](https://tamada.github.io/)
-
-### 🎃 Product Name
-
-Gixor means "GitIgnore indeX ORganizer," and
-pronounce it as "jigsaw".
-
-### 🔗 Related Tools and Services
+## 🔗 Related Tools and Services
 
 * [gibo](https://github.com/simonwhitaker/gibo)
 * [gitignore.io](https://www.gitignore.io/)
