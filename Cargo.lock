@@ -474,7 +474,7 @@ dependencies = [
 
 [[package]]
 name = "gixor"
-version = "0.3.3"
+version = "0.4.0"
 dependencies = [
  "dirs",
  "git2",
@@ -488,7 +488,7 @@ dependencies = [
 
 [[package]]
 name = "gixor-cli"
-version = "0.3.3"
+version = "0.4.0"
 dependencies = [
  "atty",
  "clap",
