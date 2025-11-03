@@ -10,8 +10,6 @@
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io/tamada/gixor:0.4.0-blue?logo=docker)](https://github.com/tamada/gixor/pkgs/container/gixor/)
 [![Homebrew](https://img.shields.io/badge/Homebrew-tamada/tap/gixor-blue?logo=homebrew)](https://github.com/tamada/homebrew-tap)
 
-![icon](docs/assets/icons/gixor.svg)
-
 Git Ignore Management System for Multiple Repositories.
 This is an alternative tool for [gibo](https://github.com/simonwhitaker/gibo).
 
