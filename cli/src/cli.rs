@@ -225,7 +225,7 @@ impl DumpOpts {
         let v = self.current_list_if_append()?;
         let v = self.merge_names_with_add_or_remove(&self.names, v);
         log::debug!("parse dumping targets: {}", v.join(", "));
-        Ok(v.iter().map(Name::parse).collect())
+        Ok(Name::parse_all(v))
     }
 
     fn merge_names_with_add_or_remove(

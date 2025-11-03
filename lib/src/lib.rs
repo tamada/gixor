@@ -9,10 +9,11 @@
 //! ```rust
 //! use gixor::{Gixor, GixorBuilder, Name, Result};
 //!
+//! // load configuration file and build Gixor object.
 //! let gixor = GixorBuilder::load("testdata/config.json").unwrap();
-//! gixor.prepare().unwrap(); // clone or update all repositories, if needed.
-//! let names = vec!["rust", "macos", "linux", "windows"]
-//!     .iter().map(|s| Name::parse(s)).collect();
+//! gixor.prepare(true).unwrap(); // clone or update all repositories, if needed.
+//! // create vec of Name instance.
+//! let names = Name::parse_all(vec!["rust", "macos", "linux", "windows"])
 //! // dump the boilerplate of rust, macos, linux, and windows into stdout.
 //! let r = gixor.dump(names, std::io::stdout());
 //! ```
@@ -276,6 +277,13 @@ impl Name {
         } else {
             Self::new_of(name)
         }
+    }
+
+    /// Create a vec of `Name` instance from the given string vec.
+    /// The this method gives each name to [Name::parse] method, and collect them.
+    pub fn parse_all<S: AsRef<str>>(names: Vec<S>) -> Vec<Self> {
+        names.iter()
+            .map(Name::parse).collect()
     }
 
     /// Returns `true` if the given boilerplate is matched with this instance.
