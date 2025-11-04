@@ -282,8 +282,7 @@ impl Name {
     /// Create a vec of `Name` instance from the given string vec.
     /// The this method gives each name to [Name::parse] method, and collect them.
     pub fn parse_all<S: AsRef<str>>(names: Vec<S>) -> Vec<Self> {
-        names.iter()
-            .map(Name::parse).collect()
+        names.iter().map(Name::parse).collect()
     }
 
     /// Returns `true` if the given boilerplate is matched with this instance.

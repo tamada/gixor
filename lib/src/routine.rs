@@ -98,7 +98,7 @@ fn find_gitignore<P: AsRef<Path>>(path: P) -> PathBuf {
 
 pub(super) fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
     let path = dest.as_ref().to_path_buf();
-    if path == PathBuf::from("-") {
+    if path == Path::new("-") {
         Ok(Box::new(std::io::stdout()))
     } else if path.is_dir() {
         match std::fs::File::create(path.join(".gitignore")) {
