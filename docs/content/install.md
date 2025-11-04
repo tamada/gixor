@@ -1,5 +1,6 @@
 ---
 title: "⚓️ Install"
+date: "2025-09-27"
 ---
 
 ## 🍺 Homebrew

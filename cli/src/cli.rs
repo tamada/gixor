@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use gixor::Name;
 
 #[derive(Parser, Debug)]
 #[command(name = "gixor", author, version, about, arg_required_else_help = true)]
@@ -190,7 +191,7 @@ pub(crate) struct DumpOpts {
         short,
         long,
         value_name = "DEST",
-        default_value = "-",
+        default_value = ".gitignore",
         help = "Specify the destination directory. \"-\" means stdout."
     )]
     pub(crate) dest: String,
@@ -198,13 +199,63 @@ pub(crate) struct DumpOpts {
     #[clap(
         short,
         long,
-        help = "Clear the current content of gitignore",
+        help = "Keep the current entries and add the given entries.",
         default_value_t = false
     )]
-    pub(crate) clean: bool,
+    pub(crate) append: bool,
+
+    #[clap(
+        short,
+        long,
+        help = "Clear the current content of gitignore (clear prologue).",
+        default_value_t = false
+    )]
+    pub(crate) clear: bool,
 
     #[clap(value_name = "NAMES...", help = "The boilerplate names to dump.")]
     pub(crate) names: Vec<String>,
+}
+
+impl DumpOpts {
+    /// Returns the target names for dumping.
+    /// If append mode, firstly reads from the current `.gitignore`, otherwise, empty `vec`.
+    /// Then, adds each name to the resultant `vec` of above process.
+    /// Finally, convert `String` to `Name` by `Name::parse` and return it.
+    pub fn names(&self) -> gixor::Result<Vec<Name>> {
+        let v = self.current_list_if_append()?;
+        let v = self.merge_names_with_add_or_remove(&self.names, v);
+        log::debug!("parse dumping targets: {}", v.join(", "));
+        Ok(Name::parse_all(v))
+    }
+
+    fn merge_names_with_add_or_remove(
+        &self,
+        names: &Vec<String>,
+        mut v: Vec<String>,
+    ) -> Vec<String> {
+        for name in names {
+            if let Some(trunk) = name.strip_prefix("-") {
+                let t = trunk.to_lowercase();
+                v.retain(|item| item.to_lowercase() != t);
+            } else {
+                v.push(name.clone());
+            }
+        }
+        v
+    }
+
+    fn current_list_if_append(&self) -> gixor::Result<Vec<String>> {
+        if self.append {
+            let d = if self.dest == "-" {
+                String::from(".gitignore")
+            } else {
+                self.dest.clone()
+            };
+            gixor::entries(d)
+        } else {
+            Ok(vec![])
+        }
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -250,4 +301,22 @@ pub(crate) struct CompleteOpts {
         hide = true
     )]
     pub(crate) dest: PathBuf,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dump_opts_names() -> gixor::Result<()> {
+        let opts = DumpOpts {
+            dest: "..".into(),
+            append: true,
+            clear: false,
+            names: vec!["java".into()],
+        };
+        let names = opts.names()?;
+        assert_eq!(names.len(), 7);
+        Ok(())
+    }
 }

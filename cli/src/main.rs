@@ -124,10 +124,12 @@ fn merge_errors<T>(r: Vec<Result<T>>) -> Result<Vec<T>> {
 }
 
 fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
-    let dest = opts.dest.clone();
-    let names = opts.names.iter().map(Name::parse).collect::<Vec<_>>();
-    match gixor.dump_to(names, dest) {
-        Ok(_) => Ok(None),
+    let (dest, clear) = (opts.dest.clone(), opts.clear);
+    match opts.names() {
+        Ok(names) => match gixor.dump_to(names, dest, clear) {
+            Ok(_) => Ok(None),
+            Err(e) => Err(e),
+        },
         Err(e) => Err(e),
     }
 }

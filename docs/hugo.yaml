@@ -40,8 +40,8 @@ params:
     displayTitle: true
     displayLogo: true
     logo:
-      path: icons/logo.svg
-      dark: icons/logo.svg
+      path: icons/gixor.svg
+      dark: icons/gixor.svg
       width: 40
       height: 20
 

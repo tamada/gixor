@@ -20,6 +20,7 @@ fn test_dump() {
             gixor::Name::parse("c"),
         ],
         &dest_path,
+        false,
     );
     log::info!("dump result: {r:?}");
     assert!(r.is_ok());

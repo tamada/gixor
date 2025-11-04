@@ -98,7 +98,7 @@ fn find_gitignore<P: AsRef<Path>>(path: P) -> PathBuf {
 
 pub(super) fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
     let path = dest.as_ref().to_path_buf();
-    if path == PathBuf::from("-") {
+    if path == Path::new("-") {
         Ok(Box::new(std::io::stdout()))
     } else if path.is_dir() {
         match std::fs::File::create(path.join(".gitignore")) {
@@ -116,9 +116,10 @@ pub(super) fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
 pub(super) fn dump_boilerplates_impl(
     dest: impl std::io::Write,
     boilerplates: Vec<super::Boilerplate>,
+    clear_flag: bool,
 ) -> Result<()> {
     let mut w = std::io::BufWriter::new(dest);
-    let prologue = load_prologue();
+    let prologue = if clear_flag { vec![] } else { load_prologue() };
     let contents = vec_result_to_result_vec(
         boilerplates
             .into_iter()
