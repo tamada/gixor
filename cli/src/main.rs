@@ -167,7 +167,7 @@ fn list_boilerplates(gixor: &Gixor, opts: cli::ListOpts) -> Result<Option<&Gixor
 }
 
 pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<String>) {
-    if atty::is(atty::Stream::Stdout) {
+    if std::io::IsTerminal::is_terminal(&std::io::stdout()) {
         let term = terminal::Terminal::default();
         if let Some(header) = header {
             println!("{}", term.format_header(header));
