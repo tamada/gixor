@@ -14,7 +14,6 @@ jobs:
     outputs:
       appname: gixor
       tag: ${{ steps.vars.outputs.tag }}
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Git Tag name
         id: vars
@@ -24,12 +23,14 @@ jobs:
 
       - name: Create release
         id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.vars.outputs.tag }}
-          name: Release v${{ steps.vars.outputs.tag }}
-          draft: true
-          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v${{ steps.vars.outputs.tag }} \
+            --draft \
+            --repo  $GITHUB_REPOSITORY \
+            --title "Release v${{ steps.vars.outputs.tag }}" \
+            --generate-notes
 
   publish:
     runs-on: ${{ matrix.os }}
@@ -128,6 +129,8 @@ jobs:
       # publish release
       - name: Create release file
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DIR=${{ steps.vars.outputs.dir }}
           DIST=${{ matrix.target }}
@@ -136,17 +139,18 @@ jobs:
           cp -r README.md LICENSE assets dist/$DIST/$DIR
           cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }}-cli dist/$DIST/$DIR/${{ matrix.artifact_name }}
           tar cvfz dist/${{ matrix.asset_name }}.tar.gz -C dist/$DIST $DIR
+          gh release upload v${{ needs.setup.outputs.tag }} dist/${{ matrix.asset_name }}.tar.gz --repo $GITHUB_REPOSITORY
         
-      - name: Upload release assets
-        id: upload-release-assets
-        uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          asset_path: dist/${{ matrix.asset_name }}.tar.gz
-          asset_name: ${{ matrix.asset_name }}.tar.gz
-          asset_content_type: application/x-gzip
-          upload_url: ${{ needs.setup.outputs.upload_url }}
+      # - name: Upload release assets
+      #   id: upload-release-assets
+      #   uses: actions/upload-release-asset@v1.0.1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     asset_path: dist/${{ matrix.asset_name }}.tar.gz
+      #     asset_name: ${{ matrix.asset_name }}.tar.gz
+      #     asset_content_type: application/x-gzip
+      #     upload_url: ${{ needs.setup.outputs.upload_url }}
 
   docker:
     needs: publish
@@ -194,13 +198,15 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository}}:buildcache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache,mode=max
 
-  release:
+  finalize_release:
     needs: publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Publish the release
         id: publish_release
-        run: |
+        run:
           gh release edit --draft=false --repo $GITHUB_REPOSITORY v${{ needs.publish.outputs.tag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
