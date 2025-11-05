@@ -201,10 +201,12 @@ jobs:
   finalize_release:
     needs: publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Publish the release
         id: publish_release
-        run: |
+        run:
           gh release edit --draft=false --repo $GITHUB_REPOSITORY v${{ needs.publish.outputs.tag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
