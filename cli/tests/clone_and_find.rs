@@ -21,7 +21,7 @@ async fn test_clone_and_find() -> Result<()> {
     assert_eq!(result.boilerplate_name(), "Rust".to_string());
     assert_eq!(result.repository_name(), "default");
 
-    let url1 = result.content_url().unwrap();
+    let url1 = result.content_url(gixor.base_path()).unwrap();
     let resp = reqwest::get(url1).await.unwrap();
     assert_eq!(resp.status(), reqwest::StatusCode::OK);
     Ok(())

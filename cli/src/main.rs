@@ -35,7 +35,7 @@ fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, 
     let gixor = if gixor.is_empty() {
         log::trace!("no repositories are given. add default repository");
         store_flag = true;
-        match gixor.add_repository(gixor::Repository::default()) {
+        match gixor.add_repository(gixor::repos::Repository::default()) {
             Err(e) => Err(e),
             Ok(_) => Ok(gixor),
         }
@@ -134,7 +134,7 @@ fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
     }
 }
 
-fn list_each_boilerplate(repo: &gixor::Repository, base_path: &PathBuf) -> Result<Vec<String>> {
+fn list_each_boilerplate(repo: &gixor::repos::Repository, base_path: &PathBuf) -> Result<Vec<String>> {
     let r = repo
         .iter(base_path)
         .map(|entry| entry.boilerplate_name().to_string())
@@ -231,8 +231,8 @@ fn search_boilerplates(gixor: &Gixor, opts: cli::SearchOpts) -> Result<Option<&G
 
 fn add_repository(gixor: &mut Gixor, opts: cli::RepoAddOpts) -> Result<Option<&Gixor>> {
     let repo = match opts.name {
-        Some(name) => gixor::Repository::new_with(name, opts.url),
-        None => gixor::Repository::new(opts.url),
+        Some(name) => gixor::repos::Repository::new_with(name, opts.url),
+        None => gixor::repos::Repository::new(opts.url),
     };
     match gixor.add_repository(repo) {
         Ok(_) => Ok(Some(gixor)),

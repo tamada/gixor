@@ -67,7 +67,7 @@ impl AliasManager for Aliases {
 pub(super) fn extract_alias<'a>(
     config: &'a super::Config,
     name: &super::Name,
-) -> Option<Vec<super::Boilerplate<'a>>> {
+) -> Option<Vec<super::repos::Boilerplate<'a>>> {
     match (&name.repository_name, &name.boilerplate_name) {
         (None, b_name) => extract_alias_impl(config, b_name),
         (Some(t), b_name) => {
@@ -83,7 +83,7 @@ pub(super) fn extract_alias<'a>(
 fn extract_alias_impl<S: AsRef<str>>(
     config: &super::Config,
     name: S,
-) -> Option<Vec<super::Boilerplate<'_>>> {
+) -> Option<Vec<super::repos::Boilerplate<'_>>> {
     match find_alias_impl(config, name) {
         Some(boilerplate_names) => config.find_all(boilerplate_names).ok(),
         None => None,

@@ -3,14 +3,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{Gixor, RepositoryManager};
+use crate::{Gixor, GixorError, RepositoryManager};
 
 use super::Result;
 
 pub(super) fn find_target_repositories<S: AsRef<str>>(
     gixor: &Gixor,
     repository_names: Vec<S>,
-) -> Result<Vec<&crate::Repository>> {
+) -> Result<Vec<&crate::repos::Repository>> {
     if repository_names.is_empty() {
         Ok(gixor.repositories().collect::<Vec<_>>())
     } else {
@@ -22,9 +22,13 @@ pub(super) fn find_target_repositories<S: AsRef<str>>(
             let errs = r
                 .iter()
                 .filter(|(_, repo)| repo.is_none())
-                .map(|(n, _)| super::GixorError::RepositoryNotFound(n.as_ref().to_string()))
+                .map(|(n, _)| GixorError::RepositoryNotFound(n.as_ref().to_string()))
                 .collect::<Vec<_>>();
-            super::utils::single_err_or_errs_array::<Vec<&crate::Repository>>(errs)
+            if errs.len() == 1 {
+                Err(errs.into_iter().next().unwrap())
+            } else {
+                Err(GixorError::Array(errs))
+            }
         } else {
             Ok(r.into_iter()
                 .filter_map(|(_, repo)| repo)
@@ -36,12 +40,12 @@ pub(super) fn find_target_repositories<S: AsRef<str>>(
 pub(super) fn find_boilerplates(
     gixor: &Gixor,
     names: Vec<super::Name>,
-) -> Result<Vec<super::Boilerplate<'_>>> {
+) -> Result<Vec<super::repos::Boilerplate<'_>>> {
     let r = names
         .into_iter()
         .map(|name| gixor.find(name))
         .collect::<Vec<_>>();
-    match vec_result_to_result_vec(r) {
+    match GixorError::vec_result_to_result_vec(r) {
         Ok(vv) => Ok(vv.into_iter().flatten().collect::<Vec<_>>()),
         Err(e) => Err(e),
     }
@@ -115,15 +119,17 @@ pub(super) fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
 
 pub(super) fn dump_boilerplates_impl(
     dest: impl std::io::Write,
-    boilerplates: Vec<super::Boilerplate>,
+    boilerplates: Vec<super::repos::Boilerplate>,
     clear_flag: bool,
+    base_path: &Path,
 ) -> Result<()> {
+    log::info!("dumping boilerplates {:?}", boilerplates.iter().map(|b| b.name()).collect::<Vec<_>>());
     let mut w = std::io::BufWriter::new(dest);
     let prologue = if clear_flag { vec![] } else { load_prologue() };
-    let contents = vec_result_to_result_vec(
+    let contents = GixorError::vec_result_to_result_vec(
         boilerplates
             .into_iter()
-            .map(|b| b.dump())
+            .map(|b| b.dump(base_path))
             .collect::<Vec<_>>(),
     );
     match contents {
@@ -133,7 +139,7 @@ pub(super) fn dump_boilerplates_impl(
                 .chain(content.iter())
                 .map(|line| writeln!(w, "{line}").map_err(super::GixorError::IO))
                 .collect::<Vec<_>>();
-            match vec_result_to_result_vec(r) {
+            match GixorError::vec_result_to_result_vec(r) {
                 Ok(_) => Ok(()),
                 Err(e) => Err(e),
             }
@@ -157,30 +163,5 @@ fn load_prologue() -> Vec<String> {
             result
         }
         Err(_) => vec![],
-    }
-}
-
-/// Convert `Vec<Result<T>>` to `Result<Vec<T>>`
-/// If `Vec<Result<T>>` has the multiple errors,
-/// `Result<Vec<T>>` returns `Err(GixorError::Array(Vec<GixorError>))`.
-pub(crate) fn vec_result_to_result_vec<T>(result: Vec<Result<T>>) -> Result<Vec<T>> {
-    let mut errs = vec![];
-    let mut ok_results = vec![];
-    for r in result {
-        match r {
-            Ok(ok) => ok_results.push(ok),
-            Err(err) => errs.push(err),
-        }
-    }
-    super::utils::errs_vec_to_result(errs, ok_results)
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_vec_result_to_result_vec() {
-        let value = vec![Ok(1), Ok(2), Ok(3)];
-        let result = super::vec_result_to_result_vec(value).unwrap();
-        assert_eq!(result, vec![1, 2, 3]);
     }
 }
