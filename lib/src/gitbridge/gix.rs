@@ -12,28 +12,28 @@ use crate::{Error, Result, repos::Boilerplate};
 pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()> {
     let url = url.as_ref();
     let path = path.as_ref();
-    std::fs::create_dir_all(path).map_err(|e| crate::Error::IO(e))?;
+    std::fs::create_dir_all(path).map_err(crate::Error::IO)?;
     let url = gix::url::parse(url.as_ref())
-        .map_err(|e| crate::Error::Git(format!("Failed to parse URL: {}", e)))?;
+        .map_err(|e| crate::Error::Git(format!("Failed to parse URL: {e}")))?;
     let mut prepare_clone = gix::prepare_clone(url.clone(), path)
-        .map_err(|e| crate::Error::Git(format!("Failed to prepare clone: {}", e)))?;
+        .map_err(|e| crate::Error::Git(format!("Failed to prepare clone: {e}")))?;
     log::info!("Cloning {:?} into {path:?}...", url.to_string());
     let (mut prepare_checkout, _) =
         prepare_clone.fetch_then_checkout(gix::progress::Discard, &gix::interrupt::IS_INTERRUPTED)
-            .map_err(|e| crate::Error::Git(format!("Failed to fetch and checkout: {}", e)))?;
+            .map_err(|e| crate::Error::Git(format!("Failed to fetch and checkout: {e}")))?;
     log::info!(
         "Checking out into {} ...",
         prepare_checkout.repo().workdir().expect("should be there").display()
     );
     let (repo, _) = prepare_checkout.main_worktree(gix::progress::Discard, &gix::interrupt::IS_INTERRUPTED)
-        .map_err(|e| crate::Error::Git(format!("Failed to checkout main worktree: {}", e)))?;
+        .map_err(|e| crate::Error::Git(format!("Failed to checkout main worktree: {e}")))?;
     log::info!(
         "Repo cloned into {}",
         repo.workdir().expect("directory pre-created").display()
     );
     let remote = repo
         .find_default_remote(gix::remote::Direction::Fetch).unwrap()
-        .map_err(|e| crate::Error::Git(format!("Failed to find default remote: {}", e)))?;
+        .map_err(|e| crate::Error::Git(format!("Failed to find default remote: {e}")))?;
 
     log::info!(
         "Default remote: {} -> {}",
@@ -56,7 +56,7 @@ pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> Result<V
                 "{}: Failed to open the repository",
                 path.display()
             );
-            log::error!("{}", message);
+            log::error!("{message}");
             Err(Error::Git(message.as_str().into()))
         },
     }?;
@@ -64,7 +64,7 @@ pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> Result<V
     match head {
         Ok(mut h) => match h.peel_to_commit() {
             Ok(commit) => Ok(commit.id().as_bytes().to_vec()),
-            Err(e) => Err(Error::Git(format!("Failed to peel to commit: {}", e))),
+            Err(e) => Err(Error::Git(format!("Failed to peel to commit: {e}"))),
         },
         Err(_) => Err(Error::Git("Failed to get the HEAD".into())),
     }
@@ -72,20 +72,20 @@ pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> Result<V
 
 fn do_fetch(repo: &gix::Repository, remote: &str) -> Result<Outcome> {
     use gix::{progress::Discard, remote::Direction::Fetch};
-    log::info!("Fetching from remote: {}", remote);
+    log::info!("Fetching from remote: {remote}");
 
     let remote = repo.find_remote(remote)
-        .map_err(|e| Error::Git(format!("Failed to find remote: {}", e)))?;
+        .map_err(|e| Error::Git(format!("Failed to find remote: {e}")))?;
     let c = remote.connect(Fetch)
-        .map_err(|e| Error::Git(format!("Failed to connect to remote: {}", e)))?;
+        .map_err(|e| Error::Git(format!("Failed to connect to remote: {e}")))?;
     let r = c.prepare_fetch(Discard,
         Options{
             prefix_from_spec_as_filter_on_remote: false,
             extra_refspecs: vec![],
             handshake_parameters: vec![]
-        }).map_err(|e| Error::Git(format!("Failed to prepare fetch: {}", e)))?;
+        }).map_err(|e| Error::Git(format!("Failed to prepare fetch: {e}")))?;
     let outcome = r.receive(Discard, &gix::interrupt::IS_INTERRUPTED)
-        .map_err(|e| Error::Git(format!("Failed to receive fetch: {}", e)))?;
+        .map_err(|e| Error::Git(format!("Failed to receive fetch: {e}")))?;
     log::info!("Fetch completed: {:?}", outcome.status);
     Ok(outcome)
 }
@@ -104,13 +104,13 @@ fn can_fast_forward(repo: &Repository, local_id: &gix::Id, remote_id: &gix::Id) 
 }
 
 fn find_merge_strategy<'a>(repo: &'a Repository, remote: &str, branch: &str) -> Result<(gix::Id<'a>, gix::Id<'a>, Strategy)> {
-    log::debug!("find_merge_strategy: {} {}", remote, branch);
+    log::debug!("find_merge_strategy: {remote} {branch}");
     let remote_tracking_name = format!("refs/remotes/{remote}/{branch}");
     let remote_tracking = repo.find_reference(&remote_tracking_name)
-        .map_err(|e| Error::Git(format!("Failed to find remote tracking branch: {}", e)))?;
+        .map_err(|e| Error::Git(format!("Failed to find remote tracking branch: {e}")))?;
     let local_ref_name = format!("refs/heads/{}", branch.trim_start_matches("refs/heads/"));
     let local_ref = repo.find_reference(&local_ref_name)
-        .map_err(|e| Error::Git(format!("Failed to find local branch: {}", e)))?;
+        .map_err(|e| Error::Git(format!("Failed to find local branch: {e}")))?;
     let local_id = local_ref.try_id().ok_or(Error::Git("Failed to get local commit ID".into()))?;
     let remote_id = remote_tracking.try_id().ok_or(Error::Git("Failed to get local commit ID".into()))?;
     if local_id == remote_id {
@@ -124,12 +124,12 @@ fn find_merge_strategy<'a>(repo: &'a Repository, remote: &str, branch: &str) -> 
 
 fn fast_forward(repo: &Repository, current_branch: &str, remote_id: gix::Id,) -> Result<()> {
     let local_ref_name = format!("refs/heads/{}", current_branch.trim_start_matches("refs/heads/"));
-    log::debug!("Fast-forwarding branch {} to {}", current_branch, remote_id);
+    log::debug!("Fast-forwarding branch {current_branch} to {remote_id}");
     let mut local_ref = repo.find_reference(&local_ref_name)
-        .map_err(|e| Error::Git(format!("Failed to find local branch: {}", e)))?;
+        .map_err(|e| Error::Git(format!("Failed to find local branch: {e}")))?;
     local_ref.set_target_id(remote_id, "Fast-forward")
-        .map_err(|e| Error::Git(format!("Failed to fast-forward local branch: {}", e)))?;
-    log::debug!("Fast-forwarded to {}", remote_id);
+        .map_err(|e| Error::Git(format!("Failed to fast-forward local branch: {e}")))?;
+    log::debug!("Fast-forwarded to {remote_id}");
     Ok(())
 }
 
@@ -151,7 +151,7 @@ fn do_merge(repo: &mut Repository, remote: &str, branch: &str) -> Result<()> {
 
 pub fn pull(path: &Path, remote: &str, branch: &str) -> Result<()> {
     let mut repo = gix::open(path)
-        .map_err(|e| Error::Git(format!("Failed to open repository: {}", e)))?;
+        .map_err(|e| Error::Git(format!("Failed to open repository: {e}")))?;
     let _fetch_outcome = do_fetch(&repo, remote)?;
     do_merge(&mut repo, remote, branch)
 }

@@ -166,7 +166,7 @@ impl Repository {
         let url = url.as_ref();
         let (owner, repo_name) = url_to_owner_and_repo_name(url);
         let path = PathBuf::from(&owner);
-        log::debug!("Repository::new(url: {}) -> owner: {}, repo_name: {}, path: {:?}", url, owner, repo_name, path);
+        log::debug!("Repository::new(url: {url}) -> owner: {owner}, repo_name: {repo_name}, path: {path:?}");
         Self {
             name: owner.clone(),
             url: url.to_string(),
@@ -181,7 +181,7 @@ impl Repository {
         let url = url.as_ref();
         let name = name.as_ref();
         let (owner, repo_name) = url_to_owner_and_repo_name(url);
-        log::debug!("Repository::new_with(name: {}, url: {}) -> owner: {}, repo_name: {}", name, url, owner, repo_name);
+        log::debug!("Repository::new_with(name: {name}, url: {url}) -> owner: {owner}, repo_name: {repo_name}");
         Self {
             name: name.to_string(),
             url: url.to_string(),
@@ -316,7 +316,7 @@ fn dump_path(path: PathBuf) -> Result<String> {
         Ok(file) => {
             let reader = std::io::BufReader::new(file);
             for line in reader.lines() {
-                let line = line.map_err(|e| Error::IO(e))?;
+                let line = line.map_err(Error::IO)?;
                 result.push(line);
             }
             Ok(result.join("\n"))
