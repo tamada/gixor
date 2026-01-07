@@ -30,7 +30,8 @@ pub fn pull(repo_path: &Path, remote: &str, branch: &str) -> Result<()> {
 
 pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, dest_path: P) -> crate::Result<()> {
     let r = Command::new("git")
-        .args(["clone", url.as_ref(), dest_path.as_ref().to_str().unwrap()])
+        .arg("clone").arg(url.as_ref())
+        .arg(dest_path.as_ref().to_str().unwrap())
         .output();
     match r {
         Ok(output) => {

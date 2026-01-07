@@ -1,3 +1,6 @@
+//! Module for managing repositories and boilerplates.
+//! This module provides functionality to define repositories, find boilerplates,
+//! and prepare repositories by cloning or pulling from remote sources.
 use std::{
     fmt::Write,
     io::BufRead,
@@ -136,7 +139,7 @@ pub struct Repository {
     pub url: String,
     /// The owner name of the repository.
     pub owner: String,
-    /// The repository name. 
+    /// The repository name.
     pub repo_name: String,
     /// The path of the repository from the base path.
     pub path: PathBuf,
@@ -158,7 +161,7 @@ impl Default for Repository {
 
 impl Repository {
     /// Creates an instance of Repository with the given url.
-    /// The name of the repository is owner name whcih is extracted from the url.
+    /// The name of the repository is owner name which is extracted from the url.
     pub fn new<S: AsRef<str>>(url: S) -> Self {
         let url = url.as_ref();
         let (owner, repo_name) = url_to_owner_and_repo_name(url);
@@ -299,7 +302,7 @@ fn strip_dot_git<S: AsRef<str>>(s: S) -> String {
 }
 
 fn is_gitignore_file(name: Option<&std::ffi::OsStr>) -> bool {
-    if let Some(name) = name.unwrap().to_str() {
+    if let Some(name) = name.and_then(|n| n.to_str()) {
         name.ends_with(".gitignore")
     } else {
         false
@@ -313,7 +316,8 @@ fn dump_path(path: PathBuf) -> Result<String> {
         Ok(file) => {
             let reader = std::io::BufReader::new(file);
             for line in reader.lines() {
-                result.push(line.unwrap());
+                let line = line.map_err(|e| GixorError::IO(e))?;
+                result.push(line);
             }
             Ok(result.join("\n"))
         }

@@ -82,7 +82,7 @@ fn do_fetch(repo: &gix::Repository, remote: &str) -> Result<Outcome> {
         Options{
             prefix_from_spec_as_filter_on_remote: false,
             extra_refspecs: vec![],
-            handshake_parameters: vec![] 
+            handshake_parameters: vec![]
         }).map_err(|e| GixorError::Git(format!("Failed to prepare fetch: {}", e)))?;
     let outcome = r.receive(Discard, &gix::interrupt::IS_INTERRUPTED)
         .map_err(|e| GixorError::Git(format!("Failed to receive fetch: {}", e)))?;
@@ -140,7 +140,7 @@ fn do_merge(repo: &mut Repository, remote: &str, branch: &str) -> Result<()> {
         Ok(())
     } else if strategy == Strategy::FastForward {
         log::info!("Fast-forwarding...");
-        fast_forward(&repo, branch, remote_id)
+        fast_forward(repo, branch, remote_id)
     } else if strategy == Strategy::Merge {
         log::info!("Merging...");
         Err(GixorError::Git("Merge commit is not supported yet".into()))

@@ -17,14 +17,14 @@
 //! // dump the boilerplate of rust, macos, linux, and windows into stdout.
 //! let r = gixor.dump(names, std::io::stdout());
 //! ```
-//! 
+//!
 //! # Features
-//! 
+//!
 //! [`Gixor`] provides the following features for operating Git repositories.:
 //! - `uselibgit`: use [`git2`](https://docs.rs/git2/latest/git2/) crate which uses libgit2 C library.
-//! - `gix`: use [`gix`](https://docs.rs/gix/latest/gix/) crate which is a pure Rust implementation of Git.
+//! - `usegix`: use [`gix`](https://docs.rs/gix/latest/gix/) crate which is a pure Rust implementation of Git.
 //! - default: use `git` command via [`std::process::Command`](https://doc.rust-lang.org/std/process/struct.Command.html).
-//! 
+//!
 use std::{
     fmt::Display,
     path::{Path, PathBuf},
@@ -120,6 +120,7 @@ pub fn find_target_repositories<S: AsRef<str>>(
     gixor: &Gixor,
     repository_names: Vec<S>,
 ) -> Result<Vec<&repos::Repository>> {
+    log::info!("find_target_repositories: repository_names={:?}", repository_names.iter().map(|s| s.as_ref()).collect::<Vec<_>>());
     routine::find_target_repositories(gixor, repository_names)
 }
 
@@ -209,7 +210,7 @@ impl Name {
 
     /// Returns `true` if the given boilerplate is matched with this instance.
     pub fn matches(&self, boilerplate: &repos::Boilerplate) -> bool {
-        boilerplate.matches(&self)
+        boilerplate.matches(self)
     }
 }
 
