@@ -1,7 +1,11 @@
+//! Module for managing aliases in the configuration.
+//! An alias is a named collection of boilerplates that can be referenced together.
+//! This module provides functionality to define, find, and merge aliases.
 use serde::{Deserialize, Serialize};
 
-use crate::{AliasManager, GixorError, Name, Result};
+use crate::{AliasManager, Error, Name, Result};
 
+/// Represents a single alias, which includes its name, description, and associated boilerplates.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Alias {
     pub name: String,
@@ -19,6 +23,7 @@ impl Alias {
     }
 }
 
+/// Represents a collection of aliases.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Aliases {
     aliases: Vec<Alias>,
@@ -59,7 +64,7 @@ impl AliasManager for Aliases {
             self.aliases.remove(pos);
             Ok(())
         } else {
-            Err(GixorError::Alias(name.to_string()))
+            Err(Error::Alias(name.to_string()))
         }
     }
 }
@@ -104,11 +109,11 @@ fn find_alias_impl<S: AsRef<str>>(config: &super::Config, name: S) -> Option<Vec
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::GixorBuilder;
+    use crate::GixorFactory;
 
     #[test]
     fn test_predefined_alias() {
-        let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
+        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
         let binding = gixor.config.aliases.unwrap();
         let alias = binding.find("os-list").unwrap();
         assert_eq!(alias.name, "os-list");
@@ -116,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_alias() {
-        let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
+        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
         gixor.prepare(false).unwrap();
         let results = gixor.find(Name::from("os-list")).unwrap();
         assert_eq!(results.len(), 3);
@@ -131,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_alias_with_repository_name() {
-        let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
+        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
         let results = gixor.find(Name::from("alias/os-list")).unwrap();
         assert_eq!(results.len(), 3);
 
@@ -145,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_nexted_alias() {
-        let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
+        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
         let results = gixor.find(Name::from("my-default")).unwrap();
         assert_eq!(results.len(), 6);
 

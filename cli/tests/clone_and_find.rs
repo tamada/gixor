@@ -1,4 +1,4 @@
-use gixor::{GixorBuilder, Name, RepositoryManager, Result};
+use gixor::{GixorFactory, Name, RepositoryManager, Result};
 
 mod common;
 
@@ -29,7 +29,7 @@ async fn test_clone_and_find() -> Result<()> {
 
 #[test]
 fn test_find() {
-    let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
+    let gixor = GixorFactory::load("../testdata/config.json").unwrap();
     let results = gixor.find(Name::from("devcontainer")).unwrap();
     assert_eq!(results.len(), 1);
     let result = results.first().unwrap();

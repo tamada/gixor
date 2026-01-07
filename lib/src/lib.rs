@@ -32,17 +32,17 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serialize};
 
-pub mod alias;
+pub mod aliases;
 pub mod gitbridge;
 pub mod repos;
 
 /// Represents the result of Gixor.
-pub type Result<T> = std::result::Result<T, GixorError>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// Represents an error of Gixor.
 #[derive(Debug)]
-pub enum GixorError {
-    Array(Vec<GixorError>),
+pub enum Error {
+    Array(Vec<Error>),
     Alias(String),
     AliasNotFound(String),
     BoilerplateNotFound(String),
@@ -54,14 +54,14 @@ pub enum GixorError {
     RepositoryNotFound(String),
 }
 
-impl GixorError {
-    pub fn to_err<T>(item: T, errs: Vec<GixorError>) -> Result<T> {
+impl Error {
+    pub fn to_err<T>(item: T, errs: Vec<Error>) -> Result<T> {
         if errs.is_empty() {
             Ok(item)
         } else if errs.len() == 1 {
             Err(errs.into_iter().next().unwrap())
         } else {
-            Err(GixorError::Array(errs))
+            Err(Error::Array(errs))
         }
     }
 
@@ -77,13 +77,13 @@ impl GixorError {
                 Err(e) => errs.push(e),
             }
         }
-        GixorError::to_err(ok_items, errs)
+        Error::to_err(ok_items, errs)
     }
 }
 
-impl Display for GixorError {
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use GixorError::*;
+        use Error::*;
         match self {
             Array(errs) => {
                 let result = errs.iter().map(|e| e.fmt(f)).collect::<Vec<_>>();
@@ -244,11 +244,11 @@ pub trait RepositoryManager {
 /// Provides the functions for management of the aliases.
 pub trait AliasManager {
     /// Iterate the aliases in the configuration.
-    fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias>;
+    fn iter_aliases(&self) -> impl Iterator<Item = &aliases::Alias>;
     /// Remove the alias which has the given name.
     fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()>;
     /// Add the given alias.
-    fn add_alias(&mut self, alias: alias::Alias) -> Result<()>;
+    fn add_alias(&mut self, alias: aliases::Alias) -> Result<()>;
 }
 
 impl Default for Gixor {
@@ -282,16 +282,16 @@ impl Default for Gixor {
 }
 
 /// The builder of [`Gixor`].
-pub struct GixorBuilder {}
+pub struct GixorFactory {}
 
-impl GixorBuilder {
+impl GixorFactory {
     /// Load the configuration file from the default location.
     /// The default configuration is provided by [`Gixor::default`].
     pub fn load_or_default() -> Gixor {
         match dirs::config_dir() {
             Some(dir) => {
                 let path = dir.join("gixor").join("config.json");
-                GixorBuilder::load(path).unwrap_or_default()
+                GixorFactory::load(path).unwrap_or_default()
             }
             None => panic!("Failed to get the config directory"),
         }
@@ -314,7 +314,7 @@ impl GixorBuilder {
                     update_base_path(config, path),
                     path.to_path_buf(),
                 )),
-                Err(e) => Err(GixorError::Json(e)),
+                Err(e) => Err(Error::Json(e)),
             },
         }
     }
@@ -369,11 +369,11 @@ impl Gixor {
     /// Store the configuration to the configuration path.
     pub fn store(&self) -> Result<()> {
         match std::fs::create_dir_all(self.load_from.parent().unwrap()) {
-            Err(e) => Err(GixorError::IO(e)),
+            Err(e) => Err(Error::IO(e)),
             Ok(_) => match std::fs::File::create(&self.load_from) {
-                Err(e) => Err(GixorError::IO(e)),
+                Err(e) => Err(Error::IO(e)),
                 Ok(f) => match serde_json::to_writer(f, &self.config) {
-                    Err(e) => Err(GixorError::Json(e)),
+                    Err(e) => Err(Error::Json(e)),
                     Ok(_) => Ok(()),
                 },
             },
@@ -392,7 +392,7 @@ impl Gixor {
 }
 
 impl AliasManager for Gixor {
-    fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias> {
+    fn iter_aliases(&self) -> impl Iterator<Item = &aliases::Alias> {
         self.config.iter_aliases()
     }
 
@@ -400,7 +400,7 @@ impl AliasManager for Gixor {
         self.config.remove_alias(name)
     }
 
-    fn add_alias(&mut self, alias: alias::Alias) -> Result<()> {
+    fn add_alias(&mut self, alias: aliases::Alias) -> Result<()> {
         self.config.add_alias(alias)
     }
 }
@@ -468,7 +468,7 @@ impl RepositoryManager for Gixor {
             }
             Ok(())
         } else {
-            Err(GixorError::Fatal(format!("{name}: repository not found")))
+            Err(Error::Fatal(format!("{name}: repository not found")))
         }
     }
 
@@ -499,7 +499,7 @@ fn update_base_path(config: Config, path: &Path) -> Config {
 struct Config {
     pub(crate) repositories: Vec<repos::Repository>,
     #[serde(flatten)]
-    pub(crate) aliases: Option<alias::Aliases>,
+    pub(crate) aliases: Option<aliases::Aliases>,
     pub(crate) base_path: PathBuf,
 }
 
@@ -507,7 +507,7 @@ impl Config {
     /// Find the related boilerplates by the names from all of repositories.
     /// The method matches the given name with an alias and, the boilerplate name in the repository..
     fn find(&self, name: Name) -> Result<Vec<repos::Boilerplate<'_>>> {
-        if let Some(r) = alias::extract_alias(self, &name) {
+        if let Some(r) = aliases::extract_alias(self, &name) {
             Ok(r)
         } else {
             for repo in &self.repositories {
@@ -516,7 +516,7 @@ impl Config {
                     return Ok(vec![item]);
                 }
             }
-            Err(GixorError::BoilerplateNotFound(name.boilerplate_name))
+            Err(Error::BoilerplateNotFound(name.boilerplate_name))
         }
     }
 
@@ -552,24 +552,24 @@ impl Config {
                     errs.push(e);
                 }
             });
-            GixorError::to_err((), errs)
+            Error::to_err((), errs)
         }
     }
 }
 
 impl AliasManager for Config {
-    fn iter_aliases(&self) -> impl Iterator<Item = &alias::Alias> {
+    fn iter_aliases(&self) -> impl Iterator<Item = &aliases::Alias> {
         self.aliases.iter().flat_map(|a| a.iter_aliases())
     }
 
     fn remove_alias<S: AsRef<str>>(&mut self, name: S) -> Result<()> {
         self.aliases.as_mut().map_or(
-            Err(GixorError::AliasNotFound(name.as_ref().to_string())),
+            Err(Error::AliasNotFound(name.as_ref().to_string())),
             |aliases| aliases.remove_alias(name),
         )
     }
 
-    fn add_alias(&mut self, alias: alias::Alias) -> Result<()> {
+    fn add_alias(&mut self, alias: aliases::Alias) -> Result<()> {
         let aliases = self.aliases.as_mut().unwrap();
         aliases.add_alias(alias)
     }
@@ -578,26 +578,24 @@ impl AliasManager for Config {
 fn remove_repo_dir<P: AsRef<Path>>(base_path: P, repo: repos::Repository) -> Result<()> {
     let path = base_path.as_ref().join(repo.name);
     match std::fs::remove_dir_all(&path) {
-        Err(e) => Err(GixorError::IO(e)),
+        Err(e) => Err(Error::IO(e)),
         Ok(_) => Ok(()),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use serde::de::Error;
-
     use super::*;
     #[test]
     fn test_vec_result_to_result_vec() {
         let value = vec![Ok(1), Ok(2), Ok(3)];
-        let result = GixorError::vec_result_to_result_vec(value).unwrap();
+        let result = Error::vec_result_to_result_vec(value).unwrap();
         assert_eq!(result, vec![1, 2, 3]);
     }
 
     #[test]
     fn parse_gixor() {
-        match GixorBuilder::load(PathBuf::from("../testdata/config.json")) {
+        match GixorFactory::load(PathBuf::from("../testdata/config.json")) {
             Err(e) => panic!("Failed to parse the config file: {e}"),
             Ok(gixor) => {
                 assert_eq!(
@@ -612,47 +610,47 @@ mod tests {
     #[test]
     fn test_error_display() {
         assert_eq!(
-            GixorError::Json(serde_json::Error::custom("hoge")).to_string(),
+            Error::Json(serde::de::Error::custom("hoge")).to_string(),
             "JSON error: hoge"
         );
         assert_eq!(
-            GixorError::IO(std::io::Error::new(std::io::ErrorKind::NotFound, "hoge")).to_string(),
+            Error::IO(std::io::Error::new(std::io::ErrorKind::NotFound, "hoge")).to_string(),
             "IO error: hoge"
         );
         assert_eq!(
-            GixorError::BoilerplateNotFound("name".to_string()).to_string(),
+            Error::BoilerplateNotFound("name".to_string()).to_string(),
             "name: boilerplate not found"
         );
         assert_eq!(
-            GixorError::Git("hoge".into()).to_string(),
+            Error::Git("hoge".into()).to_string(),
             "Git error: hoge"
         );
         assert_eq!(
-            GixorError::AliasNotFound("hoge".into()).to_string(),
+            Error::AliasNotFound("hoge".into()).to_string(),
             "hoge: alias not found"
         );
         assert_eq!(
-            GixorError::FileNotFound("hoge".into()).to_string(),
+            Error::FileNotFound("hoge".into()).to_string(),
             "hoge: file not found"
         );
         assert_eq!(
-            GixorError::RepositoryNotFound("hoge".into()).to_string(),
+            Error::RepositoryNotFound("hoge".into()).to_string(),
             "hoge: repository not found"
         );
         assert_eq!(
-            GixorError::Fatal("message".to_string()).to_string(),
+            Error::Fatal("message".to_string()).to_string(),
             "Fatal error: message"
         );
         assert_eq!(
-            GixorError::Array(vec![
-                GixorError::Fatal("hoge1".to_string()),
-                GixorError::Fatal("hoge2".to_string())
+            Error::Array(vec![
+                Error::Fatal("hoge1".to_string()),
+                Error::Fatal("hoge2".to_string())
             ])
             .to_string(),
             "Fatal error: hoge1Fatal error: hoge2"
         );
         assert_eq!(
-            GixorError::Alias("hoge: alias not found".to_string()).to_string(),
+            Error::Alias("hoge: alias not found".to_string()).to_string(),
             "hoge: alias not found"
         )
     }

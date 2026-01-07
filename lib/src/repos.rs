@@ -9,7 +9,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Result, Name, GixorError, gitbridge};
+use crate::{Result, Name, Error, gitbridge};
 
 /// Represents a boilerplate file.
 pub struct Boilerplate<'a> {
@@ -103,7 +103,7 @@ impl<'a> Boilerplate<'a> {
                 self.repo.owner, self.repo.repo_name, hash_string, self.path.to_string_lossy()
             ))
         } else {
-            Err(GixorError::Fatal(format!(
+            Err(Error::Fatal(format!(
                 "{url}: Unsupported repository host"
             )))
         }
@@ -312,11 +312,11 @@ fn is_gitignore_file(name: Option<&std::ffi::OsStr>) -> bool {
 fn dump_path(path: PathBuf) -> Result<String> {
     let mut result = vec![];
     match std::fs::File::open(&path) {
-        Err(e) => Err(GixorError::IO(e)),
+        Err(e) => Err(Error::IO(e)),
         Ok(file) => {
             let reader = std::io::BufReader::new(file);
             for line in reader.lines() {
-                let line = line.map_err(|e| GixorError::IO(e))?;
+                let line = line.map_err(|e| Error::IO(e))?;
                 result.push(line);
             }
             Ok(result.join("\n"))

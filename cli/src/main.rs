@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
-use gixor::{AliasManager, Gixor, GixorBuilder, GixorError, Name, RepositoryManager, Result};
+use gixor::{AliasManager, Gixor, GixorFactory, Error, Name, RepositoryManager, Result};
 
 mod cli;
 mod terminal;
@@ -24,7 +24,7 @@ fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, 
             store_flag = true;
             Gixor::default()
         }
-        Some(path) => match GixorBuilder::load(path.clone()) {
+        Some(path) => match GixorFactory::load(path.clone()) {
             Ok(g) => {
                 log::trace!("configuration load from {}", path.display());
                 g
@@ -87,7 +87,7 @@ fn add_alias(
     args: Vec<String>,
 ) -> Result<Option<&Gixor>> {
     let names = args.iter().map(Name::parse).collect::<Vec<_>>();
-    let alias = gixor::alias::Alias::new(name, desc, names);
+    let alias = gixor::aliases::Alias::new(name, desc, names);
     match gixor.add_alias(alias) {
         Err(e) => Err(e),
         Ok(_) => Ok(Some(gixor)),
@@ -119,7 +119,7 @@ fn merge_errors<T>(r: Vec<Result<T>>) -> Result<Vec<T>> {
     } else if errs.len() == 1 {
         Err(errs.into_iter().next().unwrap())
     } else {
-        Err(GixorError::Array(errs))
+        Err(Error::Array(errs))
     }
 }
 
@@ -162,7 +162,7 @@ fn list_boilerplates(gixor: &Gixor, opts: cli::ListOpts) -> Result<Option<&Gixor
     } else if errs.len() == 1 {
         Err(errs.into_iter().next().unwrap())
     } else {
-        Err(GixorError::Array(errs))
+        Err(Error::Array(errs))
     }
 }
 
@@ -200,7 +200,7 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<&Gixor>> {
     if opts.open {
         match opener::open(path) {
             Ok(_) => Ok(None),
-            Err(e) => Err(GixorError::Fatal(format!("failed to open {path:?}: {e:?}"))),
+            Err(e) => Err(Error::Fatal(format!("failed to open {path:?}: {e:?}"))),
         }
     } else {
         println!("{}", path.to_string_lossy());
@@ -323,7 +323,7 @@ fn init_log(level: &LogLevel) {
 #[cfg(debug_assertions)]
 mod gencomp {
     use crate::cli::CliOpts;
-    use gixor::{GixorError, Result};
+    use gixor::{Error, Result};
 
     use clap::{Command, CommandFactory};
     use clap_complete::Shell;
@@ -332,10 +332,10 @@ mod gencomp {
     fn generate_impl(app: &mut Command, shell: Shell, dest: PathBuf) -> Result<()> {
         log::info!("generate completion for {shell:?} to {dest:?}");
         if let Err(e) = std::fs::create_dir_all(dest.parent().unwrap()) {
-            return Err(GixorError::IO(e));
+            return Err(Error::IO(e));
         }
         match std::fs::File::create(dest) {
-            Err(e) => Err(GixorError::IO(e)),
+            Err(e) => Err(Error::IO(e)),
             Ok(mut out) => {
                 clap_complete::generate(shell, app, "gixor", &mut out);
                 Ok(())
@@ -359,11 +359,7 @@ mod gencomp {
                 errs.push(e);
             }
         }
-        if errs.is_empty() {
-            Ok(None)
-        } else {
-            Err(GixorError::Array(errs))
-        }
+        Error::to_err(None, errs)
     }
 }
 

@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{Gixor, GixorError, RepositoryManager};
+use crate::{Gixor, Error, RepositoryManager};
 
 use super::Result;
 
@@ -22,12 +22,12 @@ pub(super) fn find_target_repositories<S: AsRef<str>>(
             let errs = r
                 .iter()
                 .filter(|(_, repo)| repo.is_none())
-                .map(|(n, _)| GixorError::RepositoryNotFound(n.as_ref().to_string()))
+                .map(|(n, _)| Error::RepositoryNotFound(n.as_ref().to_string()))
                 .collect::<Vec<_>>();
             if errs.len() == 1 {
                 Err(errs.into_iter().next().unwrap())
             } else {
-                Err(GixorError::Array(errs))
+                Err(Error::Array(errs))
             }
         } else {
             Ok(r.into_iter()
@@ -45,7 +45,7 @@ pub(super) fn find_boilerplates(
         .into_iter()
         .map(|name| gixor.find(name))
         .collect::<Vec<_>>();
-    match GixorError::vec_result_to_result_vec(r) {
+    match Error::vec_result_to_result_vec(r) {
         Ok(vv) => Ok(vv.into_iter().flatten().collect::<Vec<_>>()),
         Err(e) => Err(e),
     }
@@ -57,10 +57,10 @@ pub(super) fn find_boilerplates(
 pub(super) fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
     let gitignore_path = find_gitignore(path);
     if !gitignore_path.exists() {
-        Err(super::GixorError::FileNotFound(gitignore_path))
+        Err(super::Error::FileNotFound(gitignore_path))
     } else {
         match std::fs::File::open(gitignore_path) {
-            Err(e) => Err(super::GixorError::IO(e)),
+            Err(e) => Err(super::Error::IO(e)),
             Ok(f) => {
                 let reader = BufReader::new(f);
                 let r = reader
@@ -107,12 +107,12 @@ pub(super) fn open_dest<P: AsRef<Path>>(dest: P) -> Result<Box<dyn Write>> {
     } else if path.is_dir() {
         match std::fs::File::create(path.join(".gitignore")) {
             Ok(f) => Ok(Box::new(f)),
-            Err(e) => Err(super::GixorError::IO(e)),
+            Err(e) => Err(super::Error::IO(e)),
         }
     } else {
         match std::fs::File::create(dest) {
             Ok(f) => Ok(Box::new(f)),
-            Err(e) => Err(super::GixorError::IO(e)),
+            Err(e) => Err(super::Error::IO(e)),
         }
     }
 }
@@ -126,7 +126,7 @@ pub(super) fn dump_boilerplates_impl(
     log::info!("dumping boilerplates {:?}", boilerplates.iter().map(|b| b.name()).collect::<Vec<_>>());
     let mut w = std::io::BufWriter::new(dest);
     let prologue = if clear_flag { vec![] } else { load_prologue() };
-    let contents = GixorError::vec_result_to_result_vec(
+    let contents = Error::vec_result_to_result_vec(
         boilerplates
             .into_iter()
             .map(|b| b.dump(base_path))
@@ -137,9 +137,9 @@ pub(super) fn dump_boilerplates_impl(
             let r = prologue
                 .iter()
                 .chain(content.iter())
-                .map(|line| writeln!(w, "{line}").map_err(super::GixorError::IO))
+                .map(|line| writeln!(w, "{line}").map_err(super::Error::IO))
                 .collect::<Vec<_>>();
-            match GixorError::vec_result_to_result_vec(r) {
+            match Error::vec_result_to_result_vec(r) {
                 Ok(_) => Ok(()),
                 Err(e) => Err(e),
             }
