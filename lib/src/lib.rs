@@ -42,15 +42,25 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Represents an error of Gixor.
 #[derive(Debug)]
 pub enum Error {
+    /// Multiple errors.
     Array(Vec<Error>),
+    /// Error related to alias.
     Alias(String),
+    /// Error when the alias is not found.
     AliasNotFound(String),
+    /// Error when the boilerplate is not found.
     BoilerplateNotFound(String),
+    /// Error when the file is not found.
     FileNotFound(PathBuf),
+    /// Fatal error.
     Fatal(String),
+    /// Git error.
     Git(String),
+    /// IO error.
     IO(std::io::Error),
+    /// JSON error.
     Json(serde_json::Error),
+    /// Error when the repository is not found.
     RepositoryNotFound(String),
 }
 
@@ -109,13 +119,24 @@ impl Display for Error {
 mod routine;
 
 /// Finds the entries of `.gitignore` file in the given path.
-/// The given path should be a directory containing a `.gitignore` file or a `.gitignore` file directly.
-/// If the `.gitignore` file is not found, returns error.
+/// The given path should be a directory containing a `.gitignore` file or
+/// a regular file which is treats as a `.gitignore` file.
+/// If the `.gitignore` file is not found, returns [`Error::FileNotFound`] error.
 pub fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
     log::info!("Find current entries from {}", path.as_ref().display());
     routine::entries(path)
 }
 
+/// Finds the target repositories by the given repository names.
+/// 
+/// ## Returns
+/// 
+/// If the given `repository_names` is empty, all repositories managed by `gixor` are returned.
+/// Otherwise, the repositories matched with the given names are returned.
+/// 
+/// ## Errors
+/// - If any of given repository name is not found, returns [`Error::RepositoryNotFound`].
+/// - If multiple repository names are not found, returns [`Error::Array`] which contains multiple [`Error::RepositoryNotFound`].
 pub fn find_target_repositories<S: AsRef<str>>(
     gixor: &Gixor,
     repository_names: Vec<S>,
@@ -125,7 +146,7 @@ pub fn find_target_repositories<S: AsRef<str>>(
 }
 
 /// The name of the boilerplate which contains the repository name and the boilerplate name.
-/// The repository name is [`Repository::name`].
+/// The repository name is [`repos::Repository::name`].
 /// The boilerplate name is the file stem of the boilerplate (gitignore) file.
 #[derive(Debug, Clone)]
 pub struct Name {
@@ -258,7 +279,7 @@ impl Default for Gixor {
     ///     - Linux: `$XDG_CONFIG_HOME/gixor/config.json` or `$HOME/.config/gixor/config.json`
     ///     - macOS: `$HOME/Library/Application Support/gixor/config.json`
     ///     - Windows: `{FOLDERID_RoamingAppData}\gixor\config.json`
-    /// - The default repository is [`Repository::default`].
+    /// - The default repository is [`repos::Repository::default`].
     /// - The default configuration file is `${XDG_CONFIG_HOME}/gixor/config.json`.
     ///
     /// The default location is as follows.
