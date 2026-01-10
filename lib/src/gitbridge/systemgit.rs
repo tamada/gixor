@@ -7,7 +7,7 @@ use std::{path::Path, process::Command};
 use crate::repos::Boilerplate;
 use crate::Result;
 
-/// 
+/// Run `git pull {remote} {branch}` on the repository at the given path.
 pub fn pull(repo_path: &Path, remote: &str, branch: &str) -> Result<()> {
     let args = ["pull", remote, branch];
     log::info!("Executing: git {:?} on {repo_path:?}", args.join(" "));
@@ -28,6 +28,7 @@ pub fn pull(repo_path: &Path, remote: &str, branch: &str) -> Result<()> {
     }
 }
 
+/// Run `git clone {url} {dest_path}` to clone the repository.
 pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, dest_path: P) -> crate::Result<()> {
     let dest_path = dest_path.as_ref().to_string_lossy().to_string();
     let args = ["clone", url.as_ref(), dest_path.as_ref()];
@@ -47,6 +48,7 @@ pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, dest_path: P) -> crate::Resu
 }
 
 /// Returns the latest commit hash (as bytes) of the given boilerplate in the repository located at base_path.
+/// For this, run `git log --format=%H -n 1 {boilerplate.path()}` on the `{base_path}/{boilerplate.repo_path()}` directory.
 pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> Result<Vec<u8>> {
     let base_path = base_path.as_ref();
     log::info!(
