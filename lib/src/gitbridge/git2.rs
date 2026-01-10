@@ -4,12 +4,12 @@
 //! This function is sed in [`gita`](https://docs.rs/gita/latest/gita/) crate.
 //! This crate is requires the old version of [`git2`](https://docs.rs/git2/0.20.0/git2/index.html) crate.
 //! Therefore, I just copy the code from `gita` and update some parts.
-//! 
+//!
 //! ------------- the following part is copied from gita crate ------------------
 //! libgit2 "pull" example - shows how to pull remote data into a local branch.
-//! 
+//!
 //! Written by the libgit2 contributors
-//! 
+//!
 //! To the extent possible under law, the author(s) have dedicated all copyright
 //! and related and neighboring rights to this software to the public domain
 //! worldwide. This software is distributed without any warranty.
@@ -25,7 +25,7 @@ use std::{
     str,
 };
 
-use crate::{GixorError, repos::Boilerplate};
+use crate::{repos::Boilerplate, Error};
 
 fn do_fetch<'a>(
     repo: &'a git2::Repository,
@@ -151,26 +151,23 @@ fn normal_merge(
 }
 
 pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> crate::Result<Vec<u8>> {
-    let path = boilerplate.abs_path(base_path);
+    let path = boilerplate.file_path(base_path);
     log::trace!("try to open the git repository: {}", path.display());
     let gitrepo = match git2::Repository::open(&path) {
         Ok(repo) => Ok(repo),
         Err(_) => {
-            let message = format!(
-                "{}: Failed to open the repository",
-                path.display()
-            );
-            log::error!("{}", message);
-            Err(GixorError::Git(message.as_str().into()))
+            let message = format!("{}: Failed to open the repository", path.display());
+            log::error!("{message}");
+            Err(Error::Git(message.as_str().into()))
         }
     }?;
     let head = gitrepo.head();
     match head {
         Ok(head) => match head.peel_to_commit() {
             Ok(commit) => Ok(commit.id().as_bytes().to_vec()),
-            Err(e) => Err(GixorError::Git(format!("Failed to peel to commit: {}", e))),
+            Err(e) => Err(Error::Git(format!("Failed to peel to commit: {e}"))),
         },
-        Err(_) => Err(GixorError::Git("Failed to get the HEAD".into())),
+        Err(_) => Err(Error::Git("Failed to get the HEAD".into())),
     }
 }
 
@@ -199,7 +196,10 @@ fn do_merge<'a>(
                     &refname,
                     fetch_commit.id(),
                     true,
-                    &format!("Setting {} to {}", remote_branch, fetch_commit.id()),
+                    &format!(
+                        "Setting {remote_branch} to {fetch_commit_id}",
+                        fetch_commit_id = fetch_commit.id()
+                    ),
                 )?;
                 repo.set_head(&refname)?;
                 repo.checkout_head(Some(
@@ -222,8 +222,7 @@ fn do_merge<'a>(
 
 /// `git pull`
 pub fn pull(repo: &Path, remote: &str, branch: &str) -> crate::Result<()> {
-    pull_impl(repo, remote, branch)
-        .map_err(|e| GixorError::Git(format!("Failed to pull: {}", e)))
+    pull_impl(repo, remote, branch).map_err(|e| Error::Git(format!("Failed to pull: {e}")))
 }
 
 pub fn pull_impl(repo: &Path, remote: &str, branch: &str) -> Result<(), git2::Error> {
@@ -244,9 +243,7 @@ pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()
     } else if is_ssh_url(Some(url)) {
         clone_with_ssh(url, path)
     } else {
-        Err(crate::GixorError::Fatal(format!(
-            "{url}: Unsupported protocol"
-        )))
+        Err(crate::Error::Fatal(format!("{url}: Unsupported protocol")))
     }
 }
 
@@ -259,7 +256,9 @@ fn is_ssh_url(url: Option<&str>) -> bool {
 
 fn clone_with_https<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()> {
     match git2::Repository::clone(url.as_ref(), path.as_ref()) {
-        Err(e) => Err(crate::GixorError::Git(format!("Failed to clone with HTTPS: {}", e))),
+        Err(e) => Err(crate::Error::Git(format!(
+            "Failed to clone with HTTPS: {e}"
+        ))),
         Ok(_) => Ok(()),
     }
 }
@@ -274,7 +273,7 @@ fn find_privatekey() -> crate::Result<PathBuf> {
     } else if path_ed25519.exists() {
         Ok(path_ed25519)
     } else {
-        Err(crate::GixorError::Fatal("No private key found".to_string()))
+        Err(crate::Error::Fatal("No private key found".to_string()))
     }
 }
 
@@ -302,7 +301,7 @@ fn clone_with_ssh<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Resu
 
     // Clone the project.
     match builder.clone(url.as_ref(), path.as_ref()) {
-        Err(e) => Err(crate::GixorError::Git(format!("Failed to clone with SSH: {}", e))),
+        Err(e) => Err(crate::Error::Git(format!("Failed to clone with SSH: {e}"))),
         Ok(_) => Ok(()),
     }
 }

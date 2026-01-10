@@ -10,8 +10,13 @@ repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 
+[features]
+default   = []
+uselibgit = ["gixor/uselibgit"]
+usegix    = ["gixor/usegix"]
+
 [dependencies]
-gixor = { path = "../lib", features = [ "usegix" ]}
+gixor = { path = "../lib" }
 clap = { version = "4.5.28", features = ["derive"] }
 clap_complete = "4.5.44"
 env_logger = "0.11.6"

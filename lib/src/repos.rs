@@ -9,7 +9,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Result, Name, Error, gitbridge};
+use crate::{gitbridge, Error, Name, Result};
 
 /// Represents a boilerplate file.
 pub struct Boilerplate<'a> {
@@ -25,7 +25,11 @@ pub struct Boilerplate<'a> {
 
 impl<'a> Boilerplate<'a> {
     fn new<P: AsRef<Path>>(name: String, path: P, repo: &'a Repository) -> Boilerplate<'a> {
-        log::debug!("Boilerplate::new(name: {}, path: {:?}, repo: {:?})", name, path.as_ref(), repo.path);
+        log::debug!(
+            "Boilerplate::new(name: {name}, path: {:?}, repo: {:?})",
+            path.as_ref(),
+            repo.path
+        );
         Self {
             name,
             path: path.as_ref().to_path_buf(),
@@ -33,18 +37,33 @@ impl<'a> Boilerplate<'a> {
         }
     }
 
-    pub fn abs_path<P: AsRef<Path>>(&self, base_path: P) -> PathBuf {
-        self.repo.path(base_path).join(&self.path)
-    }
-
+    /// Returns the name of this boilerplate as [Name].
     pub fn name(&self) -> Name {
         Name::new(self.repository_name(), self.boilerplate_name())
     }
 
-    pub fn path(&self) -> &Path {
-        self.path.as_ref()
+    /// Returns the file path of the boilerplate from the base path.
+    /// This method is equivalent to `self.repo_path(base_path).join(&self.path())`.
+    ///
+    /// ### See also
+    ///
+    /// - [`Repository::path`]
+    /// - [`Boilerplate::path`]
+    pub fn file_path<P: AsRef<Path>>(&self, base_path: P) -> PathBuf {
+        self.repo_path(base_path).join(self.path())
     }
 
+    /// Returns the path from in the repository root.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// Returns the repository path from the base path.
+    /// This method delegates to [`Repository::path`].
+    ///
+    /// ### See also
+    ///
+    /// - [`Repository::path`]
     pub fn repo_path<P: AsRef<Path>>(&self, base_path: P) -> PathBuf {
         self.repo.path(base_path)
     }
@@ -52,10 +71,6 @@ impl<'a> Boilerplate<'a> {
     /// Returns the boilerplate name of this instance.
     pub fn boilerplate_name(&self) -> &str {
         self.name.as_ref()
-    }
-
-    pub fn repository_path<P: AsRef<Path>>(&self, base_path: P) -> PathBuf {
-        self.repo.path(base_path)
     }
 
     /// Returns the repository name of this instance.
@@ -67,11 +82,18 @@ impl<'a> Boilerplate<'a> {
     pub fn matches(&self, name: &Name) -> bool {
         name.boilerplate_name.to_lowercase() == self.boilerplate_name().to_lowercase()
             && match &name.repository_name {
-                Some(repo_name) => repo_name.to_lowercase() == self.repository_name().to_lowercase(),
+                Some(repo_name) => {
+                    repo_name.to_lowercase() == self.repository_name().to_lowercase()
+                }
                 None => true,
             }
     }
 
+    /// Returns the latest commit hash (as bytes) of this boilerplate in the repository located at base_path.
+    ///
+    /// ### See also
+    ///
+    /// - [`gitbridge::hash`]
     pub fn hash<P: AsRef<Path>>(&self, base_path: P) -> Result<Vec<u8>> {
         gitbridge::hash(self, base_path)
     }
@@ -79,7 +101,13 @@ impl<'a> Boilerplate<'a> {
     /// Returns the content URL of the boilerplate file.
     pub fn content_url<P: AsRef<Path>>(&self, base_path: P) -> Result<String> {
         let base_path = base_path.as_ref();
-        log::info!("boilerplate content_url(name: {}, path: {:?}, repo: {:?}, base_path: {:?})", self.name, self.path, self.repo.path, base_path);
+        log::info!(
+            "boilerplate content_url(name: {}, path: {:?}, repo: {:?}, base_path: {:?})",
+            self.name,
+            self.path,
+            self.repo.path,
+            base_path
+        );
         let hash = self.hash(base_path)?;
         log::trace!("hash: {hash:02x?}");
         let hash_string = hash.iter().fold(String::new(), |mut output, b| {
@@ -90,28 +118,35 @@ impl<'a> Boilerplate<'a> {
         if url.contains("github.com") {
             Ok(format!(
                 "https://raw.github.com/{0}/{1}/{2}/{3}",
-                self.repo.owner, self.repo.repo_name, hash_string, self.path.to_string_lossy()
+                self.repo.owner,
+                self.repo.repo_name,
+                hash_string,
+                self.path.to_string_lossy()
             ))
         } else if url.contains("gitlab.com") {
             Ok(format!(
                 "https://gitlab.com/{0}/{1}/-/raw/{2}/{3}",
-                self.repo.owner, self.repo.repo_name, hash_string, self.path.to_string_lossy()
+                self.repo.owner,
+                self.repo.repo_name,
+                hash_string,
+                self.path.to_string_lossy()
             ))
         } else if url.contains("bitbucket.org") {
             Ok(format!(
                 "https://bitbucket.org/{0}/{1}/raw/{2}/{3}",
-                self.repo.owner, self.repo.repo_name, hash_string, self.path.to_string_lossy()
+                self.repo.owner,
+                self.repo.repo_name,
+                hash_string,
+                self.path.to_string_lossy()
             ))
         } else {
-            Err(Error::Fatal(format!(
-                "{url}: Unsupported repository host"
-            )))
+            Err(Error::Fatal(format!("{url}: Unsupported repository host")))
         }
     }
 
     /// Returns the content of the boilerplate file.
     pub fn dump<P: AsRef<Path>>(&self, base_path: P) -> Result<String> {
-        let content = dump_path(self.abs_path(&base_path).clone())?;
+        let content = dump_path(self.file_path(&base_path))?;
         Ok(format!(
             r#"### Generated by Gixor (https://github.com/tamada/gixor) ({}/{})
 ### {}
@@ -124,7 +159,6 @@ impl<'a> Boilerplate<'a> {
         ))
     }
 }
-
 
 /// Represents a repository of the boilerplates.
 /// The boilerplate repository is cloned into `${base_path}/${repo_name}`
@@ -166,7 +200,9 @@ impl Repository {
         let url = url.as_ref();
         let (owner, repo_name) = url_to_owner_and_repo_name(url);
         let path = PathBuf::from(&owner);
-        log::debug!("Repository::new(url: {url}) -> owner: {owner}, repo_name: {repo_name}, path: {path:?}");
+        log::debug!(
+            "Repository::new(url: {url}) -> owner: {owner}, repo_name: {repo_name}, path: {path:?}"
+        );
         Self {
             name: owner.clone(),
             url: url.to_string(),
@@ -191,6 +227,7 @@ impl Repository {
         }
     }
 
+    /// Returns the path of this repository from the base path.
     pub fn path<P: AsRef<Path>>(&self, base_path: P) -> PathBuf {
         if self.path.is_absolute() {
             self.path.clone()
@@ -225,8 +262,12 @@ impl Repository {
     }
 
     /// Prepare the repository by cloning or pulling the remote repository.
-    /// If the repository already exists, do `git pull origin main`.
-    /// Otherwise, execute `git clone` and store the repository into the `[self.path(base_path)]`.
+    /// If the repository already exists, perform the equivalent routine of `git pull origin main`.
+    /// Otherwise, execute `git clone` and store the repository into the `self.path(base_path)`.
+    ///
+    /// ### See also
+    ///
+    /// - [`Repository::path`]
     pub fn prepare<P: AsRef<Path>>(&self, base_path: P) -> Result<()> {
         // TODO: implement
         let path = self.path(&base_path);
@@ -248,8 +289,12 @@ impl Repository {
         }
     }
 
-    /// Clone the repository into the `[self.path(base_path)]`.
+    /// Clone the repository into the `self.path(base_path)`.
     /// If the repository already exists, do nothing and returns `Ok(())`.
+    ///
+    /// ### See also
+    ///
+    /// - [`Repository::path`]
     pub fn clone_repo_to<P: AsRef<Path>>(&self, base_path: P) -> Result<()> {
         let path = self.path(base_path);
         if path.exists() {
@@ -343,7 +388,7 @@ mod tests {
 
         if let Some(b) = repo.find(&Name::new_of("devcontainer"), &base_path) {
             assert_eq!(
-                b.path,
+                b.file_path(&base_path),
                 PathBuf::from("../testdata/boilerplates/tamada/devcontainer.gitignore")
             );
         } else {

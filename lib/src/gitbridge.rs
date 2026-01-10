@@ -2,13 +2,23 @@
 //! Provides functions to interact with Git repositories
 //! using either the `gix` crate, `git2` crate, or system Git commands
 //! based on feature flags.
-use std::path::Path;
-use crate::Result;
 use crate::repos::Boilerplate;
+use crate::Result;
+use std::path::Path;
 
-#[cfg_attr(feature="usegix", path="gitbridge/gix.rs")]
-#[cfg_attr(feature="uselibgit", path="gitbridge/git2.rs")]
-#[cfg_attr(not(any(feature="usegix", feature="uselibgit")), path="gitbridge/systemgit.rs")]
+#[cfg(all(feature = "usegix", feature = "uselibgit"))]
+compile_error!("Features 'usegix' and 'uselibgit' cannot be enabled at the same time.");
+
+#[cfg(all(feature = "usegix", not(feature = "uselibgit")))]
+#[path = "gitbridge/gix.rs"]
+mod gitctrl;
+
+#[cfg(all(not(feature = "usegix"), feature = "uselibgit"))]
+#[path = "gitbridge/git2.rs"]
+mod gitctrl;
+
+#[cfg(all(not(feature = "usegix"), not(feature = "uselibgit")))]
+#[path = "gitbridge/systemgit.rs"]
 mod gitctrl;
 
 /// Returns the latest commit hash (as bytes) of the repository at the given path.

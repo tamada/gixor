@@ -7,10 +7,10 @@
 //! # Example of Dump the boilerplate
 //!
 //! ```rust
-//! use gixor::{Gixor, GixorBuilder, Name, Result};
+//! use gixor::{Gixor, GixorFactory, Name, Result};
 //!
 //! // load configuration file and build Gixor object.
-//! let gixor = GixorBuilder::load("testdata/config.json").unwrap();
+//! let gixor = GixorFactory::load("testdata/config.json").unwrap();
 //! gixor.prepare(true).unwrap(); // clone or update all repositories, if needed.
 //! // create vec of Name instance.
 //! let names = Name::parse_all(vec!["rust", "macos", "linux", "windows"])
@@ -128,12 +128,12 @@ pub fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
 }
 
 /// Finds the target repositories by the given repository names.
-/// 
+///
 /// ## Returns
-/// 
+///
 /// If the given `repository_names` is empty, all repositories managed by `gixor` are returned.
 /// Otherwise, the repositories matched with the given names are returned.
-/// 
+///
 /// ## Errors
 /// - If any of given repository name is not found, returns [`Error::RepositoryNotFound`].
 /// - If multiple repository names are not found, returns [`Error::Array`] which contains multiple [`Error::RepositoryNotFound`].
@@ -141,7 +141,13 @@ pub fn find_target_repositories<S: AsRef<str>>(
     gixor: &Gixor,
     repository_names: Vec<S>,
 ) -> Result<Vec<&repos::Repository>> {
-    log::info!("find_target_repositories: repository_names={:?}", repository_names.iter().map(|s| s.as_ref()).collect::<Vec<_>>());
+    log::info!(
+        "find_target_repositories: repository_names={:?}",
+        repository_names
+            .iter()
+            .map(|s| s.as_ref())
+            .collect::<Vec<_>>()
+    );
     routine::find_target_repositories(gixor, repository_names)
 }
 
@@ -302,7 +308,7 @@ impl Default for Gixor {
     }
 }
 
-/// The builder of [`Gixor`].
+/// The factory pattern for [`Gixor`].
 pub struct GixorFactory {}
 
 impl GixorFactory {
@@ -364,7 +370,9 @@ impl Gixor {
     ) -> Result<()> {
         match routine::find_boilerplates(self, names) {
             Err(e) => Err(e),
-            Ok(boilerplates) => routine::dump_boilerplates_impl(dest, boilerplates, clear_flag, self.base_path()),
+            Ok(boilerplates) => {
+                routine::dump_boilerplates_impl(dest, boilerplates, clear_flag, self.base_path())
+            }
         }
     }
 
@@ -642,10 +650,7 @@ mod tests {
             Error::BoilerplateNotFound("name".to_string()).to_string(),
             "name: boilerplate not found"
         );
-        assert_eq!(
-            Error::Git("hoge".into()).to_string(),
-            "Git error: hoge"
-        );
+        assert_eq!(Error::Git("hoge".into()).to_string(), "Git error: hoge");
         assert_eq!(
             Error::AliasNotFound("hoge".into()).to_string(),
             "hoge: alias not found"

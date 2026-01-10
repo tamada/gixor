@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
-use gixor::{AliasManager, Gixor, GixorFactory, Error, Name, RepositoryManager, Result};
+use gixor::{AliasManager, Error, Gixor, GixorFactory, Name, RepositoryManager, Result};
 
 mod cli;
 mod terminal;
@@ -134,7 +134,10 @@ fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
     }
 }
 
-fn list_each_boilerplate(repo: &gixor::repos::Repository, base_path: &PathBuf) -> Result<Vec<String>> {
+fn list_each_boilerplate(
+    repo: &gixor::repos::Repository,
+    base_path: &PathBuf,
+) -> Result<Vec<String>> {
     let r = repo
         .iter(base_path)
         .map(|entry| entry.boilerplate_name().to_string())

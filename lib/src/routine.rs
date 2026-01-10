@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{Gixor, Error, RepositoryManager};
+use crate::{Error, Gixor, RepositoryManager};
 
 use super::Result;
 
@@ -123,7 +123,10 @@ pub(super) fn dump_boilerplates_impl(
     clear_flag: bool,
     base_path: &Path,
 ) -> Result<()> {
-    log::info!("dumping boilerplates {:?}", boilerplates.iter().map(|b| b.name()).collect::<Vec<_>>());
+    log::info!(
+        "dumping boilerplates {:?}",
+        boilerplates.iter().map(|b| b.name()).collect::<Vec<_>>()
+    );
     let mut w = std::io::BufWriter::new(dest);
     let prologue = if clear_flag { vec![] } else { load_prologue() };
     let contents = Error::vec_result_to_result_vec(
