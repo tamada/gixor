@@ -10,6 +10,11 @@ repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 
+[features]
+default   = []
+uselibgit = ["gixor/uselibgit"]
+usegix    = ["gixor/usegix"]
+
 [dependencies]
 gixor = { path = "../lib" }
 clap = { version = "4.5.28", features = ["derive"] }
@@ -21,4 +26,4 @@ terminal_size = "0.4.3"
 
 [dev-dependencies]
 tokio = { version = "1.16.1", features = ["full"] }
-reqwest = { version = "0.12.12", features = ["json"] }
+reqwest = { version = "0.13.1", features = ["json"] }

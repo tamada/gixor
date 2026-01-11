@@ -10,12 +10,17 @@ repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 
+[features]
+default = [ ]
+uselibgit = [ "git2" ]
+usegix = [ "gix" ]
+
 [dependencies]
 dirs = "6.0.0"
-git2 = "0.20.0"
-openssl = { version = "0.10", features = ["vendored"] }
 ignore = "0.4.23"
 log = "0.4.25"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.138"
-openssl-sys = "0.9"
+gix = { version = "0.76.0", features = [ "blocking-http-transport-reqwest-rust-tls", "blocking-network-client", "merge", "tree-editor" ], optional = true }
+git2 = { version = "0.20.3", optional = true }
+hex = "0.4.3"

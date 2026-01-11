@@ -1,4 +1,4 @@
-use gixor::{GixorBuilder, Name, RepositoryManager, Result};
+use gixor::{GixorFactory, Name, RepositoryManager, Result};
 
 mod common;
 
@@ -21,7 +21,7 @@ async fn test_clone_and_find() -> Result<()> {
     assert_eq!(result.boilerplate_name(), "Rust".to_string());
     assert_eq!(result.repository_name(), "default");
 
-    let url1 = result.content_url().unwrap();
+    let url1 = result.content_url(gixor.base_path()).unwrap();
     let resp = reqwest::get(url1).await.unwrap();
     assert_eq!(resp.status(), reqwest::StatusCode::OK);
     Ok(())
@@ -29,7 +29,7 @@ async fn test_clone_and_find() -> Result<()> {
 
 #[test]
 fn test_find() {
-    let gixor = GixorBuilder::load("../testdata/config.json").unwrap();
+    let gixor = GixorFactory::load("../testdata/config.json").unwrap();
     let results = gixor.find(Name::from("devcontainer")).unwrap();
     assert_eq!(results.len(), 1);
     let result = results.first().unwrap();

@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
-use gixor::{AliasManager, Gixor, GixorBuilder, GixorError, Name, RepositoryManager, Result};
+use gixor::{AliasManager, Error, Gixor, GixorFactory, Name, RepositoryManager, Result};
 
 mod cli;
 mod terminal;
@@ -24,7 +24,7 @@ fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, 
             store_flag = true;
             Gixor::default()
         }
-        Some(path) => match GixorBuilder::load(path.clone()) {
+        Some(path) => match GixorFactory::load(path.clone()) {
             Ok(g) => {
                 log::trace!("configuration load from {}", path.display());
                 g
@@ -35,7 +35,7 @@ fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, 
     let gixor = if gixor.is_empty() {
         log::trace!("no repositories are given. add default repository");
         store_flag = true;
-        match gixor.add_repository(gixor::Repository::default()) {
+        match gixor.add_repository(gixor::repos::Repository::default()) {
             Err(e) => Err(e),
             Ok(_) => Ok(gixor),
         }
@@ -87,7 +87,7 @@ fn add_alias(
     args: Vec<String>,
 ) -> Result<Option<&Gixor>> {
     let names = args.iter().map(Name::parse).collect::<Vec<_>>();
-    let alias = gixor::alias::Alias::new(name, desc, names);
+    let alias = gixor::aliases::Alias::new(name, desc, names);
     match gixor.add_alias(alias) {
         Err(e) => Err(e),
         Ok(_) => Ok(Some(gixor)),
@@ -119,7 +119,7 @@ fn merge_errors<T>(r: Vec<Result<T>>) -> Result<Vec<T>> {
     } else if errs.len() == 1 {
         Err(errs.into_iter().next().unwrap())
     } else {
-        Err(GixorError::Array(errs))
+        Err(Error::Array(errs))
     }
 }
 
@@ -134,7 +134,10 @@ fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
     }
 }
 
-fn list_each_boilerplate(repo: &gixor::Repository, base_path: &PathBuf) -> Result<Vec<String>> {
+fn list_each_boilerplate(
+    repo: &gixor::repos::Repository,
+    base_path: &PathBuf,
+) -> Result<Vec<String>> {
     let r = repo
         .iter(base_path)
         .map(|entry| entry.boilerplate_name().to_string())
@@ -162,7 +165,7 @@ fn list_boilerplates(gixor: &Gixor, opts: cli::ListOpts) -> Result<Option<&Gixor
     } else if errs.len() == 1 {
         Err(errs.into_iter().next().unwrap())
     } else {
-        Err(GixorError::Array(errs))
+        Err(Error::Array(errs))
     }
 }
 
@@ -200,7 +203,7 @@ fn show_root(gixor: &Gixor, opts: cli::RootOpts) -> Result<Option<&Gixor>> {
     if opts.open {
         match opener::open(path) {
             Ok(_) => Ok(None),
-            Err(e) => Err(GixorError::Fatal(format!("failed to open {path:?}: {e:?}"))),
+            Err(e) => Err(Error::Fatal(format!("failed to open {path:?}: {e:?}"))),
         }
     } else {
         println!("{}", path.to_string_lossy());
@@ -231,8 +234,8 @@ fn search_boilerplates(gixor: &Gixor, opts: cli::SearchOpts) -> Result<Option<&G
 
 fn add_repository(gixor: &mut Gixor, opts: cli::RepoAddOpts) -> Result<Option<&Gixor>> {
     let repo = match opts.name {
-        Some(name) => gixor::Repository::new_with(name, opts.url),
-        None => gixor::Repository::new(opts.url),
+        Some(name) => gixor::repos::Repository::new_with(name, opts.url),
+        None => gixor::repos::Repository::new(opts.url),
     };
     match gixor.add_repository(repo) {
         Ok(_) => Ok(Some(gixor)),
@@ -323,7 +326,7 @@ fn init_log(level: &LogLevel) {
 #[cfg(debug_assertions)]
 mod gencomp {
     use crate::cli::CliOpts;
-    use gixor::{GixorError, Result};
+    use gixor::{Error, Result};
 
     use clap::{Command, CommandFactory};
     use clap_complete::Shell;
@@ -332,10 +335,10 @@ mod gencomp {
     fn generate_impl(app: &mut Command, shell: Shell, dest: PathBuf) -> Result<()> {
         log::info!("generate completion for {shell:?} to {dest:?}");
         if let Err(e) = std::fs::create_dir_all(dest.parent().unwrap()) {
-            return Err(GixorError::IO(e));
+            return Err(Error::IO(e));
         }
         match std::fs::File::create(dest) {
-            Err(e) => Err(GixorError::IO(e)),
+            Err(e) => Err(Error::IO(e)),
             Ok(mut out) => {
                 clap_complete::generate(shell, app, "gixor", &mut out);
                 Ok(())
@@ -359,11 +362,7 @@ mod gencomp {
                 errs.push(e);
             }
         }
-        if errs.is_empty() {
-            Ok(None)
-        } else {
-            Err(GixorError::Array(errs))
-        }
+        Error::to_err(None, errs)
     }
 }
 

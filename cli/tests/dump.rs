@@ -35,9 +35,26 @@ fn test_dump() {
 }
 
 #[test]
+fn test_dump_failed() {
+    let gixor = match common::setup() {
+        Ok(gixor) => gixor,
+        Err(e) => {
+            panic!("Failed to initialize Gixor: {e}");
+        }
+    };
+    let dest = PathBuf::from("../integration/dump");
+    let _ = std::fs::create_dir_all(&dest);
+    let dest_path = dest.join(".gitignore");
+    let r = gixor.dump_to(vec![gixor::Name::parse("unknown")], &dest_path, false);
+    assert!(r.is_err());
+    let e = r.unwrap_err();
+    assert!(matches!(e, gixor::Error::BoilerplateNotFound(_)))
+}
+
+#[test]
 fn test_list_entries_not_found() {
     let r = gixor::entries("../integration/not_found");
     assert!(r.is_err());
     let e = r.unwrap_err();
-    assert!(matches!(e, gixor::GixorError::FileNotFound(_)));
+    assert!(matches!(e, gixor::Error::FileNotFound(_)));
 }

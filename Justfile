@@ -24,7 +24,9 @@ formats:
 
 # Run clippy for checking the source codes.
 clippy:
-    cargo clippy --all-targets --all-features -- -D warnings
+    cargo clippy --all-targets --features uselibgit -- -D warnings
+    cargo clippy --all-targets --features usegix    -- -D warnings
+    cargo clippy --all-targets                      -- -D warnings
 
 clone_default_ignores:
     test -d testdata/boilerplates/default || git clone https://github.com/github/gitignore.git testdata/boilerplates/default
