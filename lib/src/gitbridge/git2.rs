@@ -151,9 +151,10 @@ fn normal_merge(
 }
 
 pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> crate::Result<Vec<u8>> {
+    let repo_path = boilerplate.repo_path(base_path.as_ref());
     let path = boilerplate.file_path(base_path);
     log::trace!("try to open the git repository: {}", path.display());
-    let gitrepo = match git2::Repository::open(&path) {
+    let gitrepo = match git2::Repository::open(&repo_path) {
         Ok(repo) => Ok(repo),
         Err(_) => {
             let message = format!("{}: Failed to open the repository", path.display());
