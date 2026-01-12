@@ -349,6 +349,8 @@ impl GixorFactory {
 
 impl Gixor {
     fn new(config: Config, load_from: PathBuf) -> Self {
+        log::debug!("config path: {load_from:?}");
+        log::debug!("config: {}", serde_json::to_string_pretty(&config).unwrap());
         Gixor { config, load_from }
     }
     /// Returns the base path of this configuration.

@@ -36,8 +36,9 @@ clone_tamada_ignores:
 
 clone_for_test: clone_default_ignores clone_tamada_ignores
 
+# Generate the completion files
 gen_complete:
-    
+    cargo run -- --generate-completion-files
 
 prepare_site_build:
     test -d docs/public || git worktree add -f docs/public gh-pages
@@ -64,10 +65,29 @@ start:
 stop:
     docker stop gixorwww
 
-# Build the docker image for gixor
-docker:
-    docker build -t ghcr.io/tamada/gixor:latest -t ghcr.io/tamada/gixor:{{VERSION}} .
+# Build the docker images of gixor with different features
+docker: _docker_build_default_feature _docker_build_uselibgit_feature _docker_build_usegix_feature
+
+_docker_build_default_feature:   (_docker_build "" "git" "")
+_docker_build_uselibgit_feature: (_docker_build "--features uselibgit" "" "-libgit")
+_docker_build_usegix_feature:    (_docker_build "--features usegix"    "" "-gix")
+
+_docker_build features apt_optional docker_tag_suffix:
+    docker build \
+        --build-arg APT_OPTIONAL="{{apt_optional}}" \
+        --build-arg FEATURES="{{features}}" \
+        -t ghcr.io/tamada/gixor:{{VERSION}}{{docker_tag_suffix}} .
 
 # Build the docker image for multiple platforms and push them into ghcr.io
-docker_buildx:
-    docker buildx build --platform linux/arm64/v8,linux/amd64 --output=type=image,push=true -t ghcr.io/tamada/gixor:latest -t ghcr.io/tamada/gixor:{{VERSION}} .
+docker_buildx: _docker_buildx_default_feature _docker_buildx_uselibgit_feature _docker_buildx_usegix_feature
+
+_docker_buildx_default_feature:   (_docker_buildx "" "git" "")
+_docker_buildx_uselibgit_feature: (_docker_buildx "--features uselibgit" "" "-libgit")
+_docker_buildx_usegix_feature:    (_docker_buildx "--features usegix"    "" "-gix")
+
+_docker_buildx features apt_optional docker_tag_suffix:
+    docker buildx build --platform linux/arm64/v8,linux/amd64 \
+        --output=type=image,push=true \
+        --build-arg APT_OPTIONAL="{{apt_optional}}" \
+        --build-arg FEATURES="{{features}}" \
+        -t ghcr.io/tamada/gixor:{{VERSION}}{{docker_tag_suffix}} .
