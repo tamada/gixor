@@ -9,6 +9,7 @@ authors.workspace = true
 repository.workspace = true
 homepage.workspace = true
 keywords.workspace = true
+build = "build.rs"
 
 [features]
 default   = []
