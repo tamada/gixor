@@ -215,6 +215,14 @@ pub(crate) struct DumpOpts {
     )]
     pub(crate) clear: bool,
 
+    #[clap(
+        short,
+        long,
+        help = "Forcely overwrite the destination file.",
+        default_value_t = false
+    )]
+    pub(crate) overwrite: bool,
+
     #[clap(value_name = "NAMES...", help = "The boilerplate names to dump.")]
     pub(crate) names: Vec<String>,
 }
@@ -315,6 +323,7 @@ mod tests {
         let opts = DumpOpts {
             dest: "..".into(),
             append: true,
+            overwrite: false,
             clear: false,
             names: vec!["java".into()],
         };
