@@ -15,7 +15,8 @@
 //! // create vec of Name instance.
 //! let names = Name::parse_all(vec!["rust", "macos", "linux", "windows"])
 //! // dump the boilerplate of rust, macos, linux, and windows into stdout.
-//! let r = gixor.dump(names, std::io::stdout());
+//! // The latest bool value is `clear_flag` which means whether to clear the current content or not.
+//! let r = gixor.dump(names, std::io::stdout(), false);
 //! ```
 //!
 //! # Features
@@ -50,6 +51,8 @@ pub enum Error {
     AliasNotFound(String),
     /// Error when the boilerplate is not found.
     BoilerplateNotFound(String),
+    /// Error when the file already exists.
+    FileAlreadyExist(PathBuf),
     /// Error when the file is not found.
     FileNotFound(PathBuf),
     /// Fatal error.
@@ -106,6 +109,7 @@ impl Display for Error {
             Alias(msg) => write!(f, "{msg}"),
             AliasNotFound(name) => write!(f, "{name}: alias not found"),
             BoilerplateNotFound(name) => write!(f, "{name}: boilerplate not found"),
+            FileAlreadyExist(path) => write!(f, "{}: file already exists", path.display()),
             FileNotFound(path) => write!(f, "{}: file not found", path.display()),
             Git(e) => write!(f, "Git error: {e}"),
             IO(e) => write!(f, "IO error: {e}"),
@@ -149,6 +153,37 @@ pub fn find_target_repositories<S: AsRef<str>>(
             .collect::<Vec<_>>()
     );
     routine::find_target_repositories(gixor, repository_names)
+}
+
+/// If the given path is `"-"`, this function returns itself.
+/// If the given path is a directory, this function returns the path of `${dest}/.gitignore`.
+/// Otherwise, this function returns `dest``.
+pub fn normalize_dest_path<P: AsRef<Path>>(dest: P) -> PathBuf {
+    let path = dest.as_ref();
+    if path == Path::new("-") {
+        path.to_path_buf()
+    } else if path.is_dir() {
+        path.join(".gitignore")
+    } else {
+        path.to_path_buf()
+    }
+}
+
+/// This function returns that `gixor` does overwrite the given path or not
+/// by the existance of it and the `overwrite` flag.
+/// If `true`, `gixor` can write to the given path, otherwise, not.
+///
+/// - If the given path is `"-"`, this function returns `true`.
+/// - If the given path exists, this function returns the value of `overwrite` flag.
+/// - If the given path does not exist, this function returns `true`.
+fn is_enable_write(path: &Path, overwrite: bool) -> bool {
+    if path == Path::new("-") {
+        true
+    } else if path.exists() {
+        overwrite
+    } else {
+        true
+    }
 }
 
 /// The name of the boilerplate which contains the repository name and the boilerplate name.
@@ -362,6 +397,7 @@ impl Gixor {
     }
 
     /// Write the the content of boilerplate corresponding the given names to the destination.
+    /// If the `clear_flag` is `false`, this function keeps the current prologue.
     pub fn dump(
         &self,
         names: Vec<Name>,
@@ -384,15 +420,21 @@ impl Gixor {
         names: Vec<Name>,
         dest: P,
         clear_flag: bool,
+        overwrite: bool,
     ) -> Result<()> {
         let p = dest.as_ref();
         log::info!(
-            "dump {} entries into {} with clear_flag: {clear_flag}.",
+            "dump {} entries into {} with clear_flag: {clear_flag}, overwrite flag: {overwrite}.",
             names.len(),
             p.display()
         );
-        let out = routine::open_dest(p)?;
-        self.dump(names, out, clear_flag)
+        let path = normalize_dest_path(dest);
+        if is_enable_write(&path, overwrite) {
+            let out = routine::open_dest(&path)?;
+            self.dump(names, out, clear_flag)
+        } else {
+            Err(Error::FileAlreadyExist(path))
+        }
     }
 
     /// Store the configuration to the configuration path.

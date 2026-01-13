@@ -1,5 +1,5 @@
 use clap::{Parser, ValueEnum};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use gixor::{AliasManager, Error, Gixor, GixorFactory, Name, RepositoryManager, Result};
 
@@ -123,14 +123,45 @@ fn merge_errors<T>(r: Vec<Result<T>>) -> Result<Vec<T>> {
     }
 }
 
+fn ask_impl(message: &str, choices: &[&str]) -> String {
+    let answer = velvetio::choose(message, choices);
+    answer.to_lowercase()
+}
+
+fn ask_overwrite<F>(path: &Path, overwrite: bool, ask_func: F) -> Option<&Path>
+where
+    F: FnOnce(&str, &[&str]) -> String,
+{
+    if !overwrite && path.exists() {
+        let message = format!(
+            "File {} already exists. Overwrite? [Yes/No/Stdout]",
+            path.display()
+        );
+        let answer = ask_func(&message, &["Yes", "No", "Stdout"]);
+        match answer.as_str() {
+            "yes" | "y" => Some(path),
+            "stdout" | "out" | "s" => Some(Path::new("-")),
+            _ => None,
+        }
+    } else {
+        Some(path)
+    }
+}
+
 fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
     let (dest, clear) = (opts.dest.clone(), opts.clear);
-    match opts.names() {
-        Ok(names) => match gixor.dump_to(names, dest, clear) {
-            Ok(_) => Ok(None),
+    let dest = gixor::normalize_dest_path(dest);
+    log::debug!("resultant dest: {dest:?}");
+    if let Some(new_dest) = ask_overwrite(&dest, opts.overwrite, ask_impl) {
+        match opts.names() {
+            Ok(names) => match gixor.dump_to(names, new_dest, clear, true) {
+                Ok(_) => Ok(None),
+                Err(e) => Err(e),
+            },
             Err(e) => Err(e),
-        },
-        Err(e) => Err(e),
+        }
+    } else {
+        Err(Error::FileAlreadyExist(dest))
     }
 }
 
@@ -388,5 +419,44 @@ mod tests {
             Ok(opts) => assert_eq!(opts.log, LogLevel::Trace),
             Err(e) => panic!("failed to parse: {e:?}"),
         }
+    }
+
+    #[test]
+    fn test_ask_overwrite1() {
+        let path = Path::new("non_existing_file_for_test.txt");
+        let r = ask_overwrite(path, false, |_, _| "yes".to_string());
+        assert!(r.is_some());
+        assert_eq!(r.unwrap(), path);
+    }
+
+    #[test]
+    fn test_ask_overwrite2() {
+        let path = Path::new("../testdata/.gitignore");
+        let r = ask_overwrite(path, false, |_, _| "no".to_string());
+        assert!(r.is_none());
+    }
+
+    #[test]
+    fn test_ask_overwrite3() {
+        let path = Path::new("../testdata/.gitignore");
+        let r = ask_overwrite(path, false, |_, _| "yes".to_string());
+        assert!(r.is_some());
+        assert_eq!(r.unwrap(), path);
+    }
+
+    #[test]
+    fn test_ask_overwrite4() {
+        let path = Path::new("../testdata/.gitignore");
+        let r = ask_overwrite(path, false, |_, _| "s".to_string());
+        assert!(r.is_some());
+        assert_eq!(r.unwrap(), Path::new("-"));
+    }
+
+    #[test]
+    fn test_ask_overwrite5() {
+        let path = Path::new("../testdata/.gitignore");
+        let r = ask_overwrite(path, true, |_, _| "no".to_string());
+        assert!(r.is_some());
+        assert_eq!(r.unwrap(), path);
     }
 }

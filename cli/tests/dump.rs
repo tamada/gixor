@@ -21,6 +21,7 @@ fn test_dump() {
         ],
         &dest_path,
         false,
+        true,
     );
     log::info!("dump result: {r:?}");
     assert!(r.is_ok());
@@ -45,7 +46,7 @@ fn test_dump_failed() {
     let dest = PathBuf::from("../integration/dump");
     let _ = std::fs::create_dir_all(&dest);
     let dest_path = dest.join(".gitignore");
-    let r = gixor.dump_to(vec![gixor::Name::parse("unknown")], &dest_path, false);
+    let r = gixor.dump_to(vec![gixor::Name::parse("unknown")], &dest_path, false, true);
     assert!(r.is_err());
     let e = r.unwrap_err();
     assert!(matches!(e, gixor::Error::BoilerplateNotFound(_)))
