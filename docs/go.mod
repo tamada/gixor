@@ -1,5 +1,5 @@
 module github.com/tamada/gixor
 
-go 1.24.0
+go 1.25.6
 
-require github.com/imfing/hextra v0.9.4 // indirect
+require github.com/tamada/hugo_theme_mod v0.0.0-20260208080146-1497c09c3593 // indirect
