@@ -27,7 +27,7 @@ menu:
       weight: 500
     - identifier: "haruaki-tamada"
       pre: "haruaki-tamada"
-      url: "https://github.com/tamada"
+      url: "https://tamada.github.io/"
       weight: 400
   footer:
     - name: ":smile: About"
