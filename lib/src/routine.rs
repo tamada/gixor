@@ -122,13 +122,18 @@ pub(super) fn dump_boilerplates_impl(
     boilerplates: Vec<super::repos::Boilerplate>,
     clear_flag: bool,
     base_path: &Path,
+    prologue_path: Option<PathBuf>,
 ) -> Result<()> {
     log::info!(
         "dumping boilerplates {:?}",
         boilerplates.iter().map(|b| b.name()).collect::<Vec<_>>()
     );
     let mut w = std::io::BufWriter::new(dest);
-    let prologue = if clear_flag { vec![] } else { load_prologue() };
+    let prologue = if clear_flag {
+        vec![]
+    } else {
+        load_prologue(prologue_path)
+    };
     let contents = Error::vec_result_to_result_vec(
         boilerplates
             .into_iter()
@@ -151,10 +156,11 @@ pub(super) fn dump_boilerplates_impl(
     }
 }
 
-fn load_prologue() -> Vec<String> {
-    match std::fs::File::open(".gitignore") {
+fn load_prologue(prologue_path: Option<PathBuf>) -> Vec<String> {
+    let path = prologue_path.unwrap_or_else(|| PathBuf::from(".gitignore"));
+    match std::fs::File::open(&path) {
         Ok(f) => {
-            log::info!("loading prologue from .gitignore");
+            log::info!("loading prologue from {}", path.display());
             let mut result = vec![];
             let reader = BufReader::new(f);
             for line in reader.lines().map_while(|r| r.ok()) {

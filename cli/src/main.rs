@@ -18,11 +18,10 @@ pub enum LogLevel {
 
 fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, bool)> {
     let mut store_flag = false;
-    let mut gixor = match config_path {
+    let gixor = match config_path {
         None => {
             log::trace!("no config path specified. use default configuration");
-            store_flag = true;
-            Gixor::default()
+            GixorFactory::load_or_default()
         }
         Some(path) => match GixorFactory::load(path.clone()) {
             Ok(g) => {
@@ -35,19 +34,17 @@ fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, 
     let gixor = if gixor.is_empty() {
         log::trace!("no repositories are given. add default repository");
         store_flag = true;
-        match gixor.add_repository(gixor::repos::Repository::default()) {
-            Err(e) => Err(e),
-            Ok(_) => Ok(gixor),
+        let mut g = gixor;
+        match g.add_repository(gixor::repos::Repository::default()) {
+            Err(e) => return Err(e),
+            Ok(_) => g,
         }
     } else {
-        Ok(gixor)
+        gixor
     };
-    match gixor {
-        Ok(g) => match g.prepare(no_network) {
-            Err(e) => Err(e),
-            _ => Ok((g, store_flag)),
-        },
+    match gixor.prepare(no_network) {
         Err(e) => Err(e),
+        _ => Ok((gixor, store_flag)),
     }
 }
 
@@ -74,7 +71,7 @@ fn remove_aliases(gixor: &mut Gixor, args: Vec<String>) -> Result<Option<&Gixor>
         .iter()
         .map(|name| gixor.remove_alias(name))
         .collect::<Vec<_>>();
-    match merge_errors(r) {
+    match Error::vec_result_to_result_vec(r) {
         Ok(_) => Ok(Some(gixor)),
         Err(e) => Err(e),
     }
@@ -102,24 +99,6 @@ fn perform_alias(gixor: &mut Gixor, opts: cli::AliasOpts) -> Result<Option<&Gixo
             add_alias(gixor, opts.name, opts.description, opts.boilerplates)
         }
         Some(cli::AliasCmd::Remove(opts)) => remove_aliases(gixor, opts.args),
-    }
-}
-
-fn merge_errors<T>(r: Vec<Result<T>>) -> Result<Vec<T>> {
-    let mut errs = vec![];
-    let mut items = vec![];
-    for e in r {
-        match e {
-            Ok(item) => items.push(item),
-            Err(e) => errs.push(e),
-        }
-    }
-    if errs.is_empty() {
-        Ok(items)
-    } else if errs.len() == 1 {
-        Err(errs.into_iter().next().unwrap())
-    } else {
-        Err(Error::Array(errs))
     }
 }
 
