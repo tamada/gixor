@@ -242,7 +242,10 @@ impl Name {
     }
 }
 
-/// Represents the main structure of Gixor.
+/// Represents the main structure of Gixor, the engine for managing .gitignore boilerplates.
+///
+/// It holds the configuration, including repository locations and aliases, and provides
+/// methods to interact with them (cloning, updating, finding, and dumping boilerplates).
 pub struct Gixor {
     config: Config,
     load_from: PathBuf,
@@ -360,11 +363,22 @@ impl Gixor {
     }
 
     /// Prepare the repositories in the local environment by cloning or updating them.
+    ///
+    /// This method will iterate through all configured repositories. If a repository
+    /// does not exist locally, it will be cloned. If it exists, it will be updated (pulled).
+    ///
+    /// # Arguments
+    /// * `no_network` - If true, skip network operations (no clone or pull).
     pub fn prepare(&self, no_network: bool) -> Result<()> {
         self.config.prepare(no_network)
     }
 
-    /// Write the the content of boilerplate corresponding the given names to the destination.
+    /// Write the content of boilerplates corresponding to the given names to the destination.
+    ///
+    /// # Arguments
+    /// * `names` - A vector of [`Name`] instances representing the boilerplates to dump.
+    /// * `dest` - A writer where the combined content will be written.
+    /// * `clear_flag` - If true, do not include the existing prologue from the destination.
     pub fn dump(
         &self,
         names: Vec<Name>,
@@ -383,9 +397,16 @@ impl Gixor {
         }
     }
 
-    /// If the destination is `"-"`, the content is written to the stdout, and
-    /// the `dest` is a directory, the content is written to the `${dest}/.gitignore`.
-    /// Otherwise, the content is written to the file of `dest`.
+    /// Writes the selected boilerplates to a file or stdout.
+    ///
+    /// If the destination is `"-"`, the content is written to stdout.
+    /// If the `dest` is a directory, the content is written to `${dest}/.gitignore`.
+    /// Otherwise, the content is written to the file specified by `dest`.
+    ///
+    /// # Arguments
+    /// * `names` - A vector of [`Name`] instances.
+    /// * `dest` - The destination path or `"-"` for stdout.
+    /// * `clear_flag` - If true, ignore existing content in the destination.
     pub fn dump_to<P: AsRef<Path>>(
         &self,
         names: Vec<Name>,
