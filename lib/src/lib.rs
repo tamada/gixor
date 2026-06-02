@@ -98,7 +98,7 @@ impl Display for Error {
             Array(errs) => {
                 for (i, e) in errs.iter().enumerate() {
                     if i > 0 {
-                        write!(f, "\n")?;
+                        writeln!(f)?;
                     }
                     write!(f, "{e}")?;
                 }
