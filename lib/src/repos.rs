@@ -3,7 +3,6 @@
 //! and prepare repositories by cloning or pulling from remote sources.
 use std::{
     fmt::Write,
-    io::BufRead,
     path::{Path, PathBuf},
 };
 
@@ -355,18 +354,7 @@ fn is_gitignore_file(name: Option<&std::ffi::OsStr>) -> bool {
 }
 
 fn dump_path(path: PathBuf) -> Result<String> {
-    let mut result = vec![];
-    match std::fs::File::open(&path) {
-        Err(e) => Err(Error::IO(e)),
-        Ok(file) => {
-            let reader = std::io::BufReader::new(file);
-            for line in reader.lines() {
-                let line = line.map_err(Error::IO)?;
-                result.push(line);
-            }
-            Ok(result.join("\n"))
-        }
-    }
+    std::fs::read_to_string(path).map_err(Error::IO)
 }
 
 #[cfg(test)]
