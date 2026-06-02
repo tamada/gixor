@@ -24,7 +24,7 @@ impl Alias {
 }
 
 /// Represents a collection of aliases.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Aliases {
     aliases: Vec<Alias>,
 }
