@@ -13,9 +13,9 @@
 //! let gixor = GixorFactory::load("testdata/config.json").unwrap();
 //! gixor.prepare(true).unwrap(); // clone or update all repositories, if needed.
 //! // create vec of Name instance.
-//! let names = Name::parse_all(vec!["rust", "macos", "linux", "windows"])
+//! let names = Name::parse_all(vec!["rust", "macos", "linux", "windows"]);
 //! // dump the boilerplate of rust, macos, linux, and windows into stdout.
-//! let r = gixor.dump(names, std::io::stdout());
+//! let r = gixor.dump(names, std::io::stdout(), false);
 //! ```
 //!
 //! # Features
@@ -96,12 +96,13 @@ impl Display for Error {
         use Error::*;
         match self {
             Array(errs) => {
-                let result = errs.iter().map(|e| e.fmt(f)).collect::<Vec<_>>();
-                if result.iter().any(|r| r.is_err()) {
-                    Err(std::fmt::Error)
-                } else {
-                    Ok(())
+                for (i, e) in errs.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, "\n")?;
+                    }
+                    write!(f, "{e}")?;
                 }
+                Ok(())
             }
             Alias(msg) => write!(f, "{msg}"),
             AliasNotFound(name) => write!(f, "{name}: alias not found"),
@@ -372,9 +373,13 @@ impl Gixor {
     ) -> Result<()> {
         match routine::find_boilerplates(self, names) {
             Err(e) => Err(e),
-            Ok(boilerplates) => {
-                routine::dump_boilerplates_impl(dest, boilerplates, clear_flag, self.base_path())
-            }
+            Ok(boilerplates) => routine::dump_boilerplates_impl(
+                dest,
+                boilerplates,
+                clear_flag,
+                self.base_path(),
+                None,
+            ),
         }
     }
 
@@ -394,19 +399,37 @@ impl Gixor {
             p.display()
         );
         let out = routine::open_dest(p)?;
-        self.dump(names, out, clear_flag)
+        let prologue_path = if p == Path::new("-") {
+            Some(PathBuf::from(".gitignore"))
+        } else if p.is_dir() {
+            Some(p.join(".gitignore"))
+        } else {
+            Some(p.to_path_buf())
+        };
+        match routine::find_boilerplates(self, names) {
+            Err(e) => Err(e),
+            Ok(boilerplates) => routine::dump_boilerplates_impl(
+                out,
+                boilerplates,
+                clear_flag,
+                self.base_path(),
+                prologue_path,
+            ),
+        }
     }
 
     /// Store the configuration to the configuration path.
     pub fn store(&self) -> Result<()> {
-        match std::fs::create_dir_all(self.load_from.parent().unwrap()) {
+        if let Some(parent) = self.load_from.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent).map_err(Error::IO)?;
+            }
+        }
+        match std::fs::File::create(&self.load_from) {
             Err(e) => Err(Error::IO(e)),
-            Ok(_) => match std::fs::File::create(&self.load_from) {
-                Err(e) => Err(Error::IO(e)),
-                Ok(f) => match serde_json::to_writer(f, &self.config) {
-                    Err(e) => Err(Error::Json(e)),
-                    Ok(_) => Ok(()),
-                },
+            Ok(f) => match serde_json::to_writer(f, &self.config) {
+                Err(e) => Err(Error::Json(e)),
+                Ok(_) => Ok(()),
             },
         }
     }
@@ -511,7 +534,7 @@ impl RepositoryManager for Gixor {
 }
 
 fn update_base_path(config: Config, path: &Path) -> Config {
-    let parent = path.parent().unwrap();
+    let parent = path.parent().unwrap_or(Path::new("."));
     let base_path = config.base_path.clone();
     let new_base_path = if base_path.is_absolute() || base_path.starts_with(".") {
         base_path
@@ -601,7 +624,7 @@ impl AliasManager for Config {
     }
 
     fn add_alias(&mut self, alias: aliases::Alias) -> Result<()> {
-        let aliases = self.aliases.as_mut().unwrap();
+        let aliases = self.aliases.get_or_insert_with(aliases::Aliases::default);
         aliases.add_alias(alias)
     }
 }
@@ -675,7 +698,7 @@ mod tests {
                 Error::Fatal("hoge2".to_string())
             ])
             .to_string(),
-            "Fatal error: hoge1Fatal error: hoge2"
+            "Fatal error: hoge1\nFatal error: hoge2"
         );
         assert_eq!(
             Error::Alias("hoge: alias not found".to_string()).to_string(),
