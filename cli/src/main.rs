@@ -23,12 +23,10 @@ fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, 
             log::trace!("no config path specified. use default configuration");
             GixorFactory::load_or_default()
         }
-        Some(path) => match GixorFactory::load(path.clone()) {
-            Ok(g) => {
-                log::trace!("configuration load from {}", path.display());
-                g
-            }
-            Err(e) => return Err(e),
+        Some(path) => {
+            let g = GixorFactory::load(&path)?;
+            log::trace!("configuration load from {}", path.display());
+            g
         },
     };
     let gixor = if gixor.is_empty() {
