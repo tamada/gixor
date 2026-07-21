@@ -758,4 +758,88 @@ mod tests {
         let str = serde_json::to_string(&name).unwrap();
         assert_eq!(str, "\"alias/os-list\"");
     }
+
+    #[test]
+    fn test_repository_manager() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = Gixor::new(
+            Config {
+                repositories: vec![],
+                base_path: temp_dir.path().join("boilerplates"),
+                aliases: None,
+            },
+            config_path,
+        );
+
+        assert!(gixor.is_empty());
+        assert_eq!(gixor.len(), 0);
+
+        let repo = repos::Repository::default();
+        gixor.add_repository(repo).unwrap();
+
+        assert!(!gixor.is_empty());
+        assert_eq!(gixor.len(), 1);
+        assert!(gixor.repository("default").is_some());
+        assert_eq!(gixor.repositories().count(), 1);
+
+        gixor.remove_repository("default").unwrap();
+        assert!(gixor.is_empty());
+    }
+
+    #[test]
+    fn test_alias_manager() {
+        let mut gixor = Gixor::new(
+            Config {
+                repositories: vec![],
+                base_path: PathBuf::from("."),
+                aliases: None,
+            },
+            PathBuf::from("config.json"),
+        );
+
+        let alias = aliases::Alias::new("web".into(), "web stuff".into(), vec![]);
+        gixor.add_alias(alias).unwrap();
+        assert_eq!(gixor.iter_aliases().count(), 1);
+
+        gixor.remove_alias("web").unwrap();
+        assert_eq!(gixor.iter_aliases().count(), 0);
+    }
+
+    #[test]
+    fn test_gixor_store() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("sub").join("config.json");
+        let gixor = Gixor::new(
+            Config {
+                repositories: vec![],
+                base_path: PathBuf::from("."),
+                aliases: None,
+            },
+            config_path.clone(),
+        );
+
+        gixor.store().unwrap();
+        assert!(config_path.exists());
+    }
+
+    #[test]
+    fn test_update_base_path() {
+        let config = Config {
+            repositories: vec![],
+            base_path: PathBuf::from("boilerplates"),
+            aliases: None,
+        };
+        let path = PathBuf::from("/etc/gixor/config.json");
+        let updated = update_base_path(config, &path);
+        assert_eq!(updated.base_path, PathBuf::from("/etc/gixor/boilerplates"));
+
+        let config2 = Config {
+            repositories: vec![],
+            base_path: PathBuf::from("/absolute/path"),
+            aliases: None,
+        };
+        let updated2 = update_base_path(config2, &path);
+        assert_eq!(updated2.base_path, PathBuf::from("/absolute/path"));
+    }
 }

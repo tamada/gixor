@@ -83,6 +83,7 @@ fn map_to_boilerplate_name(line: String) -> Option<String> {
 }
 
 fn strip_to_boilerplate_name(line: String) -> String {
+    let line = line.strip_prefix("### ").unwrap_or(&line);
     let items = line.rsplit("/").collect::<Vec<_>>();
     if items.is_empty() {
         "".to_string()
@@ -172,5 +173,46 @@ fn load_prologue(prologue_path: Option<PathBuf>) -> Vec<String> {
             result
         }
         Err(_) => vec![],
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_map_to_boilerplate_name() {
+        assert_eq!(map_to_boilerplate_name("### Rust.gitignore".into()), Some("Rust".into()));
+        assert_eq!(map_to_boilerplate_name("### path/to/Rust.gitignore".into()), Some("Rust".into()));
+        assert_eq!(map_to_boilerplate_name("Not a boilerplate".into()), None);
+    }
+
+    #[test]
+    fn test_find_gitignore() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let dir_path = temp_dir.path();
+        assert_eq!(find_gitignore(dir_path), dir_path.join(".gitignore"));
+        
+        let file_path = dir_path.join("custom.gitignore");
+        assert_eq!(find_gitignore(&file_path), file_path);
+    }
+
+    #[test]
+    fn test_open_dest() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        
+        // Test stdout
+        assert!(open_dest("-").is_ok());
+        
+        // Test directory
+        let dir_result = open_dest(temp_dir.path());
+        assert!(dir_result.is_ok());
+        assert!(temp_dir.path().join(".gitignore").exists());
+        
+        // Test file
+        let file_path = temp_dir.path().join("out.txt");
+        let file_result = open_dest(&file_path);
+        assert!(file_result.is_ok());
+        assert!(file_path.exists());
     }
 }

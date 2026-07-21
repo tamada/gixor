@@ -3,6 +3,7 @@ baseurl: https://tamada.github.io/gixor/
 defaultContentLanguage: "en"
 languageCode: "en-us"
 theme: ["github.com/tamada/hugo_theme_mod", "github.com/nunocoracao/blowfish/v2"]
+googleAnalytics: "G-CSTKCRJ3F5"
 
 params:
   logo: "icons/gixor.svg"

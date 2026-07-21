@@ -24,3 +24,6 @@ serde_json = "1.0.138"
 gix = { version = "0.76.0", features = [ "blocking-http-transport-reqwest-rust-tls", "blocking-network-client", "merge", "tree-editor" ], optional = true }
 git2 = { version = "0.20.3", optional = true }
 hex = "0.4.3"
+
+[dev-dependencies]
+tempfile = "3.10.1"
