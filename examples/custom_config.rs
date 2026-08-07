@@ -6,7 +6,8 @@ use std::path::PathBuf;
 fn main() -> gixor::Result<()> {
     // 1. Create a custom configuration in a temporary location.
     let config_path = PathBuf::from("custom_config.json");
-    let mut gixor = GixorFactory::load(&config_path)?;
+    // The file does not exist yet, so it is started from scratch rather than loaded.
+    let mut gixor = GixorFactory::new_at(&config_path);
 
     // 2. Add a custom repository.
     println!("Adding custom repository...");

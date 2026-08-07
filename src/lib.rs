@@ -315,30 +315,47 @@ impl Default for Gixor {
 pub struct GixorFactory {}
 
 impl GixorFactory {
-    /// Load the configuration file from the default location.
-    /// The default configuration is provided by [`Gixor::default`].
+    /// Load the configuration file from the default location,
+    /// falling back to a fresh configuration when there is none yet.
     pub fn load_or_default() -> Gixor {
         match dirs::config_dir() {
             Some(dir) => {
                 let path = dir.join("gixor").join("config.json");
-                GixorFactory::load(path).unwrap_or_default()
+                GixorFactory::load(&path).unwrap_or_else(|_| GixorFactory::new_at(path))
             }
             None => panic!("Failed to get the config directory"),
         }
     }
 
+    /// Creates a fresh configuration destined for `path`, holding the default repository and
+    /// no alias. Nothing is written until [`Gixor::store`] is called.
+    ///
+    /// Use this to start a configuration that does not exist yet. [`GixorFactory::load`]
+    /// deliberately refuses a missing file instead, so that a mistyped path is reported rather
+    /// than silently turning into an empty configuration.
+    pub fn new_at<P: AsRef<Path>>(path: P) -> Gixor {
+        let path = path.as_ref();
+        Gixor::new(
+            Config {
+                repositories: vec![repos::Repository::default()],
+                base_path: path.parent().unwrap_or(Path::new(".")).join("boilerplates"),
+                aliases: None,
+            },
+            path.to_path_buf(),
+        )
+    }
+
     /// Parse the configuration file from the given path.
+    ///
+    /// Returns [`Error::FileNotFound`] when `path` does not exist. To start from a configuration
+    /// that has yet to be written, use [`GixorFactory::new_at`].
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Gixor> {
         let path = path.as_ref();
         match std::fs::File::open(path) {
-            Err(_) => Ok(Gixor::new(
-                Config {
-                    repositories: vec![repos::Repository::default()],
-                    base_path: path.parent().unwrap().join("boilerplates"),
-                    aliases: None,
-                },
-                path.to_path_buf(),
-            )),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                Err(Error::FileNotFound(path.to_path_buf()))
+            }
+            Err(e) => Err(Error::IO(e)),
             Ok(f) => match serde_json::from_reader(f) {
                 Ok(config) => Ok(Gixor::new(
                     update_base_path(config, path),
@@ -664,6 +681,24 @@ mod tests {
         let value = vec![Ok(1), Ok(2), Ok(3)];
         let result = Error::vec_result_to_result_vec(value).unwrap();
         assert_eq!(result, vec![1, 2, 3]);
+    }
+
+    /// A mistyped configuration path used to yield an empty configuration that looked like a
+    /// working one. Starting from scratch is now an explicit choice instead.
+    #[test]
+    fn load_reports_a_missing_configuration() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+
+        assert!(matches!(
+            GixorFactory::load(&path),
+            Err(Error::FileNotFound(_))
+        ));
+
+        let gixor = GixorFactory::new_at(&path);
+        assert_eq!(gixor.config.repositories.len(), 1);
+        assert_eq!(gixor.config.base_path, dir.path().join("boilerplates"));
+        assert_eq!(gixor.load_from, path);
     }
 
     #[test]

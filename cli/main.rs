@@ -374,7 +374,7 @@ mod tests {
     fn test_perform_impl_list() {
         let temp_dir = tempfile::tempdir().unwrap();
         let config_path = temp_dir.path().join("config.json");
-        let mut gixor = GixorFactory::load(&config_path).unwrap();
+        let mut gixor = GixorFactory::new_at(&config_path);
 
         let subcmd = GixorCommand::List(ListOpts {
             header: true,
@@ -390,7 +390,7 @@ mod tests {
     fn test_perform_impl_search() {
         let temp_dir = tempfile::tempdir().unwrap();
         let config_path = temp_dir.path().join("config.json");
-        let mut gixor = GixorFactory::load(&config_path).unwrap();
+        let mut gixor = GixorFactory::new_at(&config_path);
 
         let subcmd = GixorCommand::Search(cli::SearchOpts {
             queries: vec!["rust".into()],
@@ -404,7 +404,7 @@ mod tests {
     fn test_perform_impl_root() {
         let temp_dir = tempfile::tempdir().unwrap();
         let config_path = temp_dir.path().join("config.json");
-        let mut gixor = GixorFactory::load(&config_path).unwrap();
+        let mut gixor = GixorFactory::new_at(&config_path);
 
         let subcmd = GixorCommand::Root(cli::RootOpts { open: false });
 
@@ -416,7 +416,7 @@ mod tests {
     fn test_perform_impl_alias() {
         let temp_dir = tempfile::tempdir().unwrap();
         let config_path = temp_dir.path().join("config.json");
-        let mut gixor = GixorFactory::load(&config_path).unwrap();
+        let mut gixor = GixorFactory::new_at(&config_path);
 
         let subcmd = GixorCommand::Alias(cli::AliasOpts { cmd: None });
 
@@ -428,7 +428,7 @@ mod tests {
     fn test_perform_impl_dump() {
         let temp_dir = tempfile::tempdir().unwrap();
         let config_path = temp_dir.path().join("config.json");
-        let mut gixor = GixorFactory::load(&config_path).unwrap();
+        let mut gixor = GixorFactory::new_at(&config_path);
 
         let subcmd = GixorCommand::Dump(cli::DumpOpts {
             dest: "-".into(),
@@ -445,7 +445,7 @@ mod tests {
     fn test_perform_impl_entries() {
         let temp_dir = tempfile::tempdir().unwrap();
         let config_path = temp_dir.path().join("config.json");
-        let mut gixor = GixorFactory::load(&config_path).unwrap();
+        let mut gixor = GixorFactory::new_at(&config_path);
 
         let subcmd = GixorCommand::Entries(cli::EntriesOpts {
             dir: temp_dir.path().to_path_buf(),
@@ -460,7 +460,7 @@ mod tests {
     fn test_perform_impl_repository() {
         let temp_dir = tempfile::tempdir().unwrap();
         let config_path = temp_dir.path().join("config.json");
-        let mut gixor = GixorFactory::load(&config_path).unwrap();
+        let mut gixor = GixorFactory::new_at(&config_path);
 
         // Test Repo List
         let subcmd = GixorCommand::Repository(cli::RepositoryOpts::List);
@@ -480,7 +480,7 @@ mod tests {
     fn test_perform_impl_update() {
         let temp_dir = tempfile::tempdir().unwrap();
         let config_path = temp_dir.path().join("config.json");
-        let mut gixor = GixorFactory::load(&config_path).unwrap();
+        let mut gixor = GixorFactory::new_at(&config_path);
 
         let subcmd = GixorCommand::Update;
         // Since we have no repos and prepare(false) returns Ok(()), this should pass
