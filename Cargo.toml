@@ -44,6 +44,9 @@ terminal_size = "0.4.4"
 
 [dev-dependencies]
 tempfile = "3.27"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# rustls rather than the default native-tls, so that the tests do not drag in libopenssl
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
 
 [[bin]]
 name = "gixor"

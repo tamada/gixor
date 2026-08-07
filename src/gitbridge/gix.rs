@@ -447,7 +447,7 @@ mod tests {
         std::fs::write(remote.join("Global/Bar.gitignore"), "bar\n").unwrap();
         commit(&remote, "v1", "2024-01-01T00:00:00+0000");
 
-        super::clone(remote.to_string_lossy().to_string(), &work).unwrap();
+        super::clone(remote.to_string_lossy(), &work).unwrap();
         assert_eq!(
             std::fs::read_to_string(work.join("Foo.gitignore")).unwrap(),
             "v1\n"
@@ -478,19 +478,20 @@ mod tests {
         assert_eq!(git(&work, &["status", "--short"]), "");
     }
 
+    // These clone into a temporary directory rather than into the repository. Nothing here
+    // needs a committed fixture, and the directory goes away on its own even when the test
+    // fails partway through.
     #[test]
     fn test_clone_https() {
+        let dir = tempfile::tempdir().unwrap();
         let url = "https://github.com/github/gitignore.git";
-        let path = "../testdata/test-clone-with-gix/gitignore-https";
-        super::clone(url, path).unwrap();
-        std::fs::remove_dir_all(path).unwrap();
+        super::clone(url, dir.path().join("gitignore-https")).unwrap();
     }
 
     #[test]
     fn test_clone_ssh() {
+        let dir = tempfile::tempdir().unwrap();
         let url = "git@github.com:github/gitignore.git";
-        let path = "../testdata/test-clone-with-gix/gitignore-ssh";
-        super::clone(url, path).unwrap();
-        std::fs::remove_dir_all(path).unwrap();
+        super::clone(url, dir.path().join("gitignore-ssh")).unwrap();
     }
 }

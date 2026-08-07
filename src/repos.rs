@@ -368,7 +368,9 @@ mod tests {
         assert_eq!(repo.name, "tamada");
         assert_eq!(repo.url, "https://github.com/tamada/gitignore.git");
 
-        let base_path = PathBuf::from("../testdata/boilerplates");
+        // share the one clone the other tests use, rather than racing them for the directory
+        crate::tests::prepare_once();
+        let base_path = crate::tests::boilerplates_path();
         if let Err(e) = repo.prepare(&base_path) {
             panic!("Failed to prepare the repository: {e}");
         }
@@ -378,7 +380,7 @@ mod tests {
         if let Some(b) = repo.find(&Name::new_of("devcontainer"), &base_path) {
             assert_eq!(
                 b.file_path(&base_path),
-                PathBuf::from("../testdata/boilerplates/tamada/devcontainer.gitignore")
+                base_path.join("tamada").join("devcontainer.gitignore")
             );
         } else {
             panic!("Failed to find the devcontainer.gitignore");

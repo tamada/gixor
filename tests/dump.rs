@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 mod common;
 
 #[test]
@@ -10,7 +8,7 @@ fn test_dump() {
             panic!("Failed to initialize Gixor: {e}");
         }
     };
-    let dest = PathBuf::from("../integration/dump");
+    let dest = common::integration_dir().join("dump");
     let _ = std::fs::create_dir_all(&dest);
     let dest_path = dest.join(".gitignore");
     let r = gixor.dump_to(
@@ -42,7 +40,7 @@ fn test_dump_failed() {
             panic!("Failed to initialize Gixor: {e}");
         }
     };
-    let dest = PathBuf::from("../integration/dump");
+    let dest = common::integration_dir().join("dump");
     let _ = std::fs::create_dir_all(&dest);
     let dest_path = dest.join(".gitignore");
     let r = gixor.dump_to(vec![gixor::Name::parse("unknown")], &dest_path, false);
@@ -53,7 +51,7 @@ fn test_dump_failed() {
 
 #[test]
 fn test_list_entries_not_found() {
-    let r = gixor::entries("../integration/not_found");
+    let r = gixor::entries(common::integration_dir().join("not_found"));
     assert!(r.is_err());
     let e = r.unwrap_err();
     assert!(matches!(e, gixor::Error::FileNotFound(_)));

@@ -138,9 +138,15 @@ mod tests {
         assert!(matches!(result, Err(Error::Alias(_))));
     }
 
+    /// Loads the test configuration with its boilerplate repositories cloned or updated.
+    fn setup() -> crate::Gixor {
+        crate::tests::prepare_once();
+        GixorFactory::load(crate::tests::config_path()).unwrap()
+    }
+
     #[test]
     fn test_predefined_alias() {
-        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
+        let gixor = GixorFactory::load(crate::tests::config_path()).unwrap();
         let binding = gixor.config.aliases.unwrap();
         let alias = binding.find("os-list").unwrap();
         assert_eq!(alias.name, "os-list");
@@ -148,8 +154,7 @@ mod tests {
 
     #[test]
     fn test_alias() {
-        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
-        gixor.prepare(false).unwrap();
+        let gixor = setup();
         let results = gixor.find(Name::from("os-list")).unwrap();
         assert_eq!(results.len(), 3);
 
@@ -163,7 +168,7 @@ mod tests {
 
     #[test]
     fn test_alias_with_repository_name() {
-        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
+        let gixor = setup();
         let results = gixor.find(Name::from("alias/os-list")).unwrap();
         assert_eq!(results.len(), 3);
 
@@ -177,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_nexted_alias() {
-        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
+        let gixor = setup();
         let results = gixor.find(Name::from("my-default")).unwrap();
         assert_eq!(results.len(), 6);
 

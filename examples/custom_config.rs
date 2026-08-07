@@ -1,12 +1,12 @@
-use gixor::{Gixor, GixorFactory, Name, RepositoryManager, AliasManager};
+use gixor::{AliasManager, GixorFactory, Name, RepositoryManager};
 use gixor::repos::Repository;
 use gixor::aliases::Alias;
 use std::path::PathBuf;
 
 fn main() -> gixor::Result<()> {
     // 1. Create a custom configuration in a temporary location.
-    let config_path = PathBuf::from("custom_config.json");
     // The file does not exist yet, so it is started from scratch rather than loaded.
+    let config_path = PathBuf::from("custom_config.json");
     let mut gixor = GixorFactory::new_at(&config_path);
 
     // 2. Add a custom repository.

@@ -1,4 +1,4 @@
-use gixor::{Gixor, GixorFactory, Name};
+use gixor::{GixorFactory, Name};
 use std::io::stdout;
 
 fn main() -> gixor::Result<()> {

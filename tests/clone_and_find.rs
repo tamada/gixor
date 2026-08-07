@@ -29,7 +29,9 @@ async fn test_clone_and_find() -> Result<()> {
 
 #[test]
 fn test_find() {
-    let gixor = GixorFactory::load("../testdata/config.json").unwrap();
+    let gixor = GixorFactory::load(common::config_path()).unwrap();
+    // the fixtures have to be on disk before a name resolves to a boilerplate
+    gixor.prepare(false).unwrap();
     let results = gixor.find(Name::from("devcontainer")).unwrap();
     assert_eq!(results.len(), 1);
     let result = results.first().unwrap();

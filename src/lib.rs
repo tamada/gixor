@@ -676,6 +676,51 @@ fn remove_repo_dir<P: AsRef<Path>>(base_path: P, repo: repos::Repository) -> Res
 #[cfg(test)]
 mod tests {
     use super::*;
+    /// The directory holding the fixtures of `testdata`, shared by the unit tests of this crate.
+    ///
+    /// The paths are anchored on `CARGO_MANIFEST_DIR` rather than written relative to the working
+    /// directory. Cargo happens to run test binaries from the package root, but relying on that
+    /// is what led the tests to read `../testdata`, one level above the repository, where the
+    /// fixtures are not.
+    fn testdata_dir() -> PathBuf {
+        PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/testdata"))
+    }
+
+    /// The configuration used by the tests, carrying three repositories and two aliases.
+    ///
+    /// The existence check matters: a path that is not there is not an error the tests would
+    /// notice on their own, it just leaves them asserting against an empty configuration.
+    pub(crate) fn config_path() -> PathBuf {
+        let path = testdata_dir().join("config.json");
+        assert!(
+            path.exists(),
+            "{}: the test configuration is missing",
+            path.display()
+        );
+        path
+    }
+
+    /// The directory the test repositories are cloned into. Ignored by `testdata/.gitignore`.
+    pub(crate) fn boilerplates_path() -> PathBuf {
+        testdata_dir().join("boilerplates")
+    }
+
+    /// Clones or updates the repositories of the test configuration, once for the whole binary.
+    ///
+    /// Every test that resolves a name down to a boilerplate needs them on disk. Preparing from
+    /// each test instead would have several clones racing into the same directory, since the
+    /// tests run in parallel, and letting one test prepare for the others would make the outcome
+    /// depend on the order they happen to run in.
+    pub(crate) fn prepare_once() {
+        static PREPARED: std::sync::OnceLock<()> = std::sync::OnceLock::new();
+        PREPARED.get_or_init(|| {
+            GixorFactory::load(config_path())
+                .unwrap()
+                .prepare(false)
+                .unwrap()
+        });
+    }
+
     #[test]
     fn test_vec_result_to_result_vec() {
         let value = vec![Ok(1), Ok(2), Ok(3)];
@@ -703,13 +748,10 @@ mod tests {
 
     #[test]
     fn parse_gixor() {
-        match GixorFactory::load(PathBuf::from("../testdata/config.json")) {
+        match GixorFactory::load(config_path()) {
             Err(e) => panic!("Failed to parse the config file: {e}"),
             Ok(gixor) => {
-                assert_eq!(
-                    gixor.config.base_path,
-                    PathBuf::from("../testdata/boilerplates")
-                );
+                assert_eq!(gixor.config.base_path, boilerplates_path());
                 assert_eq!(gixor.config.repositories.len(), 3);
             }
         }

@@ -308,16 +308,21 @@ pub(crate) struct CompleteOpts {
 mod tests {
     use super::*;
 
+    /// The destination is written for this test rather than picked up from wherever the
+    /// tests happen to run, which used to be the gitignore one level above the repository.
     #[test]
     fn dump_opts_names() -> gixor::Result<()> {
+        let dir = tempfile::tempdir().unwrap();
+        let dest = dir.path().join(".gitignore");
+        std::fs::write(&dest, "### Rust.gitignore\ntarget\n### Python.gitignore\n").unwrap();
         let opts = DumpOpts {
-            dest: "..".into(),
+            dest: dest.to_string_lossy().to_string(),
             append: true,
             clear: false,
             names: vec!["java".into()],
         };
         let names = opts.names()?;
-        assert_eq!(names.len(), 7);
+        assert_eq!(names.len(), 3);
         Ok(())
     }
 }
