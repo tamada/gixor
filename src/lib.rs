@@ -440,10 +440,9 @@ impl Gixor {
 
     /// Store the configuration to the configuration path.
     pub fn store(&self) -> Result<()> {
-        if let Some(parent) = self.load_from.parent() {
-            if !parent.as_os_str().is_empty() {
+        if let Some(parent) = self.load_from.parent()
+            && !parent.as_os_str().is_empty() {
                 std::fs::create_dir_all(parent).map_err(Error::IO)?;
-            }
         }
         match std::fs::File::create(&self.load_from) {
             Err(e) => Err(Error::IO(e)),

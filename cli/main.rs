@@ -27,7 +27,7 @@ fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, 
             let g = GixorFactory::load(&path)?;
             log::trace!("configuration load from {}", path.display());
             g
-        },
+        }
     };
     let gixor = if gixor.is_empty() {
         log::trace!("no repositories are given. add default repository");
@@ -287,13 +287,15 @@ fn perform(opts: cli::CliOpts) -> Result<()> {
 
 fn init_log(level: &LogLevel) {
     use LogLevel::*;
-    match level {
-        Error => std::env::set_var("RUST_LOG", "error"),
-        Warn => std::env::set_var("RUST_LOG", "warn"),
-        Info => std::env::set_var("RUST_LOG", "info"),
-        Debug => std::env::set_var("RUST_LOG", "debug"),
-        Trace => std::env::set_var("RUST_LOG", "trace"),
-    };
+    unsafe {
+        match level {
+            Error => std::env::set_var("RUST_LOG", "error"),
+            Warn => std::env::set_var("RUST_LOG", "warn"),
+            Info => std::env::set_var("RUST_LOG", "info"),
+            Debug => std::env::set_var("RUST_LOG", "debug"),
+            Trace => std::env::set_var("RUST_LOG", "trace"),
+        };
+    }
     env_logger::try_init().unwrap_or_else(|_| {
         eprintln!("failed to initialize logger. set RUST_LOG to see logs.");
     });

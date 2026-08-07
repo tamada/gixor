@@ -5,27 +5,46 @@ description = "An API for managing .gitignore files."
 version = "0.4.3"
 edition = "2024"
 license-file = "LICENSE"
-authors = [ "Haruaki Tamada" ]
+authors = ["Haruaki Tamada"]
 repository = "https://github.com/tamada/gixor"
 homepage = "https://tamada.github.io/gixor/"
-categories = [ "command-line-utilities", "configuration", "development-tools" ]
-keywords = [ "cli", "gitignore", "gitignore-generator", "git", "shell", "gitignore-files", "gitignore-templates" ]
+categories = ["command-line-utilities", "configuration", "development-tools"]
+keywords = [
+    "cli",
+    "gitignore",
+    "gitignore-generator",
+    "git",
+    "shell",
+    "gitignore-files",
+    "gitignore-templates",
+]
 
 [features]
 default = []
-usegix  = [ "gix" ]
+usegix = ["gix"]
 
 [dependencies]
-clap = { version = "4.5.28", features = ["derive"] }
-clap_complete = "4.5.44"
-env_logger = "0.11.6"
+clap = { version = "4.6.3", features = ["derive"] }
+clap_complete = "4.6.7"
+env_logger = "0.11.11"
 dirs = "6.0.0"
+gix = { version = "0.85.0", features = [
+    "blocking-http-transport-reqwest-rust-tls",
+    "blocking-network-client",
+    "merge",
+    "tree-editor",
+], optional = true }
 hex = "0.4.3"
-ignore = "0.4.23"
-log = "0.4.25"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.138"
-gix = { version = "0.85.0", features = [ "blocking-http-transport-reqwest-rust-tls", "blocking-network-client", "merge", "tree-editor" ], optional = true }
+ignore = "0.4.31"
+log = "0.4.33"
+opener = "0.8.5"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+terminal_size = "0.4.4"
 
 [dev-dependencies]
-tempfile = "3.10.1"
+tempfile = "3.27"
+
+[[bin]]
+name = "gixor"
+path = "cli/main.rs"
