@@ -1,7 +1,6 @@
 FROM rust:1-bullseye AS builder
 
 ARG FEATURES=""
-ARG APT_OPTIONAL="git"
 
 WORKDIR /app
 COPY . .
@@ -24,6 +23,11 @@ RUN    cargo build --release $FEATURES \
 FROM debian:bullseye-slim
 
 ARG VERSION=0.4.3
+# The default build carries gix and needs nothing installed here. It is the --no-default-features
+# build that drives the git command and therefore asks for git.
+# This has to be declared in this stage: an ARG belongs to the stage it appears in, and being
+# declared in the builder left it empty here, so it never installed anything.
+ARG APT_OPTIONAL=""
 
 LABEL   org.opencontainers.image.source=https://github.com/tamada/gixor \
         org.opencontainers.image.version=${VERSION} \

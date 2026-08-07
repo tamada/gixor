@@ -24,8 +24,8 @@ formats:
 
 # Run clippy for checking the source codes.
 clippy:
-    cargo clippy --all-targets --features usegix -- -D warnings
-    cargo clippy --all-targets                   -- -D warnings
+    cargo clippy --all-targets                       -- -D warnings
+    cargo clippy --all-targets --no-default-features -- -D warnings
 
 clone_default_ignores:
     test -d testdata/boilerplates/default || git clone https://github.com/github/gitignore.git testdata/boilerplates/default
@@ -64,11 +64,12 @@ start:
 stop:
     docker stop gixorwww
 
-# Build the docker images of gixor with different features
-docker: _docker_build_default_feature _docker_build_usegix_feature
+# Build the docker images of gixor with different backends.
+# The default image carries gix, so it needs no git installed alongside.
+docker: _docker_build_default_feature _docker_build_systemgit_feature
 
-_docker_build_default_feature: (_docker_build "" "git" "")
-_docker_build_usegix_feature:  (_docker_build "--features usegix" "" "-gix")
+_docker_build_default_feature:   (_docker_build "" "" "")
+_docker_build_systemgit_feature: (_docker_build "--no-default-features" "git" "-systemgit")
 
 _docker_build features apt_optional docker_tag_suffix:
     docker build \
@@ -77,10 +78,10 @@ _docker_build features apt_optional docker_tag_suffix:
         -t ghcr.io/tamada/gixor:{{VERSION}}{{docker_tag_suffix}} .
 
 # Build the docker image for multiple platforms and push them into ghcr.io
-docker_buildx: _docker_buildx_default_feature _docker_buildx_usegix_feature
+docker_buildx: _docker_buildx_default_feature _docker_buildx_systemgit_feature
 
-_docker_buildx_default_feature: (_docker_buildx "" "git" "")
-_docker_buildx_usegix_feature:  (_docker_buildx "--features usegix" "" "-gix")
+_docker_buildx_default_feature:   (_docker_buildx "" "" "")
+_docker_buildx_systemgit_feature: (_docker_buildx "--no-default-features" "git" "-systemgit")
 
 _docker_buildx features apt_optional docker_tag_suffix:
     docker buildx build --platform linux/arm64/v8,linux/amd64 \

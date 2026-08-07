@@ -20,7 +20,9 @@ keywords = [
 ]
 
 [features]
-default = []
+# gix is a pure Rust Git, so the default build needs no git command and links no C library.
+# Build with --no-default-features to drive the git command instead.
+default = ["usegix"]
 usegix = ["gix"]
 
 [dependencies]

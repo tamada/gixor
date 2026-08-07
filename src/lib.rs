@@ -21,8 +21,11 @@
 //! # Features
 //!
 //! [`Gixor`] provides the following features for operating Git repositories.:
-//! - `usegix`: use [`gix`](https://docs.rs/gix/latest/gix/) crate which is a pure Rust implementation of Git.
-//! - default: use `git` command via [`std::process::Command`](https://doc.rust-lang.org/std/process/struct.Command.html).
+//! - `usegix` (default): use [`gix`](https://docs.rs/gix/latest/gix/) crate which is a pure Rust
+//!   implementation of Git. Nothing has to be installed alongside, and no C library is linked.
+//! - `--no-default-features`: use `git` command via
+//!   [`std::process::Command`](https://doc.rust-lang.org/std/process/struct.Command.html),
+//!   which requires `git` to be on the `PATH`.
 //!
 use std::{
     fmt::Display,
