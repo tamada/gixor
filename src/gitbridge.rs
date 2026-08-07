@@ -1,23 +1,16 @@
 //! Git bridge module that abstracts over different Git backends.
 //! Provides functions to interact with Git repositories
-//! using either the `gix` crate, `git2` crate, or system Git commands
+//! using either the `gix` crate or system Git commands
 //! based on feature flags.
 use crate::repos::Boilerplate;
 use crate::Result;
 use std::path::Path;
 
-#[cfg(all(feature = "usegix", feature = "uselibgit"))]
-compile_error!("Features 'usegix' and 'uselibgit' cannot be enabled at the same time.");
-
-#[cfg(all(feature = "usegix", not(feature = "uselibgit")))]
+#[cfg(feature = "usegix")]
 #[path = "gitbridge/gix.rs"]
 mod gitctrl;
 
-#[cfg(all(not(feature = "usegix"), feature = "uselibgit"))]
-#[path = "gitbridge/git2.rs"]
-mod gitctrl;
-
-#[cfg(all(not(feature = "usegix"), not(feature = "uselibgit")))]
+#[cfg(not(feature = "usegix"))]
 #[path = "gitbridge/systemgit.rs"]
 mod gitctrl;
 

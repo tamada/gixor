@@ -2,11 +2,12 @@
 //! This module provides functions to interact with Git repositories
 //! using the `gix` crate.
 //! It includes functions to clone repositories, pull updates, and retrieve commit hashes.
-use std::path::Path;
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
 
 use gix::{
     remote::{fetch::Outcome, ref_map::Options},
-    Repository,
+    ObjectId, Repository, Tree,
 };
 
 use crate::{repos::Boilerplate, Error, Result};
@@ -57,24 +58,81 @@ pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()
     Ok(())
 }
 
+/// Returns the id of the object that `tree` holds at `path`, or `None` if `path` is absent.
+fn entry_id(tree: &Tree<'_>, path: &Path) -> Result<Option<ObjectId>> {
+    tree.lookup_entry_by_path(path)
+        .map(|entry| entry.map(|e| e.object_id()))
+        .map_err(|e| {
+            Error::Git(format!(
+                "{}: failed to look up the path: {e}",
+                path.display()
+            ))
+        })
+}
+
+/// Returns the tree of the commit denoted by `id`.
+fn commit_tree(repo: &Repository, id: ObjectId) -> Result<Tree<'_>> {
+    repo.find_commit(id)
+        .map_err(|e| Error::Git(format!("{id}: failed to find the commit: {e}")))?
+        .tree()
+        .map_err(|e| Error::Git(format!("{id}: failed to find the tree: {e}")))
+}
+
+/// Returns the latest commit hash (as bytes) that changed the given boilerplate,
+/// which is the equivalent of `git log --format=%H -n 1 -- {boilerplate.path()}`.
 pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> Result<Vec<u8>> {
-    let path = boilerplate.repo_path(base_path);
-    log::debug!("try to open the git repository: {}", path.display());
-    let gitrepo = match gix::open(&path) {
+    let repo_path = boilerplate.repo_path(base_path);
+    let target = boilerplate.path();
+    log::debug!("try to open the git repository: {}", repo_path.display());
+    let mut gitrepo = match gix::open(&repo_path) {
         Ok(repo) => Ok(repo),
         Err(_) => {
-            let message = format!("{}: Failed to open the repository", path.display());
+            let message = format!("{}: Failed to open the repository", repo_path.display());
             log::error!("{message}");
             Err(Error::Git(message.as_str().into()))
         }
     }?;
-    let head = gitrepo.head();
-    match head {
-        Ok(mut h) => match h.peel_to_commit() {
-            Ok(commit) => Ok(commit.id().as_bytes().to_vec()),
-            Err(e) => Err(Error::Git(format!("Failed to peel to commit: {e}"))),
-        },
-        Err(_) => Err(Error::Git("Failed to get the HEAD".into())),
+    // walking by commit time looks up each commit twice, so give the odb a cache.
+    gitrepo.object_cache_size_if_unset(4 * 1024 * 1024);
+
+    let mut current = gitrepo
+        .head_id()
+        .map_err(|e| Error::Git(format!("Failed to get the HEAD: {e}")))?
+        .detach();
+    let not_found = || {
+        Error::Git(format!(
+            "{}: no commit found for the path",
+            target.display()
+        ))
+    };
+    loop {
+        let commit = gitrepo
+            .find_commit(current)
+            .map_err(|e| Error::Git(format!("{current}: failed to find the commit: {e}")))?;
+        let tree = commit
+            .tree()
+            .map_err(|e| Error::Git(format!("{current}: failed to find the tree: {e}")))?;
+        let entry = entry_id(&tree, target)?;
+
+        // Walk down to the first parent holding the very same object at `target`: the path
+        // is untouched here, and Git prunes the remaining parents (its TREESAME rule). Doing
+        // so matters on merges that dropped a side branch's edit to `target`, since that
+        // edit never reached HEAD and must not be reported.
+        let mut treesame = None;
+        for parent in commit.parent_ids() {
+            let parent = parent.detach();
+            if entry_id(&commit_tree(&gitrepo, parent)?, target)? == entry {
+                treesame = Some(parent);
+                break;
+            }
+        }
+        match treesame {
+            Some(parent) => current = parent,
+            // differs from every parent, so this commit is the one that changed `target`.
+            // With no parent at all we are at a root commit that introduced it.
+            None if entry.is_some() => return Ok(current.as_bytes().to_vec()),
+            None => return Err(not_found()),
+        }
     }
 }
 
@@ -146,6 +204,88 @@ fn find_merge_strategy<'a>(
     }
 }
 
+/// Removes `path` from the working tree, along with the parent directories it leaves empty.
+fn remove_from_worktree(workdir: &Path, path: &Path) {
+    log::debug!("removing {}", path.display());
+    if let Err(e) = std::fs::remove_file(path) {
+        log::warn!("{}: failed to remove: {e}", path.display());
+    }
+    let mut dir = path.parent();
+    while let Some(d) = dir {
+        if d == workdir || std::fs::remove_dir(d).is_err() {
+            break;
+        }
+        dir = d.parent();
+    }
+}
+
+/// Rebuilds the index and the working tree so that both match `commit_id`.
+///
+/// This is the equivalent of `git reset --hard`. Discarding the working tree wholesale is safe
+/// here because gixor keeps its repositories as read-only mirrors of the boilerplate providers:
+/// nothing ever writes to them, so there is no local change to preserve. gix offers no API to
+/// update an existing working tree, only to populate an empty one, so the tree is written out
+/// from the new index and the files that vanished upstream are removed by hand.
+fn reset_worktree(repo: &Repository, commit_id: ObjectId) -> Result<()> {
+    let workdir = repo
+        .workdir()
+        .ok_or_else(|| Error::Git("Cannot update the working tree of a bare repository".into()))?
+        .to_path_buf();
+    let tree_id = commit_tree(repo, commit_id)?.id;
+
+    let old_index = repo
+        .index_or_empty()
+        .map_err(|e| Error::Git(format!("Failed to read the index: {e}")))?;
+    let old_paths = old_index
+        .entries()
+        .iter()
+        .map(|e| gix::path::from_bstr(e.path(&old_index)).into_owned())
+        .collect::<HashSet<PathBuf>>();
+    drop(old_index);
+
+    let mut index = repo
+        .index_from_tree(&tree_id)
+        .map_err(|e| Error::Git(format!("{tree_id}: failed to build an index: {e}")))?;
+    let new_paths = index
+        .entries()
+        .iter()
+        .map(|e| gix::path::from_bstr(e.path(&index)).into_owned())
+        .collect::<HashSet<PathBuf>>();
+
+    for gone in old_paths.difference(&new_paths) {
+        remove_from_worktree(&workdir, &workdir.join(gone));
+    }
+
+    let mut opts = repo
+        .checkout_options(gix::worktree::stack::state::attributes::Source::IdMapping)
+        .map_err(|e| Error::Git(format!("Failed to build the checkout options: {e}")))?;
+    opts.destination_is_initially_empty = false;
+    opts.overwrite_existing = true;
+
+    let outcome = gix::worktree::state::checkout(
+        &mut index,
+        &workdir,
+        repo.objects
+            .clone()
+            .into_arc()
+            .map_err(|e| Error::Git(format!("Failed to share the object database: {e}")))?,
+        &gix::progress::Discard,
+        &gix::progress::Discard,
+        &gix::interrupt::IS_INTERRUPTED,
+        opts,
+    )
+    .map_err(|e| Error::Git(format!("Failed to check out {tree_id}: {e}")))?;
+    log::info!(
+        "Checked out {} files into {}",
+        outcome.files_updated,
+        workdir.display()
+    );
+
+    index
+        .write(Default::default())
+        .map_err(|e| Error::Git(format!("Failed to write the index: {e}")))
+}
+
 fn fast_forward(repo: &Repository, current_branch: &str, remote_id: gix::Id) -> Result<()> {
     let local_ref_name = format!(
         "refs/heads/{}",
@@ -155,6 +295,12 @@ fn fast_forward(repo: &Repository, current_branch: &str, remote_id: gix::Id) -> 
     let mut local_ref = repo
         .find_reference(&local_ref_name)
         .map_err(|e| Error::Git(format!("Failed to find local branch: {e}")))?;
+    // The working tree is updated before the branch on purpose. Moving the branch alone leaves
+    // the boilerplate files on disk at the old revision, and gixor reads them from there, so
+    // the two have to agree. Should we be interrupted in between, leaving the branch behind
+    // means the next update fast-forwards again and repairs the repository, whereas moving the
+    // branch first would make the update look done and strand the stale files.
+    reset_worktree(repo, remote_id.detach())?;
     local_ref
         .set_target_id(remote_id, "Fast-forward")
         .map_err(|e| Error::Git(format!("Failed to fast-forward local branch: {e}")))?;
@@ -187,6 +333,151 @@ pub fn pull(path: &Path, remote: &str, branch: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use crate::repos::Repository;
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    fn git(dir: &Path, args: &[&str]) -> String {
+        let out = Command::new("git")
+            .args(args)
+            .current_dir(dir)
+            .env("GIT_AUTHOR_NAME", "gixor")
+            .env("GIT_AUTHOR_EMAIL", "gixor@example.com")
+            .env("GIT_COMMITTER_NAME", "gixor")
+            .env("GIT_COMMITTER_EMAIL", "gixor@example.com")
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "git {:?}: {}",
+            args,
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8_lossy(&out.stdout).trim().to_string()
+    }
+
+    fn commit(dir: &Path, message: &str, date: &str) -> String {
+        git(dir, &["add", "-A"]);
+        let out = Command::new("git")
+            .args(["commit", "-m", message])
+            .current_dir(dir)
+            .env("GIT_AUTHOR_NAME", "gixor")
+            .env("GIT_AUTHOR_EMAIL", "gixor@example.com")
+            .env("GIT_COMMITTER_NAME", "gixor")
+            .env("GIT_COMMITTER_EMAIL", "gixor@example.com")
+            .env("GIT_AUTHOR_DATE", date)
+            .env("GIT_COMMITTER_DATE", date)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "git commit: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        git(dir, &["rev-parse", "HEAD"])
+    }
+
+    fn repository() -> Repository {
+        Repository {
+            name: "test".to_string(),
+            url: "https://github.com/github/gitignore.git".to_string(),
+            owner: "github".to_string(),
+            repo_name: "gitignore".to_string(),
+            path: PathBuf::from("repo"),
+        }
+    }
+
+    fn hash_of(repo: &Repository, base: &Path, name: &str) -> String {
+        let boilerplate = repo
+            .iter(base)
+            .find(|b| b.path() == Path::new(name))
+            .unwrap_or_else(|| panic!("{name}: not found"));
+        super::hash(&boilerplate, base)
+            .unwrap()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect()
+    }
+
+    /// `hash` must name the commit that last changed the given file, not the repository HEAD,
+    /// and it must ignore edits on merged-away branches the way `git log -n 1 -- <path>` does.
+    #[test]
+    fn test_hash_is_per_file_and_respects_merge_pruning() {
+        let base = tempfile::tempdir().unwrap();
+        let base = base.path();
+        let dir = base.join("repo");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        git(&dir, &["init", "-b", "main"]);
+        std::fs::write(dir.join("Foo.gitignore"), "a\n").unwrap();
+        std::fs::write(dir.join("Other.gitignore"), "other\n").unwrap();
+        commit(&dir, "a", "2024-01-01T00:00:00+0000");
+
+        // a side branch edits Foo.gitignore *later* than main does
+        git(&dir, &["switch", "-c", "side"]);
+        std::fs::write(dir.join("Foo.gitignore"), "c\n").unwrap();
+        commit(&dir, "c", "2024-03-01T00:00:00+0000");
+
+        git(&dir, &["switch", "main"]);
+        std::fs::write(dir.join("Foo.gitignore"), "b\n").unwrap();
+        let expected_foo = commit(&dir, "b", "2024-02-01T00:00:00+0000");
+
+        // the merge discards the side branch's edit, so it never reaches HEAD
+        git(&dir, &["merge", "-s", "ours", "--no-edit", "side"]);
+        std::fs::write(dir.join("Other.gitignore"), "changed\n").unwrap();
+        let expected_other = commit(&dir, "other", "2024-04-01T00:00:00+0000");
+
+        let repo = repository();
+        assert_eq!(hash_of(&repo, base, "Foo.gitignore"), expected_foo);
+        assert_eq!(hash_of(&repo, base, "Other.gitignore"), expected_other);
+        assert_ne!(expected_foo, git(&dir, &["rev-parse", "HEAD"]));
+    }
+
+    /// `pull` must leave the working tree at the fetched revision, since gixor reads the
+    /// boilerplates from disk rather than from the object database.
+    #[test]
+    fn test_pull_updates_the_working_tree() {
+        let base = tempfile::tempdir().unwrap();
+        let remote = base.path().join("remote");
+        let work = base.path().join("work");
+        std::fs::create_dir_all(remote.join("Global")).unwrap();
+
+        git(&remote, &["init", "-b", "main"]);
+        std::fs::write(remote.join("Foo.gitignore"), "v1\n").unwrap();
+        std::fs::write(remote.join("Global/Bar.gitignore"), "bar\n").unwrap();
+        commit(&remote, "v1", "2024-01-01T00:00:00+0000");
+
+        super::clone(remote.to_string_lossy().to_string(), &work).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(work.join("Foo.gitignore")).unwrap(),
+            "v1\n"
+        );
+
+        // modify one boilerplate, drop another one, and add a third
+        std::fs::write(remote.join("Foo.gitignore"), "v2\n").unwrap();
+        std::fs::remove_file(remote.join("Global/Bar.gitignore")).unwrap();
+        std::fs::write(remote.join("Baz.gitignore"), "baz\n").unwrap();
+        commit(&remote, "v2", "2024-02-01T00:00:00+0000");
+
+        super::pull(&work, "origin", "main").unwrap();
+
+        assert_eq!(
+            std::fs::read_to_string(work.join("Foo.gitignore")).unwrap(),
+            "v2\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(work.join("Baz.gitignore")).unwrap(),
+            "baz\n"
+        );
+        assert!(!work.join("Global/Bar.gitignore").exists());
+        assert!(
+            !work.join("Global").exists(),
+            "emptied directory is left behind"
+        );
+        // the index has to follow along, or the repository looks dirty to the developer
+        assert_eq!(git(&work, &["status", "--short"]), "");
+    }
+
     #[test]
     fn test_clone_https() {
         let url = "https://github.com/github/gitignore.git";

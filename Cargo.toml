@@ -13,7 +13,6 @@ keywords = [ "cli", "gitignore", "gitignore-generator", "git", "shell", "gitigno
 
 [features]
 default = []
-uselibgit = [ "git2" ]
 usegix  = [ "gix" ]
 
 [dependencies]
@@ -26,8 +25,7 @@ ignore = "0.4.23"
 log = "0.4.25"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.138"
-gix = { version = "0.76.0", features = [ "blocking-http-transport-reqwest-rust-tls", "blocking-network-client", "merge", "tree-editor" ], optional = true }
-git2 = { version = "0.20.3", optional = true }
+gix = { version = "0.85.0", features = [ "blocking-http-transport-reqwest-rust-tls", "blocking-network-client", "merge", "tree-editor" ], optional = true }
 
 [dev-dependencies]
 tempfile = "3.10.1"
