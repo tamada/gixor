@@ -101,14 +101,14 @@ fn perform_alias(gixor: &mut Gixor, opts: cli::AliasOpts) -> Result<Option<&Gixo
 }
 
 fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
-    let (dest, clear) = (opts.dest.clone(), opts.clear);
-    match opts.names() {
-        Ok(names) => match gixor.dump_to(names, dest, clear) {
-            Ok(_) => Ok(None),
-            Err(e) => Err(e),
-        },
-        Err(e) => Err(e),
+    let (dest, clear_prologue) = (opts.dest.clone(), opts.should_clear_prologue());
+    let names = opts.names(gixor)?;
+    if opts.dry_run {
+        let content = gixor.build_gitignore(names, &dest, clear_prologue)?;
+        print!("{content}");
+        return Ok(None);
     }
+    gixor.dump_to(names, dest, clear_prologue).map(|_| None)
 }
 
 fn list_each_boilerplate(
@@ -432,8 +432,11 @@ mod tests {
 
         let subcmd = GixorCommand::Dump(cli::DumpOpts {
             dest: "-".into(),
-            append: false,
+            no_append: false,
+            clear_prologue: false,
             clear: false,
+            dry_run: false,
+            append: false,
             names: vec![],
         });
 

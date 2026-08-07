@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use gixor::Name;
+use gixor::{Gixor, Name};
 
 #[derive(Parser, Debug)]
 #[command(name = "gixor", author, version)]
@@ -198,35 +198,88 @@ pub(crate) struct DumpOpts {
     pub(crate) dest: String,
 
     #[clap(
-        short,
         long,
-        help = "Keep the current entries and add the given entries.",
+        help = "Drop the entries currently listed in the gitignore.",
         default_value_t = false
     )]
-    pub(crate) append: bool,
+    pub(crate) no_append: bool,
+
+    #[clap(
+        long,
+        help = "Drop the prologue, the part of the gitignore before the first boilerplate.",
+        default_value_t = false
+    )]
+    pub(crate) clear_prologue: bool,
 
     #[clap(
         short,
         long,
-        help = "Clear the current content of gitignore (clear prologue).",
+        help = "Start from scratch, dropping both the prologue and the current entries.",
         default_value_t = false
     )]
     pub(crate) clear: bool,
+
+    #[clap(
+        short = 'n',
+        long,
+        help = "Print the result to stdout and leave the gitignore untouched.",
+        default_value_t = false
+    )]
+    pub(crate) dry_run: bool,
+
+    /// Kept so that existing scripts keep working. Appending is the default now.
+    #[clap(short, long, hide = true, default_value_t = false)]
+    pub(crate) append: bool,
 
     #[clap(value_name = "NAMES...", help = "The boilerplate names to dump.")]
     pub(crate) names: Vec<String>,
 }
 
 impl DumpOpts {
+    /// Returns true if the prologue of the destination should be dropped.
+    pub fn should_clear_prologue(&self) -> bool {
+        self.clear || self.clear_prologue
+    }
+
+    /// Returns true if the entries already listed in the destination should be dropped.
+    fn drop_current_entries(&self) -> bool {
+        self.clear || self.no_append
+    }
+
     /// Returns the target names for dumping.
-    /// If append mode, firstly reads from the current `.gitignore`, otherwise, empty `vec`.
-    /// Then, adds each name to the resultant `vec` of above process.
+    /// Unless the current entries are dropped, they are read from the destination first,
+    /// then the given names are added and the `-NAME` ones removed.
     /// Finally, convert `String` to `Name` by `Name::parse` and return it.
-    pub fn names(&self) -> gixor::Result<Vec<Name>> {
-        let v = self.current_list_if_append()?;
-        let v = self.merge_names_with_add_or_remove(&self.names, v);
+    pub fn names(&self, gixor: &Gixor) -> gixor::Result<Vec<Name>> {
+        let current = self.resolvable_current_list(gixor)?;
+        Ok(self.names_with(current))
+    }
+
+    /// Merges the given names into `current` and parses the result.
+    /// Split out from [`DumpOpts::names`] so the merging can be exercised on its own.
+    fn names_with(&self, current: Vec<String>) -> Vec<Name> {
+        let v = self.merge_names_with_add_or_remove(&self.names, current);
         log::debug!("parse dumping targets: {}", v.join(", "));
-        Ok(Name::parse_all(v))
+        Name::parse_all(v)
+    }
+
+    /// Drops the current entries that no longer resolve to a boilerplate.
+    ///
+    /// These names come from the destination file rather than from the command line, so a
+    /// boilerplate renamed or removed upstream is not the user's mistake and must not block
+    /// the update. Names given on the command line are still resolved strictly, later on.
+    fn resolvable_current_list(&self, gixor: &Gixor) -> gixor::Result<Vec<String>> {
+        let current = self.current_list_if_append()?;
+        Ok(current
+            .into_iter()
+            .filter(|name| match gixor.find(Name::parse(name)) {
+                Ok(_) => true,
+                Err(e) => {
+                    log::warn!("{name}: dropped from the gitignore ({e})");
+                    false
+                }
+            })
+            .collect())
     }
 
     fn merge_names_with_add_or_remove(
@@ -246,15 +299,19 @@ impl DumpOpts {
     }
 
     fn current_list_if_append(&self) -> gixor::Result<Vec<String>> {
-        if self.append {
-            let d = if self.dest == "-" {
-                String::from(".gitignore")
-            } else {
-                self.dest.clone()
-            };
-            gixor::entries(d)
+        if self.drop_current_entries() {
+            return Ok(vec![]);
+        }
+        let d = if self.dest == "-" {
+            String::from(".gitignore")
         } else {
-            Ok(vec![])
+            self.dest.clone()
+        };
+        match gixor::entries(d) {
+            // There is nothing to carry over before the gitignore exists, and creating one is
+            // the ordinary case now that appending is the default.
+            Err(gixor::Error::FileNotFound(_)) => Ok(vec![]),
+            r => r,
         }
     }
 }
@@ -308,21 +365,77 @@ pub(crate) struct CompleteOpts {
 mod tests {
     use super::*;
 
-    /// The destination is written for this test rather than picked up from wherever the
-    /// tests happen to run, which used to be the gitignore one level above the repository.
+    fn dump_opts(dest: &str, names: Vec<&str>) -> DumpOpts {
+        DumpOpts {
+            dest: dest.into(),
+            no_append: false,
+            clear_prologue: false,
+            clear: false,
+            dry_run: false,
+            append: false,
+            names: names.into_iter().map(String::from).collect(),
+        }
+    }
+
     #[test]
-    fn dump_opts_names() -> gixor::Result<()> {
+    fn dump_opts_names_appends_to_the_current_ones() {
+        let opts = dump_opts(".gitignore", vec!["java"]);
+        let names = opts.names_with(vec!["Rust".into(), "Python".into()]);
+        let names = names.iter().map(|n| n.to_string()).collect::<Vec<_>>();
+        assert_eq!(names, vec!["Rust", "Python", "java"]);
+    }
+
+    #[test]
+    fn dump_opts_names_removes_the_ones_prefixed_with_a_dash() {
+        let opts = dump_opts(".gitignore", vec!["-rust", "go"]);
+        let names = opts.names_with(vec!["Rust".into(), "Python".into()]);
+        let names = names.iter().map(|n| n.to_string()).collect::<Vec<_>>();
+        assert_eq!(names, vec!["Python", "go"]);
+    }
+
+    #[test]
+    fn dump_opts_current_list_is_empty_without_a_gitignore() {
         let dir = tempfile::tempdir().unwrap();
         let dest = dir.path().join(".gitignore");
-        std::fs::write(&dest, "### Rust.gitignore\ntarget\n### Python.gitignore\n").unwrap();
-        let opts = DumpOpts {
-            dest: dest.to_string_lossy().to_string(),
-            append: true,
-            clear: false,
-            names: vec!["java".into()],
-        };
-        let names = opts.names()?;
-        assert_eq!(names.len(), 3);
-        Ok(())
+        let opts = dump_opts(&dest.to_string_lossy(), vec!["java"]);
+        // appending is the default, and a missing gitignore is simply an empty one
+        assert_eq!(opts.current_list_if_append().unwrap(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn dump_opts_current_list_is_read_when_appending() {
+        let dir = tempfile::tempdir().unwrap();
+        let dest = dir.path().join(".gitignore");
+        std::fs::write(&dest, "# mine\n### Rust.gitignore\ntarget\n").unwrap();
+        let opts = dump_opts(&dest.to_string_lossy(), vec![]);
+        assert_eq!(opts.current_list_if_append().unwrap(), vec!["Rust"]);
+    }
+
+    #[test]
+    fn dump_opts_current_list_is_dropped_by_no_append_and_clear() {
+        let dir = tempfile::tempdir().unwrap();
+        let dest = dir.path().join(".gitignore");
+        std::fs::write(&dest, "### Rust.gitignore\ntarget\n").unwrap();
+
+        let mut opts = dump_opts(&dest.to_string_lossy(), vec![]);
+        opts.no_append = true;
+        assert_eq!(opts.current_list_if_append().unwrap(), Vec::<String>::new());
+
+        let mut opts = dump_opts(&dest.to_string_lossy(), vec![]);
+        opts.clear = true;
+        assert_eq!(opts.current_list_if_append().unwrap(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn dump_opts_clear_implies_clearing_the_prologue() {
+        let mut opts = dump_opts(".gitignore", vec![]);
+        assert!(!opts.should_clear_prologue());
+        opts.clear_prologue = true;
+        assert!(opts.should_clear_prologue());
+
+        let mut opts = dump_opts(".gitignore", vec![]);
+        opts.clear = true;
+        assert!(opts.should_clear_prologue());
+        assert!(opts.drop_current_entries());
     }
 }

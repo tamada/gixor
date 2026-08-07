@@ -23,10 +23,18 @@ Gixor dumps the specified boilerplates in following process:
 * :three: **Finding** Gixor parses the command-line arguments and options.
   * Gixor assumes each name consists of the repository name and boilerplate names separated by a slash (`/`).  The repository name is optional, and the boilerplate name is mandatory.
     If the repository name is omitted, Gixor searches the boilerplate name from all repositories with case-insensitive.
-* :four: **Dumping** Gixor dumps the specified boilerplates to the standard output.
-  * Gixor finds the `.gitignore` file in the current directory if it exists,
-    and reads it until the first boilerplate, which named prologue.
-  * Then, Gixor write the prologue and the found boilerplates to the specified output.
+* :four: **Dumping** Gixor updates the `.gitignore` file in place.
+  * Gixor reads the destination if it exists, taking the part before the first boilerplate as the prologue,
+    and the boilerplates already listed there as the entries to keep. Adding to what is already
+    there is the default; `--no-append` drops the entries, `--clear-prologue` drops the prologue,
+    and `--clear` drops both.
+  * An entry listed in the `.gitignore` that no longer resolves to a boilerplate, because it was
+    renamed or removed upstream, is reported as a warning and dropped. A name given on the command
+    line that does not resolve is an error, since that is a mistake worth stopping for.
+  * Then, Gixor builds the prologue and the found boilerplates in memory, writes them to a
+    temporary file next to the destination, and renames it over the destination. The whole
+    content is known to be complete before anything is replaced, so a failure at any point leaves
+    the existing `.gitignore` exactly as it was. Use `--dry-run` to see the result without writing.
 * :five: **Finalization** Gixor writes the configuration file into the loaded location, if the configuration file was updated.
 
 ## :name_badge: The repository name
@@ -41,7 +49,8 @@ and dumps the first found boilerplate.
 
 The prologue is the first part of the `.gitignore` file in the current directory.
 The first part means the content in the `.gitignore` file until the first boilerplate.
-Gixor writes prologue to the output before the specified boilerplates.
+It is where your own rules live, so Gixor carries it over on every dump and writes it to the
+output before the specified boilerplates. Pass `--clear-prologue` (or `--clear`) to drop it.
 
 ## `config.json`
 

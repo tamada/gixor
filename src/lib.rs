@@ -398,19 +398,42 @@ impl Gixor {
     pub fn dump(
         &self,
         names: Vec<Name>,
-        dest: impl std::io::Write,
+        mut dest: impl std::io::Write,
         clear_flag: bool,
     ) -> Result<()> {
-        match routine::find_boilerplates(self, names) {
-            Err(e) => Err(e),
-            Ok(boilerplates) => routine::dump_boilerplates_impl(
-                dest,
-                boilerplates,
-                clear_flag,
-                self.base_path(),
-                None,
-            ),
-        }
+        let content = self.build_gitignore(names, ".gitignore", clear_flag)?;
+        dest.write_all(content.as_bytes()).map_err(Error::IO)?;
+        dest.flush().map_err(Error::IO)
+    }
+
+    /// Builds the content that [`Gixor::dump_to`] would write, without touching any file.
+    ///
+    /// Use this to preview the result, or to write it somewhere else.
+    ///
+    /// # Arguments
+    /// * `names` - A vector of [`Name`] instances representing the boilerplates to dump.
+    /// * `dest` - The path the content is destined for. Its prologue is carried over, and
+    ///   `"-"` reads the prologue from `.gitignore` in the current directory.
+    /// * `clear_prologue` - If true, drop the prologue of the destination.
+    pub fn build_gitignore<P: AsRef<Path>>(
+        &self,
+        names: Vec<Name>,
+        dest: P,
+        clear_prologue: bool,
+    ) -> Result<String> {
+        let dest = dest.as_ref();
+        let prologue = if clear_prologue {
+            vec![]
+        } else {
+            let from = if dest == Path::new("-") {
+                PathBuf::from(".gitignore")
+            } else {
+                routine::find_gitignore(dest)
+            };
+            routine::load_prologue(&from)
+        };
+        let boilerplates = routine::find_boilerplates(self, names)?;
+        routine::build_content(boilerplates, prologue, self.base_path())
     }
 
     /// Writes the selected boilerplates to a file or stdout.
@@ -419,10 +442,13 @@ impl Gixor {
     /// If the `dest` is a directory, the content is written to `${dest}/.gitignore`.
     /// Otherwise, the content is written to the file specified by `dest`.
     ///
+    /// The destination is replaced by a rename once the whole content has been built and
+    /// written elsewhere, so an error leaves the existing file exactly as it was.
+    ///
     /// # Arguments
     /// * `names` - A vector of [`Name`] instances.
     /// * `dest` - The destination path or `"-"` for stdout.
-    /// * `clear_flag` - If true, ignore existing content in the destination.
+    /// * `clear_flag` - If true, drop the prologue of the destination.
     pub fn dump_to<P: AsRef<Path>>(
         &self,
         names: Vec<Name>,
@@ -435,24 +461,16 @@ impl Gixor {
             names.len(),
             p.display()
         );
-        let out = routine::open_dest(p)?;
-        let prologue_path = if p == Path::new("-") {
-            Some(PathBuf::from(".gitignore"))
-        } else if p.is_dir() {
-            Some(p.join(".gitignore"))
-        } else {
-            Some(p.to_path_buf())
-        };
-        match routine::find_boilerplates(self, names) {
-            Err(e) => Err(e),
-            Ok(boilerplates) => routine::dump_boilerplates_impl(
-                out,
-                boilerplates,
-                clear_flag,
-                self.base_path(),
-                prologue_path,
-            ),
+        // The content is built first and in full. Nothing here opens the destination until the
+        // result is known to be complete, so a failure leaves the existing file untouched.
+        let content = self.build_gitignore(names, p, clear_flag)?;
+        if p == Path::new("-") {
+            use std::io::Write;
+            let mut out = std::io::stdout();
+            out.write_all(content.as_bytes()).map_err(Error::IO)?;
+            return out.flush().map_err(Error::IO);
         }
+        routine::write_atomically(&routine::find_gitignore(p), &content)
     }
 
     /// Store the configuration to the configuration path.
@@ -676,6 +694,7 @@ fn remove_repo_dir<P: AsRef<Path>>(base_path: P, repo: repos::Repository) -> Res
 #[cfg(test)]
 mod tests {
     use super::*;
+
     /// The directory holding the fixtures of `testdata`, shared by the unit tests of this crate.
     ///
     /// The paths are anchored on `CARGO_MANIFEST_DIR` rather than written relative to the working
