@@ -3,8 +3,11 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use gixor::{Gixor, Name};
 
+/// The build information `build.rs` writes out, shown by `--version`.
+const BUILD_LONG_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/BUILD_LONG_VERSION.txt"));
+
 #[derive(Parser, Debug)]
-#[command(name = "gixor", author, version)]
+#[command(name = "gixor", author, version, long_version = BUILD_LONG_VERSION)]
 #[command(about, arg_required_else_help = true)]
 pub(crate) struct CliOpts {
     #[clap(subcommand)]

@@ -74,6 +74,11 @@ Git: {git_sha} (on branch {branch})"#
     std::fs::write(&dest, &long).expect("Unable to write build version file");
     println!("cargo:rerun-if-env-changed=GIT_SHA");
     println!("cargo:rerun-if-env-changed=GIT_BRANCH");
+    // Emitting any rerun-if instruction replaces Cargo's default of rerunning whenever a file
+    // in the package changes, so the git state has to be named explicitly. Without these the
+    // embedded commit is whatever it was the first time this ran, and never moves again.
+    println!("cargo:rerun-if-changed=.git/HEAD");
+    println!("cargo:rerun-if-changed=.git/refs/heads");
 }
 
 fn main() {
