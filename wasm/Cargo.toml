@@ -6,7 +6,7 @@
 name = "gixor-wasm"
 description = "Browser bindings for gixor, carrying the boilerplates with it."
 readme = "README.md"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2024"
 license = "MIT"
 authors = ["Haruaki Tamada"]
