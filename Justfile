@@ -63,6 +63,11 @@ wasm:
 wasm_check:
     cargo check --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown
 
+# Serve wasm/demo.html for a manual check, at http://localhost:8765/demo.html.
+# A server is needed rather than opening the file: modules and wasm are not fetched from file://.
+wasm_demo: wasm
+    cd wasm && python3 -m http.server 8765
+
 # Generate the completion files
 gen_complete:
     cargo run -p gixor-cli -- --generate-completion-files

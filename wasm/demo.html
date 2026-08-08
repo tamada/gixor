@@ -1,0 +1,43 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>gixor-wasm check</title>
+<pre id="out">loading…</pre>
+<script type="module">
+  import init, { list_boilerplates, generate, snapshot_commits } from "./pkg/gixor_wasm.js";
+
+  const lines = [];
+  const say = (label, value) => lines.push(`${label}: ${value}`);
+
+  try {
+    await init();
+
+    const names = list_boilerplates();
+    say("count", names.length);
+    say("first", names.slice(0, 3).join(", "));
+    say("last", names.slice(-3).join(", "));
+    say("has Rust", names.includes("Rust"));
+    say("snapshot", snapshot_commits().join(" | "));
+
+    const current = "# my own rules\n*.local\n### Stale.gitignore\ndropped\n";
+    const result = generate(["Rust", "macOS"], current);
+    say("prologue kept", result.startsWith("# my own rules\n*.local\n"));
+    say("stale dropped", !result.includes("dropped"));
+    say("has Rust block", result.includes("(default/Rust)"));
+    say("has macOS block", result.includes("(default/macOS)"));
+    say("permalink", (result.match(/^### (https:\S+)/m) || [])[1] ?? "none");
+    say("length", result.length);
+
+    try {
+      generate(["NoSuchBoilerplate"], "");
+      say("unknown name", "NO ERROR - unexpected");
+    } catch (e) {
+      say("unknown name", `rejected: ${e.message ?? e}`);
+    }
+
+    lines.push("", "--- first 8 lines of the result ---", ...result.split("\n").slice(0, 8));
+    say("STATUS", "OK");
+  } catch (e) {
+    say("STATUS", `FAILED: ${e}`);
+  }
+  document.getElementById("out").textContent = lines.join("\n");
+</script>
