@@ -28,6 +28,9 @@ jobs:
             -e "s/^version = \".*\"/version = \"${{ steps.vars.outputs.tag }}\"/" \
             -e "s/^(gixor = \{ path = \"lib\", version = )\"[^\"]*\"/\1\"${{ steps.vars.outputs.tag }}\"/" \
             Cargo.toml > a ; mv a Cargo.toml
+          # wasm is a workspace of its own, so it inherits nothing and carries its own version.
+          sed "s/^version = \".*\"/version = \"${{ steps.vars.outputs.tag }}\"/" \
+            wasm/Cargo.toml > a ; mv a wasm/Cargo.toml
           sed "s/\$VERSION/${{ steps.vars.outputs.tag }}/g" .templates/README.md > README.md
           sed "s/\$VERSION/${{ steps.vars.outputs.tag }}/g" .templates/template.md > docs/content/_index.md
           sed "s/ARG VERSION=.*/ARG VERSION=${{ steps.vars.outputs.tag }}/g" Containerfile > a ; mv a Containerfile
