@@ -136,6 +136,21 @@ pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> Result<V
     }
 }
 
+/// The message of an error together with the ones beneath it.
+///
+/// gix nests what actually went wrong several levels down, and Display shows only the outermost
+/// line, which says that something failed without saying what.
+fn chain(e: &dyn std::error::Error) -> String {
+    let mut message = e.to_string();
+    let mut source = e.source();
+    while let Some(e) = source {
+        message.push_str(": ");
+        message.push_str(&e.to_string());
+        source = e.source();
+    }
+    message
+}
+
 fn do_fetch(repo: &gix::Repository, remote: &str) -> Result<Outcome> {
     use gix::{progress::Discard, remote::Direction::Fetch};
     log::info!("Fetching from remote: {remote}");
@@ -158,7 +173,7 @@ fn do_fetch(repo: &gix::Repository, remote: &str) -> Result<Outcome> {
         .map_err(|e| Error::Git(format!("Failed to prepare fetch: {e}")))?;
     let outcome = r
         .receive(Discard, &gix::interrupt::IS_INTERRUPTED)
-        .map_err(|e| Error::Git(format!("Failed to receive fetch: {e}")))?;
+        .map_err(|e| Error::Git(format!("Failed to receive fetch: {}", chain(&e))))?;
     log::info!("Fetch completed: {:?}", outcome.status);
     Ok(outcome)
 }
@@ -324,9 +339,39 @@ fn do_merge(repo: &mut Repository, remote: &str, branch: &str) -> Result<()> {
     }
 }
 
+/// Names gixor as the committer when the machine has no identity of its own.
+///
+/// gix writes a reflog entry for every reference a fetch moves, and a reflog entry needs a
+/// committer. Somewhere `user.name` has never been set — a fresh container, a CI runner — the
+/// fetch fails outright with "reflog messages need a committer which isn't set". Asking someone
+/// who only wants the boilerplates to introduce themselves first is no way to behave, so gixor
+/// signs for them. An identity that is configured is left alone and used as it stands.
+fn name_the_committer(repo: &mut Repository) {
+    if repo.committer().is_some() {
+        return;
+    }
+    log::debug!("no committer is configured; signing the reflog as gixor");
+    let mut config = gix::config::File::new(gix::config::file::Metadata::api());
+    let fallbacks = [
+        (&gix::config::tree::gitoxide::Committer::NAME_FALLBACK, "gixor"),
+        (
+            &gix::config::tree::gitoxide::Committer::EMAIL_FALLBACK,
+            "gixor@users.noreply.github.com",
+        ),
+    ];
+    for (key, value) in fallbacks {
+        if let Err(e) = config.set_raw_value(key, value) {
+            log::warn!("could not name the committer: {e}");
+            return;
+        }
+    }
+    repo.config_snapshot_mut().append(config);
+}
+
 pub fn pull(path: &Path, remote: &str, branch: &str) -> Result<()> {
     let mut repo =
         gix::open(path).map_err(|e| Error::Git(format!("Failed to open repository: {e}")))?;
+    name_the_committer(&mut repo);
     let _fetch_outcome = do_fetch(&repo, remote)?;
     do_merge(&mut repo, remote, branch)
 }
@@ -488,6 +533,9 @@ mod tests {
         super::clone(url, dir.path().join("gitignore-https")).unwrap();
     }
 
+    /// Ignored because it needs an SSH key the remote accepts, which CI has no way to hold.
+    /// Run it with `cargo test -- --ignored` where such a key is configured.
+    #[ignore = "needs an SSH key for github.com"]
     #[test]
     fn test_clone_ssh() {
         let dir = tempfile::tempdir().unwrap();
