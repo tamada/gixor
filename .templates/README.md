@@ -13,7 +13,7 @@
 Git Ignore Management System for Multiple Repositories.
 This is an alternative tool for [gibo](https://github.com/simonwhitaker/gibo).
 
-## :speaking_head: Overview
+## 🗣️ Overview
 
 The `gibo` is an excellent tool for managing the `.gitignore` file.
 However, `gibo` uses [`github.com/github/gitignore`](https://github.com/github/gitignore) as the default and only repository, and we cannot use our own `gitignore` boilerplates.
@@ -25,7 +25,7 @@ Then, the team wants to use their own `gitignore` repository, run `gixor reposit
 
 Note that I formerly created the [wrapper of `gibo`](https://github.com/tamada/gibo-wrapper), which lists the entries of the `.gitignore` file and supports updating the `.gitignore` file. The `gixor` is the successor of the `gibo-wrapper`, and `gibo-wrapper` is now archived.
 
-## :runner: Usage
+## 🏃‍♀️ Usage
 
 ```shell
 git ignore [OPTIONS] [ARGS...]
@@ -52,17 +52,27 @@ Options:
   -V, --version               Print version
 ```
 
-## About
+`gixor dump Rust` adds to the `.gitignore` rather than replacing it: the rules you wrote yourself
+and the boilerplates already listed both stay. `gixor dump -Rust` drops one of them, `--no-append`
+drops them all, `--clear-prologue` drops what you wrote, and `--clear` drops both. `--dry-run`
+shows the result without writing it. Should anything go wrong, the `.gitignore` is left as it was.
 
-### Product Name
+## ℹ️ About
 
-Gixor means "GitIgnore indeX ORganizer," and pronounce it as "jigsaw."
+### 👩‍💻 Authors 👨‍💻
 
-### Related Tools and Services
+* Haruaki Tamada [GitHub](https://github.com/tamada) [🌏](https://tamada.github.io/)
 
-- [gibo](https://github.com/simonwhitaker/gibo) (Go lang)
-- [gitignore.io](https://www.gitignore.io/) (Swift, Less, JavaScript, ...)
-- [bliss](https://github.com/ajmwagar/bliss) (Rust)
-- [gitignore-it](https://github.com/christopherkade/gitignore-it) (JavaScript)
-- [gitnr](https://github.com/reemus-dev/gitnr) (Rust)
-- [gig](https://github.com/shihanng/gig) (Go lang)
+### 🎃 Product Name
+
+Gixor means "GitIgnore indeX ORganizer," and
+pronounce it as "jigsaw".
+
+### 🔗 Related Tools and Services
+
+* [gibo](https://github.com/simonwhitaker/gibo)
+* [gitignore.io](https://www.gitignore.io/)
+* [bliss](https://github.com/ajmwagar/bliss)
+* [gitignore-it](https://github.com/christopherkade/gitignore-it)
+* [gitnr](https://github.com/reemus-dev/gitnr)
+* [gig](https://github.com/shihanng/gig)
