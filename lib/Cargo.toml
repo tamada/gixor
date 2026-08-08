@@ -1,26 +1,67 @@
 [package]
 name = "gixor"
-readme = "README.md"
-categories = ["development tools", "configuration" ]
 description = "An API for managing .gitignore files."
+readme = "README.md"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 authors.workspace = true
 repository.workspace = true
 homepage.workspace = true
-keywords.workspace = true
+categories = ["configuration", "development-tools"]
+keywords = [
+    "gitignore",
+    "gitignore-generator",
+    "git",
+    "gitignore-files",
+    "gitignore-templates",
+]
 
 [features]
-default = [ ]
-uselibgit = [ "git2" ]
-usegix = [ "gix" ]
+# `local` clones the boilerplate repositories and reads them from the file system, and is what
+# the CLI is built on. `usegix` picks the Git implementation for it: gix is a pure Rust Git, so
+# the default needs no git command and links no C library. Build with --no-default-features and
+# --features local to drive the git command instead.
+default = ["local", "usegix"]
+local = ["dep:dirs", "dep:ignore"]
+usegix = ["local", "dep:gix"]
+# `embedded` compiles the snapshot under boilerplates/ into the binary instead, so that neither
+# a clone nor a file system is needed. It is what the wasm build stands on, and it excludes
+# `local`: the two answer the same questions.
+embedded = []
 
 [dependencies]
-dirs = "6.0.0"
-ignore = "0.4.23"
-log = "0.4.25"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.138"
-gix = { version = "0.76.0", features = [ "blocking-http-transport-reqwest-rust-tls", "blocking-network-client", "merge", "tree-editor" ], optional = true }
-git2 = { version = "0.20.3", optional = true }
-hex = "0.4.3"
+dirs = { workspace = true, optional = true }
+gix = { workspace = true, optional = true }
+hex.workspace = true
+ignore = { workspace = true, optional = true }
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio.workspace = true
+reqwest.workspace = true
+
+# Clones, configuration files and the network only exist for the `local` feature; the embedded
+# build has its own tests in tests/embedded.rs.
+[[example]]
+name = "basic_usage"
+required-features = ["local"]
+
+[[example]]
+name = "custom_config"
+required-features = ["local"]
+
+[[test]]
+name = "dump"
+required-features = ["local"]
+
+[[test]]
+name = "clone_and_find"
+required-features = ["local"]
+
+[[test]]
+name = "repositories"
+required-features = ["local"]

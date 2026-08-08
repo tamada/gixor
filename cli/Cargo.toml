@@ -1,29 +1,37 @@
 [package]
 name = "gixor-cli"
+description = "Git Ignore indeX ORganizer, a command to manage .gitignore files."
 readme = "README.md"
-categories = ["command-line-utilities"]
-description = "Git ignore managenemnt system for multiple repositories."
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 authors.workspace = true
 repository.workspace = true
 homepage.workspace = true
-keywords.workspace = true
-
-[features]
-default   = []
-uselibgit = ["gixor/uselibgit"]
-usegix    = ["gixor/usegix"]
+categories = ["command-line-utilities", "development-tools"]
+keywords = [
+    "cli",
+    "gitignore",
+    "gitignore-generator",
+    "git",
+    "shell",
+]
 
 [dependencies]
-gixor = { path = "../lib" }
-clap = { version = "4.5.28", features = ["derive"] }
-clap_complete = "4.5.44"
-env_logger = "0.11.6"
-log = "0.4.25"
-opener = "0.8.3"
-terminal_size = "0.4.3"
+gixor.workspace = true
+
+clap.workspace = true
+clap_complete.workspace = true
+env_logger.workspace = true
+log.workspace = true
+opener.workspace = true
+terminal_size.workspace = true
 
 [dev-dependencies]
-tokio = { version = "1.16.1", features = ["full"] }
-reqwest = { version = "0.13.1", features = ["json"] }
+tempfile.workspace = true
+
+# The package is gixor-cli so that the library keeps the gixor name on crates.io, but the command
+# it installs stays gixor.
+[[bin]]
+name = "gixor"
+path = "src/main.rs"

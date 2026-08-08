@@ -18,36 +18,31 @@ pub enum LogLevel {
 
 fn load_gixor(config_path: Option<PathBuf>, no_network: bool) -> Result<(Gixor, bool)> {
     let mut store_flag = false;
-    let mut gixor = match config_path {
+    let gixor = match config_path {
         None => {
             log::trace!("no config path specified. use default configuration");
-            store_flag = true;
-            Gixor::default()
+            GixorFactory::load_or_default()
         }
-        Some(path) => match GixorFactory::load(path.clone()) {
-            Ok(g) => {
-                log::trace!("configuration load from {}", path.display());
-                g
-            }
-            Err(e) => return Err(e),
-        },
+        Some(path) => {
+            let g = GixorFactory::load(&path)?;
+            log::trace!("configuration load from {}", path.display());
+            g
+        }
     };
     let gixor = if gixor.is_empty() {
         log::trace!("no repositories are given. add default repository");
         store_flag = true;
-        match gixor.add_repository(gixor::repos::Repository::default()) {
-            Err(e) => Err(e),
-            Ok(_) => Ok(gixor),
+        let mut g = gixor;
+        match g.add_repository(gixor::repos::Repository::default()) {
+            Err(e) => return Err(e),
+            Ok(_) => g,
         }
     } else {
-        Ok(gixor)
+        gixor
     };
-    match gixor {
-        Ok(g) => match g.prepare(no_network) {
-            Err(e) => Err(e),
-            _ => Ok((g, store_flag)),
-        },
+    match gixor.prepare(no_network) {
         Err(e) => Err(e),
+        _ => Ok((gixor, store_flag)),
     }
 }
 
@@ -74,7 +69,7 @@ fn remove_aliases(gixor: &mut Gixor, args: Vec<String>) -> Result<Option<&Gixor>
         .iter()
         .map(|name| gixor.remove_alias(name))
         .collect::<Vec<_>>();
-    match merge_errors(r) {
+    match Error::vec_result_to_result_vec(r) {
         Ok(_) => Ok(Some(gixor)),
         Err(e) => Err(e),
     }
@@ -105,33 +100,15 @@ fn perform_alias(gixor: &mut Gixor, opts: cli::AliasOpts) -> Result<Option<&Gixo
     }
 }
 
-fn merge_errors<T>(r: Vec<Result<T>>) -> Result<Vec<T>> {
-    let mut errs = vec![];
-    let mut items = vec![];
-    for e in r {
-        match e {
-            Ok(item) => items.push(item),
-            Err(e) => errs.push(e),
-        }
-    }
-    if errs.is_empty() {
-        Ok(items)
-    } else if errs.len() == 1 {
-        Err(errs.into_iter().next().unwrap())
-    } else {
-        Err(Error::Array(errs))
-    }
-}
-
 fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
-    let (dest, clear) = (opts.dest.clone(), opts.clear);
-    match opts.names() {
-        Ok(names) => match gixor.dump_to(names, dest, clear) {
-            Ok(_) => Ok(None),
-            Err(e) => Err(e),
-        },
-        Err(e) => Err(e),
+    let (dest, clear_prologue) = (opts.dest.clone(), opts.should_clear_prologue());
+    let names = opts.names(gixor)?;
+    if opts.dry_run {
+        let content = gixor.build_gitignore(names, &dest, clear_prologue)?;
+        print!("{content}");
+        return Ok(None);
     }
+    gixor.dump_to(names, dest, clear_prologue).map(|_| None)
 }
 
 fn list_each_boilerplate(
@@ -310,13 +287,15 @@ fn perform(opts: cli::CliOpts) -> Result<()> {
 
 fn init_log(level: &LogLevel) {
     use LogLevel::*;
-    match level {
-        Error => std::env::set_var("RUST_LOG", "error"),
-        Warn => std::env::set_var("RUST_LOG", "warn"),
-        Info => std::env::set_var("RUST_LOG", "info"),
-        Debug => std::env::set_var("RUST_LOG", "debug"),
-        Trace => std::env::set_var("RUST_LOG", "trace"),
-    };
+    unsafe {
+        match level {
+            Error => std::env::set_var("RUST_LOG", "error"),
+            Warn => std::env::set_var("RUST_LOG", "warn"),
+            Info => std::env::set_var("RUST_LOG", "info"),
+            Debug => std::env::set_var("RUST_LOG", "debug"),
+            Trace => std::env::set_var("RUST_LOG", "trace"),
+        };
+    }
     env_logger::try_init().unwrap_or_else(|_| {
         eprintln!("failed to initialize logger. set RUST_LOG to see logs.");
     });
@@ -378,15 +357,137 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::LogLevel;
-
     use super::*;
+    use crate::cli::{CliOpts, GixorCommand, ListOpts};
+    use clap::Parser;
 
     #[test]
-    fn test() {
-        let r = cli::CliOpts::try_parse_from(vec!["gixor", "--log", "trace", "init"]);
+    fn test_log_level_parse() {
+        let r = CliOpts::try_parse_from(vec!["gixor", "--log", "trace", "init"]);
         match r {
             Ok(opts) => assert_eq!(opts.log, LogLevel::Trace),
             Err(e) => panic!("failed to parse: {e:?}"),
         }
+    }
+
+    #[test]
+    fn test_perform_impl_list() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = GixorFactory::new_at(&config_path);
+
+        let subcmd = GixorCommand::List(ListOpts {
+            header: true,
+            repos: vec![],
+        });
+
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[test]
+    fn test_perform_impl_search() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = GixorFactory::new_at(&config_path);
+
+        let subcmd = GixorCommand::Search(cli::SearchOpts {
+            queries: vec!["rust".into()],
+        });
+
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_perform_impl_root() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = GixorFactory::new_at(&config_path);
+
+        let subcmd = GixorCommand::Root(cli::RootOpts { open: false });
+
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_perform_impl_alias() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = GixorFactory::new_at(&config_path);
+
+        let subcmd = GixorCommand::Alias(cli::AliasOpts { cmd: None });
+
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_perform_impl_dump() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = GixorFactory::new_at(&config_path);
+
+        let subcmd = GixorCommand::Dump(cli::DumpOpts {
+            dest: "-".into(),
+            no_append: false,
+            clear_prologue: false,
+            clear: false,
+            dry_run: false,
+            append: false,
+            names: vec![],
+        });
+
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_perform_impl_entries() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = GixorFactory::new_at(&config_path);
+
+        let subcmd = GixorCommand::Entries(cli::EntriesOpts {
+            dir: temp_dir.path().to_path_buf(),
+        });
+
+        // Should fail because .gitignore doesn't exist, but it exercises the path
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_perform_impl_repository() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = GixorFactory::new_at(&config_path);
+
+        // Test Repo List
+        let subcmd = GixorCommand::Repository(cli::RepositoryOpts::List);
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_ok());
+
+        // Test Repo Remove (fail case)
+        let subcmd = GixorCommand::Repository(cli::RepositoryOpts::Remove(cli::RepoRemoveOpts {
+            keep_dir: true,
+            name: "non-existent".into(),
+        }));
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_perform_impl_update() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = GixorFactory::new_at(&config_path);
+
+        let subcmd = GixorCommand::Update;
+        // Since we have no repos and prepare(false) returns Ok(()), this should pass
+        let result = perform_impl(&mut gixor, subcmd, false);
+        assert!(result.is_ok());
     }
 }

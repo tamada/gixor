@@ -1,17 +1,43 @@
 [workspace]
-members = [
-    "lib",
-    "cli"
-]
+members = ["lib", "cli"]
+# wasm stands outside the workspace on purpose. Cargo builds a dependency once for the whole
+# workspace with the union of the features its members ask for, and gixor-cli asks for `local`
+# while gixor-wasm asks for `embedded` — the two answer the same questions and cannot both be
+# on. Excluding it lets each be built with the features it means. Build it with
+# `just wasm`, or `wasm-pack build wasm --target web`.
+exclude = ["wasm"]
 resolver = "3"
 
 [workspace.package]
-version = "0.4.2"
-edition = "2021"
-authors = [ "Haruaki Tamada" ]
-license-file = "LICENSE"
-repository = "https://github.com/tamada/gixor.git"
+version = "0.4.3"
+edition = "2024"
+license = "MIT"
+authors = ["Haruaki Tamada"]
+repository = "https://github.com/tamada/gixor"
 homepage = "https://tamada.github.io/gixor/"
-readme = "README.md"
-categories = [ "command-line-utilities", "configuration", "development-tools" ]
-keywords = [ "cli", "gitignore", "gitignore-generator", "git", "shell", "gitignore-files", "gitignore-templates" ]
+
+[workspace.dependencies]
+gixor = { path = "lib", version = "0.4.3" }
+
+clap = { version = "4.6.3", features = ["derive"] }
+clap_complete = "4.6.7"
+dirs = "6.0.0"
+env_logger = "0.11.11"
+gix = { version = "0.85.0", features = [
+    "blocking-http-transport-reqwest-rust-tls",
+    "blocking-network-client",
+    "merge",
+    "tree-editor",
+] }
+hex = "0.4.3"
+ignore = "0.4.31"
+log = "0.4.33"
+opener = "0.8.5"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+terminal_size = "0.4.4"
+
+tempfile = "3.27"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# rustls rather than the default native-tls, so that the tests do not drag in libopenssl
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }

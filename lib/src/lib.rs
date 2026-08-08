@@ -13,17 +13,19 @@
 //! let gixor = GixorFactory::load("testdata/config.json").unwrap();
 //! gixor.prepare(true).unwrap(); // clone or update all repositories, if needed.
 //! // create vec of Name instance.
-//! let names = Name::parse_all(vec!["rust", "macos", "linux", "windows"])
+//! let names = Name::parse_all(vec!["rust", "macos", "linux", "windows"]);
 //! // dump the boilerplate of rust, macos, linux, and windows into stdout.
-//! let r = gixor.dump(names, std::io::stdout());
+//! let r = gixor.dump(names, std::io::stdout(), false);
 //! ```
 //!
 //! # Features
 //!
 //! [`Gixor`] provides the following features for operating Git repositories.:
-//! - `uselibgit`: use [`git2`](https://docs.rs/git2/latest/git2/) crate which uses libgit2 C library.
-//! - `usegix`: use [`gix`](https://docs.rs/gix/latest/gix/) crate which is a pure Rust implementation of Git.
-//! - default: use `git` command via [`std::process::Command`](https://doc.rust-lang.org/std/process/struct.Command.html).
+//! - `usegix` (default): use [`gix`](https://docs.rs/gix/latest/gix/) crate which is a pure Rust
+//!   implementation of Git. Nothing has to be installed alongside, and no C library is linked.
+//! - `--no-default-features`: use `git` command via
+//!   [`std::process::Command`](https://doc.rust-lang.org/std/process/struct.Command.html),
+//!   which requires `git` to be on the `PATH`.
 //!
 use std::{
     fmt::Display,
@@ -32,9 +34,20 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serialize};
 
+#[cfg(not(any(feature = "local", feature = "embedded")))]
+compile_error!(
+    "gixor needs to know where the boilerplates come from: enable `local` to keep clones on the \
+     file system, or `embedded` to compile a snapshot in."
+);
+
+#[cfg(all(feature = "local", feature = "embedded"))]
+compile_error!("The features `local` and `embedded` cannot be enabled at the same time.");
+
 pub mod aliases;
+#[cfg(feature = "local")]
 pub mod gitbridge;
 pub mod repos;
+mod source;
 
 /// Represents the result of Gixor.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -96,12 +109,13 @@ impl Display for Error {
         use Error::*;
         match self {
             Array(errs) => {
-                let result = errs.iter().map(|e| e.fmt(f)).collect::<Vec<_>>();
-                if result.iter().any(|r| r.is_err()) {
-                    Err(std::fmt::Error)
-                } else {
-                    Ok(())
+                for (i, e) in errs.iter().enumerate() {
+                    if i > 0 {
+                        writeln!(f)?;
+                    }
+                    write!(f, "{e}")?;
                 }
+                Ok(())
             }
             Alias(msg) => write!(f, "{msg}"),
             AliasNotFound(name) => write!(f, "{name}: alias not found"),
@@ -241,7 +255,10 @@ impl Name {
     }
 }
 
-/// Represents the main structure of Gixor.
+/// Represents the main structure of Gixor, the engine for managing .gitignore boilerplates.
+///
+/// It holds the configuration, including repository locations and aliases, and provides
+/// methods to interact with them (cloning, updating, finding, and dumping boilerplates).
 pub struct Gixor {
     config: Config,
     load_from: PathBuf,
@@ -278,6 +295,9 @@ pub trait AliasManager {
     fn add_alias(&mut self, alias: aliases::Alias) -> Result<()>;
 }
 
+/// The configuration directory only means something where there is a user to have one, so both
+/// it and the constructors resting on it belong to the `local` feature.
+#[cfg(feature = "local")]
 impl Default for Gixor {
     /// Create a default instance of Gixor.
     /// The default configuration is as follows:
@@ -312,30 +332,65 @@ impl Default for Gixor {
 pub struct GixorFactory {}
 
 impl GixorFactory {
-    /// Load the configuration file from the default location.
-    /// The default configuration is provided by [`Gixor::default`].
+    /// Builds a [`Gixor`] over the boilerplates compiled into the binary.
+    ///
+    /// There is no configuration file and nothing to clone: the repositories are the ones the
+    /// snapshot was taken from, and [`Gixor::prepare`] has nothing to do. This is the entry
+    /// point for a target with no file system, such as wasm.
+    #[cfg(feature = "embedded")]
+    pub fn embedded() -> Gixor {
+        Gixor::new(
+            Config {
+                repositories: source::repositories(),
+                base_path: PathBuf::new(),
+                aliases: None,
+            },
+            PathBuf::new(),
+        )
+    }
+
+    /// Load the configuration file from the default location,
+    /// falling back to a fresh configuration when there is none yet.
+    #[cfg(feature = "local")]
     pub fn load_or_default() -> Gixor {
         match dirs::config_dir() {
             Some(dir) => {
                 let path = dir.join("gixor").join("config.json");
-                GixorFactory::load(path).unwrap_or_default()
+                GixorFactory::load(&path).unwrap_or_else(|_| GixorFactory::new_at(path))
             }
             None => panic!("Failed to get the config directory"),
         }
     }
 
+    /// Creates a fresh configuration destined for `path`, holding the default repository and
+    /// no alias. Nothing is written until [`Gixor::store`] is called.
+    ///
+    /// Use this to start a configuration that does not exist yet. [`GixorFactory::load`]
+    /// deliberately refuses a missing file instead, so that a mistyped path is reported rather
+    /// than silently turning into an empty configuration.
+    pub fn new_at<P: AsRef<Path>>(path: P) -> Gixor {
+        let path = path.as_ref();
+        Gixor::new(
+            Config {
+                repositories: vec![repos::Repository::default()],
+                base_path: path.parent().unwrap_or(Path::new(".")).join("boilerplates"),
+                aliases: None,
+            },
+            path.to_path_buf(),
+        )
+    }
+
     /// Parse the configuration file from the given path.
+    ///
+    /// Returns [`Error::FileNotFound`] when `path` does not exist. To start from a configuration
+    /// that has yet to be written, use [`GixorFactory::new_at`].
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Gixor> {
         let path = path.as_ref();
         match std::fs::File::open(path) {
-            Err(_) => Ok(Gixor::new(
-                Config {
-                    repositories: vec![repos::Repository::default()],
-                    base_path: path.parent().unwrap().join("boilerplates"),
-                    aliases: None,
-                },
-                path.to_path_buf(),
-            )),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                Err(Error::FileNotFound(path.to_path_buf()))
+            }
+            Err(e) => Err(Error::IO(e)),
             Ok(f) => match serde_json::from_reader(f) {
                 Ok(config) => Ok(Gixor::new(
                     update_base_path(config, path),
@@ -349,6 +404,8 @@ impl GixorFactory {
 
 impl Gixor {
     fn new(config: Config, load_from: PathBuf) -> Self {
+        log::debug!("config path: {load_from:?}");
+        log::debug!("config: {}", serde_json::to_string_pretty(&config).unwrap());
         Gixor { config, load_from }
     }
     /// Returns the base path of this configuration.
@@ -357,28 +414,92 @@ impl Gixor {
     }
 
     /// Prepare the repositories in the local environment by cloning or updating them.
+    ///
+    /// This method will iterate through all configured repositories. If a repository
+    /// does not exist locally, it will be cloned. If it exists, it will be updated (pulled).
+    ///
+    /// # Arguments
+    /// * `no_network` - If true, skip network operations (no clone or pull).
     pub fn prepare(&self, no_network: bool) -> Result<()> {
         self.config.prepare(no_network)
     }
 
-    /// Write the the content of boilerplate corresponding the given names to the destination.
+    /// Write the content of boilerplates corresponding to the given names to the destination.
+    ///
+    /// # Arguments
+    /// * `names` - A vector of [`Name`] instances representing the boilerplates to dump.
+    /// * `dest` - A writer where the combined content will be written.
+    /// * `clear_flag` - If true, do not include the existing prologue from the destination.
     pub fn dump(
         &self,
         names: Vec<Name>,
-        dest: impl std::io::Write,
+        mut dest: impl std::io::Write,
         clear_flag: bool,
     ) -> Result<()> {
-        match routine::find_boilerplates(self, names) {
-            Err(e) => Err(e),
-            Ok(boilerplates) => {
-                routine::dump_boilerplates_impl(dest, boilerplates, clear_flag, self.base_path())
-            }
-        }
+        let content = self.build_gitignore(names, ".gitignore", clear_flag)?;
+        dest.write_all(content.as_bytes()).map_err(Error::IO)?;
+        dest.flush().map_err(Error::IO)
     }
 
-    /// If the destination is `"-"`, the content is written to the stdout, and
-    /// the `dest` is a directory, the content is written to the `${dest}/.gitignore`.
-    /// Otherwise, the content is written to the file of `dest`.
+    /// Builds the content that [`Gixor::dump_to`] would write, without touching any file.
+    ///
+    /// Use this to preview the result, or to write it somewhere else.
+    ///
+    /// # Arguments
+    /// * `names` - A vector of [`Name`] instances representing the boilerplates to dump.
+    /// * `dest` - The path the content is destined for. Its prologue is carried over, and
+    ///   `"-"` reads the prologue from `.gitignore` in the current directory.
+    /// * `clear_prologue` - If true, drop the prologue of the destination.
+    pub fn build_gitignore<P: AsRef<Path>>(
+        &self,
+        names: Vec<Name>,
+        dest: P,
+        clear_prologue: bool,
+    ) -> Result<String> {
+        let dest = dest.as_ref();
+        let prologue = if clear_prologue {
+            vec![]
+        } else {
+            let from = if dest == Path::new("-") {
+                PathBuf::from(".gitignore")
+            } else {
+                routine::find_gitignore(dest)
+            };
+            routine::load_prologue(&from)
+        };
+        let boilerplates = routine::find_boilerplates(self, names)?;
+        routine::build_content(boilerplates, prologue, self.base_path())
+    }
+
+    /// Builds the same content as [`Gixor::build_gitignore`], from a gitignore already in hand
+    /// rather than one on disk.
+    ///
+    /// This is what a caller with no file system has to use: a browser holds the current
+    /// `.gitignore` as text, and gets the new one back as text.
+    ///
+    /// # Arguments
+    /// * `names` - A vector of [`Name`] instances representing the boilerplates to dump.
+    /// * `current` - The current content of the gitignore. Its prologue, the part before the
+    ///   first boilerplate, is carried over. Pass `""` to start from nothing.
+    pub fn build_gitignore_with(&self, names: Vec<Name>, current: &str) -> Result<String> {
+        let prologue = routine::prologue_of(current);
+        let boilerplates = routine::find_boilerplates(self, names)?;
+        routine::build_content(boilerplates, prologue, self.base_path())
+    }
+
+    /// Writes the selected boilerplates to a file or stdout.
+    ///
+    /// If the destination is `"-"`, the content is written to stdout.
+    /// If the `dest` is a directory, the content is written to `${dest}/.gitignore`.
+    /// Otherwise, the content is written to the file specified by `dest`.
+    ///
+    /// The destination is replaced by a rename once the whole content has been built and
+    /// written elsewhere, so an error leaves the existing file exactly as it was.
+    ///
+    /// # Arguments
+    /// * `names` - A vector of [`Name`] instances.
+    /// * `dest` - The destination path or `"-"` for stdout.
+    /// * `clear_flag` - If true, drop the prologue of the destination.
     pub fn dump_to<P: AsRef<Path>>(
         &self,
         names: Vec<Name>,
@@ -391,20 +512,29 @@ impl Gixor {
             names.len(),
             p.display()
         );
-        let out = routine::open_dest(p)?;
-        self.dump(names, out, clear_flag)
+        // The content is built first and in full. Nothing here opens the destination until the
+        // result is known to be complete, so a failure leaves the existing file untouched.
+        let content = self.build_gitignore(names, p, clear_flag)?;
+        if p == Path::new("-") {
+            use std::io::Write;
+            let mut out = std::io::stdout();
+            out.write_all(content.as_bytes()).map_err(Error::IO)?;
+            return out.flush().map_err(Error::IO);
+        }
+        routine::write_atomically(&routine::find_gitignore(p), &content)
     }
 
     /// Store the configuration to the configuration path.
     pub fn store(&self) -> Result<()> {
-        match std::fs::create_dir_all(self.load_from.parent().unwrap()) {
+        if let Some(parent) = self.load_from.parent()
+            && !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent).map_err(Error::IO)?;
+        }
+        match std::fs::File::create(&self.load_from) {
             Err(e) => Err(Error::IO(e)),
-            Ok(_) => match std::fs::File::create(&self.load_from) {
-                Err(e) => Err(Error::IO(e)),
-                Ok(f) => match serde_json::to_writer(f, &self.config) {
-                    Err(e) => Err(Error::Json(e)),
-                    Ok(_) => Ok(()),
-                },
+            Ok(f) => match serde_json::to_writer(f, &self.config) {
+                Err(e) => Err(Error::Json(e)),
+                Ok(_) => Ok(()),
             },
         }
     }
@@ -509,7 +639,7 @@ impl RepositoryManager for Gixor {
 }
 
 fn update_base_path(config: Config, path: &Path) -> Config {
-    let parent = path.parent().unwrap();
+    let parent = path.parent().unwrap_or(Path::new("."));
     let base_path = config.base_path.clone();
     let new_base_path = if base_path.is_absolute() || base_path.starts_with(".") {
         base_path
@@ -599,7 +729,7 @@ impl AliasManager for Config {
     }
 
     fn add_alias(&mut self, alias: aliases::Alias) -> Result<()> {
-        let aliases = self.aliases.as_mut().unwrap();
+        let aliases = self.aliases.get_or_insert_with(aliases::Aliases::default);
         aliases.add_alias(alias)
     }
 }
@@ -607,6 +737,12 @@ impl AliasManager for Config {
 fn remove_repo_dir<P: AsRef<Path>>(base_path: P, repo: repos::Repository) -> Result<()> {
     let path = base_path.as_ref().join(repo.name);
     match std::fs::remove_dir_all(&path) {
+        // The repository is gone from the configuration either way, and a clone that was never
+        // made is not a failure to remove it. The embedded build never has one at all.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            log::debug!("{}: no directory to remove", path.display());
+            Ok(())
+        }
         Err(e) => Err(Error::IO(e)),
         Ok(_) => Ok(()),
     }
@@ -615,6 +751,52 @@ fn remove_repo_dir<P: AsRef<Path>>(base_path: P, repo: repos::Repository) -> Res
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The directory holding the fixtures of `testdata`, shared by the unit tests of this crate.
+    ///
+    /// The paths are anchored on `CARGO_MANIFEST_DIR` rather than written relative to the working
+    /// directory. Cargo happens to run test binaries from the package root, but relying on that
+    /// is what led the tests to read `../testdata`, one level above the repository, where the
+    /// fixtures are not.
+    fn testdata_dir() -> PathBuf {
+        PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/testdata"))
+    }
+
+    /// The configuration used by the tests, carrying three repositories and two aliases.
+    ///
+    /// The existence check matters: a path that is not there is not an error the tests would
+    /// notice on their own, it just leaves them asserting against an empty configuration.
+    pub(crate) fn config_path() -> PathBuf {
+        let path = testdata_dir().join("config.json");
+        assert!(
+            path.exists(),
+            "{}: the test configuration is missing",
+            path.display()
+        );
+        path
+    }
+
+    /// The directory the test repositories are cloned into. Ignored by `testdata/.gitignore`.
+    pub(crate) fn boilerplates_path() -> PathBuf {
+        testdata_dir().join("boilerplates")
+    }
+
+    /// Clones or updates the repositories of the test configuration, once for the whole binary.
+    ///
+    /// Every test that resolves a name down to a boilerplate needs them on disk. Preparing from
+    /// each test instead would have several clones racing into the same directory, since the
+    /// tests run in parallel, and letting one test prepare for the others would make the outcome
+    /// depend on the order they happen to run in.
+    pub(crate) fn prepare_once() {
+        static PREPARED: std::sync::OnceLock<()> = std::sync::OnceLock::new();
+        PREPARED.get_or_init(|| {
+            GixorFactory::load(config_path())
+                .unwrap()
+                .prepare(false)
+                .unwrap()
+        });
+    }
+
     #[test]
     fn test_vec_result_to_result_vec() {
         let value = vec![Ok(1), Ok(2), Ok(3)];
@@ -622,15 +804,30 @@ mod tests {
         assert_eq!(result, vec![1, 2, 3]);
     }
 
+    /// A mistyped configuration path used to yield an empty configuration that looked like a
+    /// working one. Starting from scratch is now an explicit choice instead.
+    #[test]
+    fn load_reports_a_missing_configuration() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+
+        assert!(matches!(
+            GixorFactory::load(&path),
+            Err(Error::FileNotFound(_))
+        ));
+
+        let gixor = GixorFactory::new_at(&path);
+        assert_eq!(gixor.config.repositories.len(), 1);
+        assert_eq!(gixor.config.base_path, dir.path().join("boilerplates"));
+        assert_eq!(gixor.load_from, path);
+    }
+
     #[test]
     fn parse_gixor() {
-        match GixorFactory::load(PathBuf::from("../testdata/config.json")) {
+        match GixorFactory::load(config_path()) {
             Err(e) => panic!("Failed to parse the config file: {e}"),
             Ok(gixor) => {
-                assert_eq!(
-                    gixor.config.base_path,
-                    PathBuf::from("../testdata/boilerplates")
-                );
+                assert_eq!(gixor.config.base_path, boilerplates_path());
                 assert_eq!(gixor.config.repositories.len(), 3);
             }
         }
@@ -673,7 +870,7 @@ mod tests {
                 Error::Fatal("hoge2".to_string())
             ])
             .to_string(),
-            "Fatal error: hoge1Fatal error: hoge2"
+            "Fatal error: hoge1\nFatal error: hoge2"
         );
         assert_eq!(
             Error::Alias("hoge: alias not found".to_string()).to_string(),
@@ -711,5 +908,89 @@ mod tests {
 
         let str = serde_json::to_string(&name).unwrap();
         assert_eq!(str, "\"alias/os-list\"");
+    }
+
+    #[test]
+    fn test_repository_manager() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("config.json");
+        let mut gixor = Gixor::new(
+            Config {
+                repositories: vec![],
+                base_path: temp_dir.path().join("boilerplates"),
+                aliases: None,
+            },
+            config_path,
+        );
+
+        assert!(gixor.is_empty());
+        assert_eq!(gixor.len(), 0);
+
+        let repo = repos::Repository::default();
+        gixor.add_repository(repo).unwrap();
+
+        assert!(!gixor.is_empty());
+        assert_eq!(gixor.len(), 1);
+        assert!(gixor.repository("default").is_some());
+        assert_eq!(gixor.repositories().count(), 1);
+
+        gixor.remove_repository("default").unwrap();
+        assert!(gixor.is_empty());
+    }
+
+    #[test]
+    fn test_alias_manager() {
+        let mut gixor = Gixor::new(
+            Config {
+                repositories: vec![],
+                base_path: PathBuf::from("."),
+                aliases: None,
+            },
+            PathBuf::from("config.json"),
+        );
+
+        let alias = aliases::Alias::new("web".into(), "web stuff".into(), vec![]);
+        gixor.add_alias(alias).unwrap();
+        assert_eq!(gixor.iter_aliases().count(), 1);
+
+        gixor.remove_alias("web").unwrap();
+        assert_eq!(gixor.iter_aliases().count(), 0);
+    }
+
+    #[test]
+    fn test_gixor_store() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config_path = temp_dir.path().join("sub").join("config.json");
+        let gixor = Gixor::new(
+            Config {
+                repositories: vec![],
+                base_path: PathBuf::from("."),
+                aliases: None,
+            },
+            config_path.clone(),
+        );
+
+        gixor.store().unwrap();
+        assert!(config_path.exists());
+    }
+
+    #[test]
+    fn test_update_base_path() {
+        let config = Config {
+            repositories: vec![],
+            base_path: PathBuf::from("boilerplates"),
+            aliases: None,
+        };
+        let path = PathBuf::from("/etc/gixor/config.json");
+        let updated = update_base_path(config, &path);
+        assert_eq!(updated.base_path, PathBuf::from("/etc/gixor/boilerplates"));
+
+        let config2 = Config {
+            repositories: vec![],
+            base_path: PathBuf::from("/absolute/path"),
+            aliases: None,
+        };
+        let updated2 = update_base_path(config2, &path);
+        assert_eq!(updated2.base_path, PathBuf::from("/absolute/path"));
     }
 }

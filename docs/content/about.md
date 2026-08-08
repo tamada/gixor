@@ -3,18 +3,18 @@ title: ":information: About"
 date: 2025-09-29
 ---
 
-## 👩‍💻 Authors 👨‍💻
+## :woman_technologist: Authors :man_technologist:
 
-- Haruaki Tamada [GitHub](https://github.com/tamada) [🌏](https://tamada.github.io/)
+- Haruaki Tamada [{{< icon "github" >}}](https://github.com/tamada) [:earth_asia:](https://tamada.github.io/)
 
-## 🎃 Product Name
+## :jack_o_lantern: Product Name
 
 Gixor means "GitIgnore indeX ORganizer," and
 pronounce it as "jigsaw".
 
-## Logo
+## :triangular_ruler: Logo
 
-![logo](/gixor/icons/gixor.svg)
+![logo](/icons/gixor.svg)
 
 The logo of gixor is created with the following services/tools.
 
@@ -25,4 +25,13 @@ The logo of gixor is created with the following services/tools.
 - [Boxy SVG Editor](https://boxy-svg.com)
   - By transforming the SVG objects.
 - [Gapplin](https://gapplin.wolfrosch.com)
-  - Viewer.
+  - Viewer.`
+
+## :link: Related Tools and Services
+
+- [gibo](https://github.com/simonwhitaker/gibo)
+- [gitignore.io](https://www.gitignore.io/)
+- [bliss](https://github.com/ajmwagar/bliss)
+- [gitignore-it](https://github.com/christopherkade/gitignore-it)
+- [gitnr](https://github.com/reemus-dev/gitnr)
+- [gig](https://github.com/shihanng/gig)

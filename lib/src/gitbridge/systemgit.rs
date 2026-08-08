@@ -58,10 +58,10 @@ pub fn hash<P: AsRef<Path>>(boilerplate: &Boilerplate, base_path: P) -> Result<V
     );
     let path = boilerplate.path();
     let repository_path = boilerplate.repo_path(base_path);
-    let args = ["log", "--format=%H", "-n", "1", path.to_str().unwrap()];
-    log::info!("Executing: git {:?}", args.join(" "));
+    log::info!("Executing: git log --format=%H -n 1 {}", path.display());
     let r = Command::new("git")
-        .args(args)
+        .args(["log", "--format=%H", "-n", "1"])
+        .arg(path)
         .current_dir(repository_path)
         .output();
     match r {

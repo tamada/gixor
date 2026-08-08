@@ -24,7 +24,7 @@ impl Alias {
 }
 
 /// Represents a collection of aliases.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Aliases {
     aliases: Vec<Alias>,
 }
@@ -112,8 +112,41 @@ mod tests {
     use crate::GixorFactory;
 
     #[test]
+    fn test_aliases_merge() {
+        let alias1 = Alias::new("a1".into(), "d1".into(), vec![Name::from("n1")]);
+        let alias2 = Alias::new("a2".into(), "d2".into(), vec![Name::from("n2")]);
+        let alias3 = Alias::new("a1".into(), "d3".into(), vec![Name::from("n3")]); // Duplicate name
+
+        let aliases1 = Aliases {
+            aliases: vec![alias1.clone()],
+        };
+        let aliases2 = Aliases {
+            aliases: vec![alias2, alias3],
+        };
+
+        let merged = aliases1.merge(&aliases2);
+        assert_eq!(merged.aliases.len(), 2);
+        assert_eq!(merged.aliases[0].name, "a1");
+        assert_eq!(merged.aliases[0].description, "d1"); // Kept from aliases1
+        assert_eq!(merged.aliases[1].name, "a2");
+    }
+
+    #[test]
+    fn test_remove_alias_error() {
+        let mut aliases = Aliases { aliases: vec![] };
+        let result = aliases.remove_alias("non-existent");
+        assert!(matches!(result, Err(Error::Alias(_))));
+    }
+
+    /// Loads the test configuration with its boilerplate repositories cloned or updated.
+    fn setup() -> crate::Gixor {
+        crate::tests::prepare_once();
+        GixorFactory::load(crate::tests::config_path()).unwrap()
+    }
+
+    #[test]
     fn test_predefined_alias() {
-        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
+        let gixor = GixorFactory::load(crate::tests::config_path()).unwrap();
         let binding = gixor.config.aliases.unwrap();
         let alias = binding.find("os-list").unwrap();
         assert_eq!(alias.name, "os-list");
@@ -121,8 +154,7 @@ mod tests {
 
     #[test]
     fn test_alias() {
-        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
-        gixor.prepare(false).unwrap();
+        let gixor = setup();
         let results = gixor.find(Name::from("os-list")).unwrap();
         assert_eq!(results.len(), 3);
 
@@ -136,7 +168,7 @@ mod tests {
 
     #[test]
     fn test_alias_with_repository_name() {
-        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
+        let gixor = setup();
         let results = gixor.find(Name::from("alias/os-list")).unwrap();
         assert_eq!(results.len(), 3);
 
@@ -150,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_nexted_alias() {
-        let gixor = GixorFactory::load("../testdata/config.json").unwrap();
+        let gixor = setup();
         let results = gixor.find(Name::from("my-default")).unwrap();
         assert_eq!(results.len(), 6);
 

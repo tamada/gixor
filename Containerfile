@@ -1,0 +1,53 @@
+FROM rust:1-bullseye AS builder
+
+ARG FEATURES=""
+
+WORKDIR /app
+COPY . .
+RUN    cargo build --release -p gixor-cli $FEATURES \
+    && mkdir -p /opt/gixor/boilerplates \
+    && git clone https://github.com/github/gitignore.git /opt/gixor/boilerplates/default \
+    && echo '{ \n\
+    "base-path": "/opt/gixor/boilerplates",\n\
+    "repositories": [\n\
+        {\n\
+            "url": "https://github.com/github/gitignore.git",\n\
+            "repo-name": "gitignore",\n\
+            "owner": "github",\n\
+            "name": "default",\n\
+            "path": "default"\n\
+        }\n\
+    ]\n\
+}' > /opt/gixor/config.json
+
+FROM debian:bullseye-slim
+
+ARG VERSION=0.4.3
+# The default build carries gix and needs nothing installed here. It is the --no-default-features
+# build that drives the git command and therefore asks for git.
+# This has to be declared in this stage: an ARG belongs to the stage it appears in, and being
+# declared in the builder left it empty here, so it never installed anything.
+ARG APT_OPTIONAL=""
+
+LABEL   org.opencontainers.image.source=https://github.com/tamada/gixor \
+        org.opencontainers.image.version=${VERSION} \
+        org.opencontainers.image.title=gixor \
+        org.opencontainers.image.description="Git Ignore Managenemnt System for Multiple Repositories."
+
+RUN    adduser --disabled-password --disabled-login --home /opt/gixor nonroot \
+    && mkdir -p /app /opt/gixor/boilerplates \
+    && apt-get update \
+    && apt-get install --no-install-recommends -y $APT_OPTIONAL ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/target/release/gixor     /opt/gixor/gixor
+COPY --from=builder /opt/gixor                    /opt/gixor
+
+RUN  chown -R nonroot:nonroot /opt/gixor
+
+USER nonroot
+
+WORKDIR /app
+
+ENTRYPOINT [ "/opt/gixor/gixor", "--config", "/opt/gixor/config.json" ]
