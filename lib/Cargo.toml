@@ -8,7 +8,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 homepage.workspace = true
-categories = ["configuration", "development-tools"]
+categories = ["config", "development-tools"]
 keywords = [
     "gitignore",
     "gitignore-generator",
