@@ -145,7 +145,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: quay.io/${{ github.repository }}
+          images: quay.io/tama5/${{ needs.publish.outputs.appname }}
           tags: |
             type=raw,value=latest
             type=sha,prefix=,suffix=,format=short

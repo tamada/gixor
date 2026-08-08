@@ -111,9 +111,9 @@ _docker_build features apt_optional docker_tag_suffix:
         -f Containerfile \
         --build-arg APT_OPTIONAL="{{apt_optional}}" \
         --build-arg FEATURES="{{features}}" \
-        -t ghcr.io/tamada/gixor:{{VERSION}}{{docker_tag_suffix}} .
+        -t quay.io/tama5/gixor:{{VERSION}}{{docker_tag_suffix}} .
 
-# Build the docker image for multiple platforms and push them into ghcr.io
+# Build the docker image for multiple platforms and push them into quay.io
 docker_buildx: _docker_buildx_default_feature _docker_buildx_systemgit_feature
 
 _docker_buildx_default_feature:   (_docker_buildx "" "" "")
@@ -126,4 +126,4 @@ _docker_buildx features apt_optional docker_tag_suffix:
         --output=type=image,push=true \
         --build-arg APT_OPTIONAL="{{apt_optional}}" \
         --build-arg FEATURES="{{features}}" \
-        -t ghcr.io/tamada/gixor:{{VERSION}}{{docker_tag_suffix}} .
+        -t quay.io/tama5/gixor:{{VERSION}}{{docker_tag_suffix}} .
