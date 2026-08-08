@@ -25,6 +25,10 @@ keywords = [
 default = ["local", "usegix"]
 local = ["dep:dirs", "dep:ignore"]
 usegix = ["local", "dep:gix"]
+# `embedded` compiles the snapshot under boilerplates/ into the binary instead, so that neither
+# a clone nor a file system is needed. It is what the wasm build stands on, and it excludes
+# `local`: the two answer the same questions.
+embedded = []
 
 [dependencies]
 dirs = { workspace = true, optional = true }
@@ -39,3 +43,25 @@ serde_json.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
 reqwest.workspace = true
+
+# Clones, configuration files and the network only exist for the `local` feature; the embedded
+# build has its own tests in tests/embedded.rs.
+[[example]]
+name = "basic_usage"
+required-features = ["local"]
+
+[[example]]
+name = "custom_config"
+required-features = ["local"]
+
+[[test]]
+name = "dump"
+required-features = ["local"]
+
+[[test]]
+name = "clone_and_find"
+required-features = ["local"]
+
+[[test]]
+name = "repositories"
+required-features = ["local"]

@@ -25,7 +25,9 @@ formats:
 # Run clippy for checking the source codes.
 clippy:
     cargo clippy --workspace --all-targets -- -D warnings
-    cargo clippy -p gixor --all-targets --no-default-features --features local -- -D warnings
+    cargo clippy -p gixor --all-targets --no-default-features --features local    -- -D warnings
+    cargo clippy -p gixor --all-targets --no-default-features --features embedded -- -D warnings
+    cargo clippy --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown  -- -D warnings
 
 clone_default_ignores:
     test -d lib/testdata/boilerplates/default || git clone https://github.com/github/gitignore.git lib/testdata/boilerplates/default
@@ -34,6 +36,32 @@ clone_tamada_ignores:
     test -d lib/testdata/boilerplates/tamada || git clone https://github.com/tamada/gitignore.git lib/testdata/boilerplates/tamada
 
 clone_for_test: clone_default_ignores clone_tamada_ignores
+
+# Refresh the boilerplate snapshot that the embedded build, and therefore wasm, carries.
+# The snapshot is committed rather than fetched at build time: cargo package does not carry
+# submodules, so anything not committed would reach crates.io empty.
+vendor_boilerplates:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    git clone --depth 1 https://github.com/github/gitignore.git "$tmp/default"
+    commit=$(git -C "$tmp/default" rev-parse HEAD)
+    rm -rf lib/boilerplates/default
+    mkdir -p lib/boilerplates/default
+    rsync -a --prune-empty-dirs --include='*/' --include='*.gitignore' --exclude='*' \
+        "$tmp/default/" lib/boilerplates/default/
+    printf '# repository url owner repo-name commit\ndefault https://github.com/github/gitignore.git github gitignore %s\n' \
+        "$commit" > lib/boilerplates/SOURCES
+    echo "vendored $(find lib/boilerplates/default -name '*.gitignore' | wc -l | tr -d ' ') boilerplates at $commit"
+
+# Build the wasm module for the browser. It stands outside the workspace; see the root Cargo.toml.
+wasm:
+    wasm-pack build wasm --target web
+
+# Check that the library still builds for the browser, without needing wasm-pack.
+wasm_check:
+    cargo check --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown
 
 # Generate the completion files
 gen_complete:

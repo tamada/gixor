@@ -175,18 +175,23 @@ pub(super) fn load_prologue(path: &Path) -> Vec<String> {
     match std::fs::File::open(path) {
         Ok(f) => {
             log::info!("loading prologue from {}", path.display());
-            let mut result = vec![];
             let reader = BufReader::new(f);
-            for line in reader.lines().map_while(|r| r.ok()) {
-                if line.starts_with("### ") {
-                    break;
-                }
-                result.push(line);
-            }
-            result
+            take_prologue(reader.lines().map_while(|r| r.ok()))
         }
         Err(_) => vec![],
     }
+}
+
+/// The prologue of a gitignore already held in memory, for callers that have the text rather
+/// than a path to it.
+pub(super) fn prologue_of(content: &str) -> Vec<String> {
+    take_prologue(content.lines().map(str::to_string))
+}
+
+/// The lines up to the first boilerplate. Everything from `### ` onwards was written by gixor
+/// and is about to be written again.
+fn take_prologue(lines: impl Iterator<Item = String>) -> Vec<String> {
+    lines.take_while(|line| !line.starts_with("### ")).collect()
 }
 
 #[cfg(test)]

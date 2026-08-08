@@ -34,15 +34,20 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serialize};
 
-#[cfg(not(feature = "local"))]
+#[cfg(not(any(feature = "local", feature = "embedded")))]
 compile_error!(
-    "gixor currently needs the `local` feature, which reads the boilerplates from the file system. \
-     Use --no-default-features --features local to drive the git command instead of gix."
+    "gixor needs to know where the boilerplates come from: enable `local` to keep clones on the \
+     file system, or `embedded` to compile a snapshot in."
 );
 
+#[cfg(all(feature = "local", feature = "embedded"))]
+compile_error!("The features `local` and `embedded` cannot be enabled at the same time.");
+
 pub mod aliases;
+#[cfg(feature = "local")]
 pub mod gitbridge;
 pub mod repos;
+mod source;
 
 /// Represents the result of Gixor.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -290,6 +295,9 @@ pub trait AliasManager {
     fn add_alias(&mut self, alias: aliases::Alias) -> Result<()>;
 }
 
+/// The configuration directory only means something where there is a user to have one, so both
+/// it and the constructors resting on it belong to the `local` feature.
+#[cfg(feature = "local")]
 impl Default for Gixor {
     /// Create a default instance of Gixor.
     /// The default configuration is as follows:
@@ -324,8 +332,26 @@ impl Default for Gixor {
 pub struct GixorFactory {}
 
 impl GixorFactory {
+    /// Builds a [`Gixor`] over the boilerplates compiled into the binary.
+    ///
+    /// There is no configuration file and nothing to clone: the repositories are the ones the
+    /// snapshot was taken from, and [`Gixor::prepare`] has nothing to do. This is the entry
+    /// point for a target with no file system, such as wasm.
+    #[cfg(feature = "embedded")]
+    pub fn embedded() -> Gixor {
+        Gixor::new(
+            Config {
+                repositories: source::repositories(),
+                base_path: PathBuf::new(),
+                aliases: None,
+            },
+            PathBuf::new(),
+        )
+    }
+
     /// Load the configuration file from the default location,
     /// falling back to a fresh configuration when there is none yet.
+    #[cfg(feature = "local")]
     pub fn load_or_default() -> Gixor {
         match dirs::config_dir() {
             Some(dir) => {
@@ -441,6 +467,22 @@ impl Gixor {
             };
             routine::load_prologue(&from)
         };
+        let boilerplates = routine::find_boilerplates(self, names)?;
+        routine::build_content(boilerplates, prologue, self.base_path())
+    }
+
+    /// Builds the same content as [`Gixor::build_gitignore`], from a gitignore already in hand
+    /// rather than one on disk.
+    ///
+    /// This is what a caller with no file system has to use: a browser holds the current
+    /// `.gitignore` as text, and gets the new one back as text.
+    ///
+    /// # Arguments
+    /// * `names` - A vector of [`Name`] instances representing the boilerplates to dump.
+    /// * `current` - The current content of the gitignore. Its prologue, the part before the
+    ///   first boilerplate, is carried over. Pass `""` to start from nothing.
+    pub fn build_gitignore_with(&self, names: Vec<Name>, current: &str) -> Result<String> {
+        let prologue = routine::prologue_of(current);
         let boilerplates = routine::find_boilerplates(self, names)?;
         routine::build_content(boilerplates, prologue, self.base_path())
     }
@@ -695,6 +737,12 @@ impl AliasManager for Config {
 fn remove_repo_dir<P: AsRef<Path>>(base_path: P, repo: repos::Repository) -> Result<()> {
     let path = base_path.as_ref().join(repo.name);
     match std::fs::remove_dir_all(&path) {
+        // The repository is gone from the configuration either way, and a clone that was never
+        // made is not a failure to remove it. The embedded build never has one at all.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            log::debug!("{}: no directory to remove", path.display());
+            Ok(())
+        }
         Err(e) => Err(Error::IO(e)),
         Ok(_) => Ok(()),
     }

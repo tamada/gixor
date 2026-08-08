@@ -1,5 +1,11 @@
 [workspace]
 members = ["lib", "cli"]
+# wasm stands outside the workspace on purpose. Cargo builds a dependency once for the whole
+# workspace with the union of the features its members ask for, and gixor-cli asks for `local`
+# while gixor-wasm asks for `embedded` — the two answer the same questions and cannot both be
+# on. Excluding it lets each be built with the features it means. Build it with
+# `just wasm`, or `wasm-pack build wasm --target web`.
+exclude = ["wasm"]
 resolver = "3"
 
 [workspace.package]

@@ -1,0 +1,25 @@
+# A workspace of its own: see the exclude in the workspace above for why it is not a member.
+# The fields the members inherit are spelled out here instead.
+[workspace]
+
+[package]
+name = "gixor-wasm"
+description = "Browser bindings for gixor, carrying the boilerplates with it."
+readme = "README.md"
+version = "0.4.3"
+edition = "2024"
+license = "MIT"
+authors = ["Haruaki Tamada"]
+repository = "https://github.com/tamada/gixor"
+homepage = "https://tamada.github.io/gixor/"
+# This one goes to npm through wasm-pack, not to crates.io.
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# The path dependency carries no version because this crate is never published, which also
+# spares the release from having to keep one more version in step.
+gixor = { path = "../lib", default-features = false, features = ["embedded"] }
+wasm-bindgen = "0.2"
