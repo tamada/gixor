@@ -27,7 +27,6 @@ clippy:
     cargo clippy --workspace --all-targets -- -D warnings
     cargo clippy -p gixor --all-targets --no-default-features --features local    -- -D warnings
     cargo clippy -p gixor --all-targets --no-default-features --features embedded -- -D warnings
-    cargo clippy --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown  -- -D warnings
 
 clone_default_ignores:
     test -d lib/testdata/boilerplates/default || git clone https://github.com/github/gitignore.git lib/testdata/boilerplates/default
@@ -60,8 +59,11 @@ wasm:
     wasm-pack build wasm --target web
 
 # Check that the library still builds for the browser, without needing wasm-pack.
+# It installs the target itself, so that neither `clippy` nor a fresh checkout has to carry a
+# target that only this crate needs.
 wasm_check:
-    cargo check --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown
+    rustup target add wasm32-unknown-unknown
+    cargo clippy --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown -- -D warnings
 
 # Serve wasm/demo.html for a manual check, at http://localhost:8765/demo.html.
 # A server is needed rather than opening the file: modules and wasm are not fetched from file://.
