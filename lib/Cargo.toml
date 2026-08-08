@@ -1,0 +1,41 @@
+[package]
+name = "gixor"
+description = "An API for managing .gitignore files."
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+categories = ["configuration", "development-tools"]
+keywords = [
+    "gitignore",
+    "gitignore-generator",
+    "git",
+    "gitignore-files",
+    "gitignore-templates",
+]
+
+[features]
+# `local` clones the boilerplate repositories and reads them from the file system, and is what
+# the CLI is built on. `usegix` picks the Git implementation for it: gix is a pure Rust Git, so
+# the default needs no git command and links no C library. Build with --no-default-features and
+# --features local to drive the git command instead.
+default = ["local", "usegix"]
+local = ["dep:dirs", "dep:ignore"]
+usegix = ["local", "dep:gix"]
+
+[dependencies]
+dirs = { workspace = true, optional = true }
+gix = { workspace = true, optional = true }
+hex.workspace = true
+ignore = { workspace = true, optional = true }
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio.workspace = true
+reqwest.workspace = true

@@ -12,7 +12,7 @@ VERSION := `grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/g'`
 
 # Build the project with cargo build
 build target = "": formats clippy
-    cargo build {{ target }}
+    cargo build --workspace {{ target }}
 
 # Run the test with cargo test
 test: (build "") clone_for_test
@@ -24,20 +24,20 @@ formats:
 
 # Run clippy for checking the source codes.
 clippy:
-    cargo clippy --all-targets                       -- -D warnings
-    cargo clippy --all-targets --no-default-features -- -D warnings
+    cargo clippy --workspace --all-targets -- -D warnings
+    cargo clippy -p gixor --all-targets --no-default-features --features local -- -D warnings
 
 clone_default_ignores:
-    test -d testdata/boilerplates/default || git clone https://github.com/github/gitignore.git testdata/boilerplates/default
+    test -d lib/testdata/boilerplates/default || git clone https://github.com/github/gitignore.git lib/testdata/boilerplates/default
 
 clone_tamada_ignores:
-    test -d testdata/boilerplates/tamada || git clone https://github.com/tamada/gitignore.git testdata/boilerplates/tamada
+    test -d lib/testdata/boilerplates/tamada || git clone https://github.com/tamada/gitignore.git lib/testdata/boilerplates/tamada
 
 clone_for_test: clone_default_ignores clone_tamada_ignores
 
 # Generate the completion files
 gen_complete:
-    cargo run -- --generate-completion-files
+    cargo run -p gixor-cli -- --generate-completion-files
 
 prepare_site_build:
     test -d docs/public || git worktree add -f docs/public gh-pages

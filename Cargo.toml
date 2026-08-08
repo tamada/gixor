@@ -1,41 +1,28 @@
-[package]
-name = "gixor"
-readme = "README.md"
-description = "An API for managing .gitignore files."
+[workspace]
+members = ["lib", "cli"]
+resolver = "3"
+
+[workspace.package]
 version = "0.4.3"
 edition = "2024"
-license-file = "LICENSE"
+license = "MIT"
 authors = ["Haruaki Tamada"]
 repository = "https://github.com/tamada/gixor"
 homepage = "https://tamada.github.io/gixor/"
-categories = ["command-line-utilities", "configuration", "development-tools"]
-keywords = [
-    "cli",
-    "gitignore",
-    "gitignore-generator",
-    "git",
-    "shell",
-    "gitignore-files",
-    "gitignore-templates",
-]
 
-[features]
-# gix is a pure Rust Git, so the default build needs no git command and links no C library.
-# Build with --no-default-features to drive the git command instead.
-default = ["usegix"]
-usegix = ["gix"]
+[workspace.dependencies]
+gixor = { path = "lib", version = "0.4.3" }
 
-[dependencies]
 clap = { version = "4.6.3", features = ["derive"] }
 clap_complete = "4.6.7"
-env_logger = "0.11.11"
 dirs = "6.0.0"
+env_logger = "0.11.11"
 gix = { version = "0.85.0", features = [
     "blocking-http-transport-reqwest-rust-tls",
     "blocking-network-client",
     "merge",
     "tree-editor",
-], optional = true }
+] }
 hex = "0.4.3"
 ignore = "0.4.31"
 log = "0.4.33"
@@ -44,12 +31,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 terminal_size = "0.4.4"
 
-[dev-dependencies]
 tempfile = "3.27"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # rustls rather than the default native-tls, so that the tests do not drag in libopenssl
 reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
-
-[[bin]]
-name = "gixor"
-path = "cli/main.rs"

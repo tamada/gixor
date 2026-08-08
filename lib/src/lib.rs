@@ -34,6 +34,12 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serialize};
 
+#[cfg(not(feature = "local"))]
+compile_error!(
+    "gixor currently needs the `local` feature, which reads the boilerplates from the file system. \
+     Use --no-default-features --features local to drive the git command instead of gix."
+);
+
 pub mod aliases;
 pub mod gitbridge;
 pub mod repos;

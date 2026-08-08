@@ -90,11 +90,8 @@ jobs:
       - name: Setup
         run: rustup update stable
       
-      - name: Setup for Linux (1/2)
-        if: matrix.os == 'ubuntu-latest'
-        run:
-          sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
-      - name: Setup for Linux (2/2)
+      # No openssl to set up: gix is pure Rust and speaks TLS through rustls.
+      - name: Setup for Linux
         if: matrix.os == 'ubuntu-latest'
         uses: taiki-e/setup-cross-toolchain-action@v1
         with:
@@ -116,15 +113,10 @@ jobs:
       #   run:
       #     pacman -Syu --noconfirm mingw-w64-clang-aarch64-openssl
 
-      - name: Setup for macOS
-        if: matrix.os == 'macos-latest'
-        run:
-          brew install openssl@3
-
       - name: Build
         run: |
           rustup target add ${{ matrix.target }}
-          cargo build --release --target ${{ matrix.target }}
+          cargo build --release -p gixor-cli --target ${{ matrix.target }}
 
       # publish release
       - name: Create release file
@@ -137,7 +129,7 @@ jobs:
           mkdir -p dist/$DIST/$DIR
           # cp -r site/public dist/$DIST/$DIR/docs
           cp -r README.md LICENSE assets dist/$DIST/$DIR
-          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }}-cli dist/$DIST/$DIR/${{ matrix.artifact_name }}
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} dist/$DIST/$DIR/${{ matrix.artifact_name }}
           tar cvfz dist/${{ matrix.asset_name }}.tar.gz -C dist/$DIST $DIR
           gh release upload v${{ needs.setup.outputs.tag }} dist/${{ matrix.asset_name }}.tar.gz --repo $GITHUB_REPOSITORY
         

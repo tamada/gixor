@@ -4,7 +4,7 @@ ARG FEATURES=""
 
 WORKDIR /app
 COPY . .
-RUN    cargo build --release $FEATURES \
+RUN    cargo build --release -p gixor-cli $FEATURES \
     && mkdir -p /opt/gixor/boilerplates \
     && git clone https://github.com/github/gitignore.git /opt/gixor/boilerplates/default \
     && echo '{ \n\
@@ -41,7 +41,7 @@ RUN    adduser --disabled-password --disabled-login --home /opt/gixor nonroot \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/gixor-cli /opt/gixor/gixor
+COPY --from=builder /app/target/release/gixor     /opt/gixor/gixor
 COPY --from=builder /opt/gixor                    /opt/gixor
 
 RUN  chown -R nonroot:nonroot /opt/gixor
