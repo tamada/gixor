@@ -11,7 +11,7 @@ date: 2025-02-25
 [![Version](https://img.shields.io/badge/Version-v0.5.0-green)](https://github.com/tamada/gixor/releases/tag/v0.5.0)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/tamada/gixor/blob/main/LICENSE)
 
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io/tamada/gixor:0.5.0-blue?logo=docker)](https://github.com/tamada/gixor/pkgs/container/gixor/)
+[![Docker](https://img.shields.io/badge/Docker-quay.io/tama5/gixor:0.5.0-blue?logo=docker)](https://quay.io/repository/tama5/gixor)
 [![Homebrew](https://img.shields.io/badge/Homebrew-tamada/tap/gixor-blue?logo=homebrew)](https://github.com/tamada/homebrew-tap)
 
 Gixor is Git Ignore Managenemnt System for Multiple Repositories.
@@ -32,17 +32,20 @@ git ignore [OPTIONS] [ARGS...]
 gixor [OPTIONS] <COMMAND>
 
 Commands:
-  dump        Dump the boilerplates
-  entries     List the the current entries in the .gitignore file
-  list        List available boilerplates
-  root        Show the root directory of the boilerplate
-  search      Search the boilerplates from the query
-  update      Update the gitignore boilerplate repositories (alias of `repository update`)
-  repository  Manage the gitignore boilerplate repositories
-  help        Print this message or the help of the given subcommand(s)
+  alias                      Manage the aliases. If no command is given, list the aliases.
+  dump                       Dump the boilerplates
+  entries                    List the current entries in the .gitignore file
+  list                       List available boilerplates
+  root                       Show the root directory of the boilerplates
+  search                     Search the boilerplates from the query
+  update                     Update the gitignore boilerplate repositories (alias of `repository update`)
+  repository                 Manage the gitignore boilerplate repositories
+  generate-completion-files  Generate the completion files
+  help                       Print this message or the help of the given subcommand(s)
 
 Options:
   -l, --log <LOG>             Specify the log level [default: warn] [possible values: trace, debug, info, warn, error]
+      --no-network            Disable network access
   -c, --config <CONFIG_JSON>  Specify the configuration file
   -h, --help                  Print help
   -V, --version               Print version
