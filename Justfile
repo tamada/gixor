@@ -73,6 +73,7 @@ _docker_build_systemgit_feature: (_docker_build "--no-default-features" "git" "-
 
 _docker_build features apt_optional docker_tag_suffix:
     docker build \
+        -f Containerfile \
         --build-arg APT_OPTIONAL="{{apt_optional}}" \
         --build-arg FEATURES="{{features}}" \
         -t ghcr.io/tamada/gixor:{{VERSION}}{{docker_tag_suffix}} .
@@ -84,7 +85,9 @@ _docker_buildx_default_feature:   (_docker_buildx "" "" "")
 _docker_buildx_systemgit_feature: (_docker_buildx "--no-default-features" "git" "-systemgit")
 
 _docker_buildx features apt_optional docker_tag_suffix:
-    docker buildx build --platform linux/arm64/v8,linux/amd64 \
+    docker buildx build \
+        -f Containerfile \
+        --platform linux/arm64/v8,linux/amd64 \
         --output=type=image,push=true \
         --build-arg APT_OPTIONAL="{{apt_optional}}" \
         --build-arg FEATURES="{{features}}" \

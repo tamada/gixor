@@ -20,10 +20,17 @@ jobs:
 
       - name: Update version
         run: |
-          sed "s/^version = \".*\"/version = \"${{ steps.vars.outputs.tag }}\"/" Cargo.toml > a ; mv a Cargo.toml
+          # Two lines of the workspace manifest carry the version and have to move together:
+          # [workspace.package] sets it for both crates, and [workspace.dependencies] pins the
+          # version gixor-cli asks of gixor. Leave the second behind and the published command
+          # would depend on the previous release of the library.
+          sed -E \
+            -e "s/^version = \".*\"/version = \"${{ steps.vars.outputs.tag }}\"/" \
+            -e "s/^(gixor = \{ path = \"lib\", version = )\"[^\"]*\"/\1\"${{ steps.vars.outputs.tag }}\"/" \
+            Cargo.toml > a ; mv a Cargo.toml
           sed "s/\$VERSION/${{ steps.vars.outputs.tag }}/g" .templates/README.md > README.md
           sed "s/\$VERSION/${{ steps.vars.outputs.tag }}/g" .templates/template.md > docs/content/_index.md
-          sed "s/ARG VERSION=.*/ARG VERSION=${{ steps.vars.outputs.tag }}/g" Dockerfile > a ; mv a Dockerfile
+          sed "s/ARG VERSION=.*/ARG VERSION=${{ steps.vars.outputs.tag }}/g" Containerfile > a ; mv a Containerfile
 
       - name: Initialize Git
         shell: bash

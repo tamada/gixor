@@ -4,33 +4,48 @@ on:
     branches:
       - main
     types: [closed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "the version to publish, such as 3.0.0"
+        required: true
+        type: string
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
-    # ブランチ名が release/v から始まる場合のみに実行する．
-    # プルリクエストがマージされた場合のみに実行する．
-    if: startsWith(github.head_ref, 'release/v') && github.event.pull_request.merged == true
-    outputs:
-      appname: gixor
-      tag: ${{ steps.vars.outputs.tag }}
-    steps:
-      - name: Git Tag name
-        id: vars
-        run: |
-          echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF (${GITHUB_HEAD_REF##*/v})"
-          echo "tag=${GITHUB_HEAD_REF##*/v}" >> $GITHUB_OUTPUT
+    if: github.event_name == 'workflow_dispatch' || (startsWith(github.head_ref, 'release/v') && github.event.pull_request.merged == true)
+    uses: tamada/.github/.github/workflows/release-start.yaml@v1
+    with:
+      # Empty on the pull request; the version comes from the head branch then.
+      version: ${{ inputs.version }}
+    permissions:
+      contents: write
 
-      - name: Create release
-        id: create_release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create v${{ steps.vars.outputs.tag }} \
-            --draft \
-            --repo  $GITHUB_REPOSITORY \
-            --title "Release v${{ steps.vars.outputs.tag }}" \
-            --generate-notes
+  # setup:
+  #   runs-on: ubuntu-latest
+  #   # ブランチ名が release/v から始まる場合のみに実行する．
+  #   # プルリクエストがマージされた場合のみに実行する．
+  #   if: startsWith(github.head_ref, 'release/v') && github.event.pull_request.merged == true
+  #   outputs:
+  #     appname: gixor
+  #     tag: ${{ steps.vars.outputs.tag }}
+  #   steps:
+  #     - name: Git Tag name
+  #       id: vars
+  #       run: |
+  #         echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF (${GITHUB_HEAD_REF##*/v})"
+  #         echo "tag=${GITHUB_HEAD_REF##*/v}" >> $GITHUB_OUTPUT
+
+  #     - name: Create release
+  #       id: create_release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: |
+  #         gh release create v${{ steps.vars.outputs.tag }} \
+  #           --draft \
+  #           --repo  $GITHUB_REPOSITORY \
+  #           --title "Release v${{ steps.vars.outputs.tag }}" \
+  #           --generate-notes
 
   publish:
     runs-on: ${{ matrix.os }}
@@ -38,38 +53,31 @@ jobs:
     outputs:
       appname: ${{ needs.setup.outputs.appname }}
       tag: ${{ needs.setup.outputs.tag }}
+      version: ${{ needs.setup.outputs.version }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             artifact_name: ${{ needs.setup.outputs.appname }}
-            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_arm64
+            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_linux_arm64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: ${{ needs.setup.outputs.appname }}
-            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_linux_amd64
-          # - os: windows-latest
-          #   target: aarch64-pc-windows-gnullvm
-          #   artifact_name: ${{ needs.setup.outputs.appname }}.exe
-          #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_windows_arm64
-          # - os: windows-latest
-          #   target: x86_64-pc-windows-gnu
-          #   artifact_name: ${{ needs.setup.outputs.appname }}.exe
-          #   asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_windows_amd64
+            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_linux_amd64
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: ${{ needs.setup.outputs.appname }}
-            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_darwin_arm64
+            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_darwin_arm64
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: ${{ needs.setup.outputs.appname }}
-            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}_darwin_amd64
+            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_darwin_amd64
 
     steps:
       # initialization
       - name: Checkout the project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0 # Fetch all history for .GitInfo and .Lastmod
@@ -78,16 +86,10 @@ jobs:
         id: vars
         shell: bash
         run: |
-          DIR=$(echo "${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.tag }}")
+          DIR=$(echo "${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}")
           echo "dir=$DIR" >> $GITHUB_OUTPUT
-  
-      # - name: Cache cargo registry
-      #   uses: actions/cache@v1
-      #   with:
-      #     path: ~/.cargo/registry
-      #     key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}        
 
-      - name: Setup
+      - name: Setup Rust
         run: rustup update stable
       
       # No openssl to set up: gix is pure Rust and speaks TLS through rustls.
@@ -97,22 +99,6 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
-      # - name: Setup Msys2
-      #   uses: msys2/setup-msys2@v2
-      #   if: matrix.os == 'windows-latest'
-  
-      # - name: Setup for Windows (x86_64 (arm64))
-      #   if: matrix.os == 'windows-latest' && contains(matrix.target, 'x86_64')
-      #   shell: msys2 {0}
-      #   run:
-      #     pacman -Syu --noconfirm mingw-w64-x86_64-openssl
-
-      # - name: Setup for Windows (aarch64 (amd64))
-      #   if: matrix.os == 'windows-latest' && contains(matrix.target, 'aarch')
-      #   shell: msys2 {0}
-      #   run:
-      #     pacman -Syu --noconfirm mingw-w64-clang-aarch64-openssl
-
       - name: Build
         run: |
           rustup target add ${{ matrix.target }}
@@ -121,29 +107,20 @@ jobs:
       # publish release
       - name: Create release file
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DIR=${{ steps.vars.outputs.dir }}
           DIST=${{ matrix.target }}
           mkdir -p dist/$DIST/$DIR
-          # cp -r site/public dist/$DIST/$DIR/docs
           cp -r README.md LICENSE assets dist/$DIST/$DIR
-          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} dist/$DIST/$DIR/${{ matrix.artifact_name }}
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} dist/$DIST/$DIR/
           tar cvfz dist/${{ matrix.asset_name }}.tar.gz -C dist/$DIST $DIR
-          gh release upload v${{ needs.setup.outputs.tag }} dist/${{ matrix.asset_name }}.tar.gz --repo $GITHUB_REPOSITORY
-        
-      # - name: Upload release assets
-      #   id: upload-release-assets
-      #   uses: actions/upload-release-asset@v1.0.1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     asset_path: dist/${{ matrix.asset_name }}.tar.gz
-      #     asset_name: ${{ matrix.asset_name }}.tar.gz
-      #     asset_content_type: application/x-gzip
-      #     upload_url: ${{ needs.setup.outputs.upload_url }}
 
+      - name: Upload the asset to the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: 
+          gh release upload "${{ needs.setup.outputs.tag }}" "dist/${{ matrix.asset_name }}.tar.gz" --clobber
+        
   docker:
     needs: publish
     runs-on: ubuntu-latest
@@ -168,21 +145,20 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # ${{ github.repository }} = tamada/totebag
-          images: ghcr.io/${{ github.repository }}
+          images: quay.io/${{ github.repository }}
           tags: |
             type=raw,value=latest
             type=sha,prefix=,suffix=,format=short
-            type=raw,value=${{ needs.publish.outputs.tag }}
+            type=raw,value=${{ needs.publish.outputs.version }}
 
       - name: Checkout the project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Containerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
@@ -190,15 +166,50 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  finalize_release:
-    needs: publish
+  publish_to_crates_io:
+    needs: [setup, publish]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      id-token: write # the trusted publishing of crates.io uses OIDC
     steps:
-      - name: Publish the release
-        id: publish_release
-        run:
-          gh release edit --draft=false --repo $GITHUB_REPOSITORY v${{ needs.publish.outputs.tag }}
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Setup Rust
+        run: rustup update stable
+      
+      - name: Authenticate with crates.io
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - name: Publish
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          cargo publish -p gixor
+          cargo publish -p gixor-cli
+
+  finish:
+    needs: [setup, publish]
+    uses: tamada/.github/.github/workflows/release-finish.yaml@v1
+    with:
+      tag: ${{ needs.setup.outputs.tag }}
+    permissions:
+      contents: write
+    secrets: inherit
+
+  # finalize_release:
+  #   needs: publish
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - name: Publish the release
+  #       id: publish_release
+  #       run:
+  #         gh release edit --draft=false --repo $GITHUB_REPOSITORY v${{ needs.publish.outputs.tag }}
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
