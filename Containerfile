@@ -22,7 +22,7 @@ RUN    cargo build --release -p gixor-cli $FEATURES \
 
 FROM debian:bullseye-slim
 
-ARG VERSION=0.5.0
+ARG VERSION=0.5.1
 # The default build carries gix and needs nothing installed here. It is the --no-default-features
 # build that drives the git command and therefore asks for git.
 # This has to be declared in this stage: an ARG belongs to the stage it appears in, and being

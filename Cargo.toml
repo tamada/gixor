@@ -9,7 +9,7 @@ exclude = ["wasm"]
 resolver = "3"
 
 [workspace.package]
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
 license = "MIT"
 authors = ["Haruaki Tamada"]
@@ -17,7 +17,7 @@ repository = "https://github.com/tamada/gixor"
 homepage = "https://tamada.github.io/gixor/"
 
 [workspace.dependencies]
-gixor = { path = "lib", version = "0.5.0" }
+gixor = { path = "lib", version = "0.5.1" }
 
 clap = { version = "4.6.3", features = ["derive"] }
 clap_complete = "4.6.7"
