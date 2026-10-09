@@ -32,22 +32,22 @@ set edit:completion:arg-completer[gixor] = {|@words|
             cand list 'List available boilerplates'
             cand root 'Show the root directory of the boilerplate'
             cand search 'Search the boilerplates from the query'
-            cand update 'Update the gitignore boilerplate repositories (alias of `repository update`)'
+            cand update 'Update (pull) the gitignore boilerplate repositories (alias of `repository update`)'
             cand repository 'Manage the gitignore boilerplate repositories'
             cand generate-completion-files 'Generate the completion files'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'gixor;dump'= {
-            cand -d 'Specify the destination directory. "-" means stdout.'
-            cand --dest 'Specify the destination directory. "-" means stdout.'
+            cand -d 'Specify the destination gitignore file or the directory containing it. "-" means stdout.'
+            cand --dest 'Specify the destination gitignore file or the directory containing it. "-" means stdout.'
             cand -c 'Clear the current content of gitignore'
             cand --clean 'Clear the current content of gitignore'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'gixor;entries'= {
-            cand -d 'Specify the directory located the .gitignore file'
-            cand --dir 'Specify the directory located the .gitignore file'
+            cand -d 'Specify the directory containing the .gitignore file'
+            cand --dir 'Specify the directory containing the .gitignore file'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -133,7 +133,7 @@ set edit:completion:arg-completer[gixor] = {|@words|
             cand list 'List available boilerplates'
             cand root 'Show the root directory of the boilerplate'
             cand search 'Search the boilerplates from the query'
-            cand update 'Update the gitignore boilerplate repositories (alias of `repository update`)'
+            cand update 'Update (pull) the gitignore boilerplate repositories (alias of `repository update`)'
             cand repository 'Manage the gitignore boilerplate repositories'
             cand generate-completion-files 'Generate the completion files'
             cand help 'Print this message or the help of the given subcommand(s)'

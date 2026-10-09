@@ -38,7 +38,7 @@ Commands:
   list                       List available boilerplates
   root                       Show the root directory of the boilerplates
   search                     Search the boilerplates from the query
-  update                     Update the gitignore boilerplate repositories (alias of `repository update`)
+  update                     Update (pull) the gitignore boilerplate repositories (alias of `repository update`)
   repository                 Manage the gitignore boilerplate repositories
   generate-completion-files  Generate the completion files
   help                       Print this message or the help of the given subcommand(s)

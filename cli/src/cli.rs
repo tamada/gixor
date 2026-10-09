@@ -62,7 +62,7 @@ pub(crate) enum GixorCommand {
     Search(SearchOpts),
     #[command(
         name = "update",
-        about = "Update the gitignore boilerplate repositories (alias of `repository update`)"
+        about = "Update (pull) the gitignore boilerplate repositories (alias of `repository update`)"
     )]
     Update,
     #[command(
@@ -149,7 +149,7 @@ pub(crate) enum RepositoryOpts {
     Remove(RepoRemoveOpts),
     #[command(
         name = "update",
-        about = "Run `git update` for updating a gitignore boilerplate repository"
+        about = "Update (pull) the gitignore boilerplate repositories"
     )]
     Update,
 }
@@ -196,7 +196,7 @@ pub(crate) struct DumpOpts {
         long,
         value_name = "DEST",
         default_value = ".gitignore",
-        help = "Specify the destination directory. \"-\" means stdout."
+        help = "Specify the destination gitignore file or the directory containing it. \"-\" means stdout."
     )]
     pub(crate) dest: String,
 
@@ -324,7 +324,7 @@ pub(crate) struct EntriesOpts {
     #[clap(
         short,
         long,
-        help = "Specify the directory located the .gitignore file",
+        help = "Specify the directory containing the .gitignore file",
         default_value = "."
     )]
     pub(crate) dir: PathBuf,
