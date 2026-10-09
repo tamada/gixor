@@ -195,6 +195,10 @@ fn update_repositories(gixor: &Gixor) -> Result<Option<&Gixor>> {
     }
 }
 
+fn contains_case_insensitive(name: &str, query: &str) -> bool {
+    name.to_lowercase().contains(&query.to_lowercase())
+}
+
 fn search_boilerplates(gixor: &Gixor, opts: cli::SearchOpts) -> Result<Option<&Gixor>> {
     let names = gixor
         .iter()
@@ -202,7 +206,7 @@ fn search_boilerplates(gixor: &Gixor, opts: cli::SearchOpts) -> Result<Option<&G
         .filter(|name| {
             opts.queries
                 .iter()
-                .any(|query| name.to_lowercase().contains(query))
+                .any(|query| contains_case_insensitive(name, query))
         })
         .collect::<Vec<_>>();
     print_in_columns_if_needed(names, None);
@@ -398,6 +402,11 @@ mod tests {
 
         let result = perform_impl(&mut gixor, subcmd, false);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_search_is_case_insensitive() {
+        assert!(contains_case_insensitive("Rust", "rUsT"));
     }
 
     #[test]
