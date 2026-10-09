@@ -96,7 +96,7 @@ pub(crate) enum AliasCmd {
     Remove(AliasRemoveOpts),
 
     #[command(name = "list", aliases = ["ls"], about = "List all aliases")]
-    List(AliasListOpts),
+    List,
 }
 
 #[derive(Parser, Debug)]
@@ -128,12 +128,6 @@ pub(crate) struct AliasRemoveOpts {
         help = "Specify the alias name for removal"
     )]
     pub(crate) args: Vec<String>,
-}
-
-#[derive(Parser, Debug)]
-pub(crate) struct AliasListOpts {
-    #[clap(short = 'H', long, help = "Show header", default_value_t = true)]
-    pub(crate) header: bool,
 }
 
 #[derive(Debug, Subcommand)]
@@ -332,8 +326,8 @@ pub(crate) struct EntriesOpts {
 
 #[derive(Parser, Debug)]
 pub(crate) struct ListOpts {
-    #[clap(short = 'H', long, help = "Show header", default_value_t = true)]
-    pub(crate) header: bool,
+    #[clap(long, help = "Do not show header")]
+    pub(crate) no_header: bool,
 
     #[clap(value_name = "REPO_NAMEs", num_args = 1.., help = "The repository names")]
     pub(crate) repos: Vec<String>,
@@ -394,6 +388,15 @@ mod tests {
         let names = opts.names_with(vec!["Rust".into(), "Python".into()]);
         let names = names.iter().map(|n| n.to_string()).collect::<Vec<_>>();
         assert_eq!(names, vec!["Python", "go"]);
+    }
+
+    #[test]
+    fn list_accepts_no_header_flag() {
+        let opts = CliOpts::try_parse_from(["gixor", "list", "--no-header"]).unwrap();
+        let GixorCommand::List(opts) = opts.subcmd else {
+            panic!("expected list command");
+        };
+        assert!(opts.no_header);
     }
 
     #[test]

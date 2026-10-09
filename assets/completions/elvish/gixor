@@ -56,8 +56,7 @@ set edit:completion:arg-completer[gixor] = {|@words|
             cand --help 'Print help'
         }
         &'gixor;list'= {
-            cand -H 'Show header'
-            cand --header 'Show header'
+            cand --no-header 'Do not show header'
             cand -h 'Print help'
             cand --help 'Print help'
         }

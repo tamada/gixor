@@ -437,7 +437,7 @@ _gixor() {
             return 0
             ;;
         gixor__list)
-            opts="-H -h --header --help [REPO_NAMEs]..."
+            opts="-h --no-header --help [REPO_NAMEs]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

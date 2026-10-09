@@ -59,8 +59,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (list)
 _arguments "${_arguments_options[@]}" : \
-'-H[Show header]' \
-'--header[Show header]' \
+'--no-header[Do not show header]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '*::repos -- The repository names:_default' \

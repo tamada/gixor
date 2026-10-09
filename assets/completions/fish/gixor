@@ -48,7 +48,7 @@ complete -c gixor -n "__fish_gixor_using_subcommand dump" -s h -l help -d 'Print
 complete -c gixor -n "__fish_gixor_using_subcommand entries" -s d -l dir -d 'Specify the directory located the .gitignore file' -r -F
 complete -c gixor -n "__fish_gixor_using_subcommand entries" -s h -l help -d 'Print help'
 complete -c gixor -n "__fish_gixor_using_subcommand init" -s h -l help -d 'Print help'
-complete -c gixor -n "__fish_gixor_using_subcommand list" -s H -l header -d 'Show header'
+complete -c gixor -n "__fish_gixor_using_subcommand list" -l no-header -d 'Do not show header'
 complete -c gixor -n "__fish_gixor_using_subcommand list" -s h -l help -d 'Print help'
 complete -c gixor -n "__fish_gixor_using_subcommand root" -s o -l open -d 'Open the folder in the GUI file manager'
 complete -c gixor -n "__fish_gixor_using_subcommand root" -s h -l help -d 'Print help'

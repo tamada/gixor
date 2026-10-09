@@ -63,8 +63,7 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             break
         }
         'gixor;list' {
-            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'Show header')
-            [CompletionResult]::new('--header', '--header', [CompletionResultType]::ParameterName, 'Show header')
+            [CompletionResult]::new('--no-header', '--no-header', [CompletionResultType]::ParameterName, 'Do not show header')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break

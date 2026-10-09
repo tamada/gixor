@@ -92,7 +92,7 @@ fn add_alias(
 fn perform_alias(gixor: &mut Gixor, opts: cli::AliasOpts) -> Result<Option<&Gixor>> {
     match opts.cmd {
         None => list_aliases(gixor),
-        Some(cli::AliasCmd::List(_)) => list_aliases(gixor),
+        Some(cli::AliasCmd::List) => list_aliases(gixor),
         Some(cli::AliasCmd::Add(opts)) => {
             add_alias(gixor, opts.name, opts.description, opts.boilerplates)
         }
@@ -127,10 +127,10 @@ fn list_boilerplates(gixor: &Gixor, opts: cli::ListOpts) -> Result<Option<&Gixor
     let base_path = gixor.base_path().to_path_buf();
     let mut errs = vec![];
     for &repo in repos.iter() {
-        let header = if opts.header {
-            Some(repo.name.clone())
-        } else {
+        let header = if opts.no_header {
             None
+        } else {
+            Some(repo.name.clone())
         };
         match list_each_boilerplate(repo, &base_path) {
             Err(e) => errs.push(e),
@@ -377,7 +377,7 @@ mod tests {
         let mut gixor = GixorFactory::new_at(&config_path);
 
         let subcmd = GixorCommand::List(ListOpts {
-            header: true,
+            no_header: false,
             repos: vec![],
         });
 
