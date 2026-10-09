@@ -84,12 +84,8 @@ fn map_to_boilerplate_name(line: String) -> Option<String> {
 
 fn strip_to_boilerplate_name(line: String) -> String {
     let line = line.strip_prefix("### ").unwrap_or(&line);
-    let items = line.rsplit("/").collect::<Vec<_>>();
-    if items.is_empty() {
-        "".to_string()
-    } else {
-        items[0].strip_suffix(".gitignore").unwrap().to_string()
-    }
+    let last = line.rsplit('/').next().unwrap_or(line);
+    last.strip_suffix(".gitignore").unwrap_or(last).to_string()
 }
 
 /// Resolves the path of the `.gitignore` file that `path` denotes.
@@ -202,6 +198,10 @@ mod tests {
     fn test_map_to_boilerplate_name() {
         assert_eq!(map_to_boilerplate_name("### Rust.gitignore".into()), Some("Rust".into()));
         assert_eq!(map_to_boilerplate_name("### path/to/Rust.gitignore".into()), Some("Rust".into()));
+        assert_eq!(
+            map_to_boilerplate_name("### https://github.com/github/gitignore/blob/main/Global/macOS.gitignore".into()),
+            Some("macOS".into())
+        );
         assert_eq!(map_to_boilerplate_name("Not a boilerplate".into()), None);
     }
 
