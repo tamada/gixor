@@ -407,6 +407,7 @@ mod tests {
     #[test]
     fn test_search_is_case_insensitive() {
         assert!(contains_case_insensitive("Rust", "rUsT"));
+        assert!(!contains_case_insensitive("Python", "rust"));
     }
 
     #[test]
