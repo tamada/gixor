@@ -1,21 +1,9 @@
-//! Embed build information into the binary via environment variables.
-//! This script collects enabled Cargo features, package name and version,
-//! and git commit hash (if provided), then sets them as environment variables
-//! to be included in the compiled binary.
+//! Writes the long version shown by `gixor --version` to `$OUT_DIR/BUILD_LONG_VERSION.txt`,
+//! which `cli.rs` includes: the version, the target, the rustc version, and the git commit and
+//! branch, taken from `GIT_SHA` and `GIT_BRANCH` when they are set and from git otherwise.
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
-
-fn collect_enabled_cargo_features() -> Vec<String> {
-    let mut features = Vec::new();
-    for (k, _) in env::vars() {
-        if let Some(name) = k.strip_prefix("CARGO_FEATURE_") {
-            features.push(name.to_lowercase().replace('_', "-"));
-        }
-    }
-    features.sort();
-    features
-}
 
 fn extract_rustc_version() -> String {
     Command::new("rustc")
@@ -52,12 +40,6 @@ fn extract_git_branch() -> String {
 }
 
 fn embed_build_info_into_version() {
-    let features = collect_enabled_cargo_features();
-    let features_str = if features.is_empty() {
-        "no features".to_string()
-    } else {
-        features.join(",")
-    };
     let ver = env::var("CARGO_PKG_VERSION").unwrap_or_default();
     let target = env::var("TARGET").unwrap_or_default();
     let git_sha = extract_latest_git_sha();
@@ -65,7 +47,7 @@ fn embed_build_info_into_version() {
     let rustc_version = extract_rustc_version();
 
     let long = format!(
-        r#"{ver} ({features_str}, {target})
+        r#"{ver} ({target})
 Building with: {rustc_version}
 Git: {git_sha} (on branch {branch})"#
     );
