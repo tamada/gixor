@@ -39,6 +39,23 @@ fn extract_git_branch() -> String {
     })
 }
 
+/// Names the files that change with the commit and the branch, so that the build script reruns
+/// when they do and only then.
+fn watch_git_state() {
+    // Asking git rather than joining ".git" by hand: the paths are relative to the package
+    // directory, not to the repository, and in a worktree .git is a file rather than a directory.
+    for name in ["HEAD", "refs/heads"] {
+        if let Some(path) = run_git_command(vec![
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-path",
+            name,
+        ]) {
+            println!("cargo:rerun-if-changed={path}");
+        }
+    }
+}
+
 fn embed_build_info_into_version() {
     let ver = env::var("CARGO_PKG_VERSION").unwrap_or_default();
     let target = env::var("TARGET").unwrap_or_default();
@@ -59,8 +76,7 @@ Git: {git_sha} (on branch {branch})"#
     // Emitting any rerun-if instruction replaces Cargo's default of rerunning whenever a file
     // in the package changes, so the git state has to be named explicitly. Without these the
     // embedded commit is whatever it was the first time this ran, and never moves again.
-    println!("cargo:rerun-if-changed=.git/HEAD");
-    println!("cargo:rerun-if-changed=.git/refs/heads");
+    watch_git_state();
 }
 
 fn main() {
