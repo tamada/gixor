@@ -352,13 +352,20 @@ impl GixorFactory {
     /// Load the configuration file from the default location,
     /// falling back to a fresh configuration when there is none yet.
     #[cfg(feature = "local")]
-    pub fn load_or_default() -> Gixor {
+    pub fn load_or_default() -> Result<Gixor> {
         match dirs::config_dir() {
-            Some(dir) => {
-                let path = dir.join("gixor").join("config.json");
-                GixorFactory::load(&path).unwrap_or_else(|_| GixorFactory::new_at(path))
-            }
+            Some(dir) => GixorFactory::load_or_new_at(dir.join("gixor").join("config.json")),
             None => panic!("Failed to get the config directory"),
+        }
+    }
+
+    /// Loads `path`, or starts a fresh configuration destined for it when it does not exist.
+    /// Any other failure, such as a malformed file, is returned rather than replaced.
+    pub fn load_or_new_at<P: AsRef<Path>>(path: P) -> Result<Gixor> {
+        let path = path.as_ref();
+        match GixorFactory::load(path) {
+            Err(Error::FileNotFound(_)) => Ok(GixorFactory::new_at(path)),
+            r => r,
         }
     }
 

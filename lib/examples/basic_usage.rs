@@ -4,7 +4,8 @@ use std::io::stdout;
 fn main() -> gixor::Result<()> {
     // 1. Initialize Gixor with the default configuration.
     // The default configuration uses the official GitHub gitignore repository.
-    let gixor = GixorFactory::load_or_default();
+    let gixor = GixorFactory::load_or_default()
+        .expect("load from config if exists, if not, load the default config");
 
     // 2. Prepare the repositories (clone or update).
     // This requires network access unless the repositories are already cached.
