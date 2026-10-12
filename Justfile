@@ -20,7 +20,7 @@ test: (build "") clone_for_test
 
 # Run cargo fmt for formatting the source codes.
 formats:
-    cargo fmt -- --emit=files
+    cargo fmt --all --check
 
 # Run clippy for checking the source codes.
 clippy:
