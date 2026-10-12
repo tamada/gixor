@@ -26,7 +26,7 @@ impl Terminal {
     }
 
     fn get_max_length_and_number_of_columns(&self, list: &[String]) -> (usize, usize) {
-        let max_length = list.iter().map(|item| item.len()).max().unwrap_or(0);
+        let max_length = list.iter().map(String::len).max().unwrap_or(0);
         let number_of_columns: usize = (self.width + 1) / (max_length + self.padding.len());
         if number_of_columns == 0 {
             (max_length, 1)

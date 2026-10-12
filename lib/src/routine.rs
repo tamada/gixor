@@ -65,7 +65,7 @@ pub(super) fn entries<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
                 let reader = BufReader::new(f);
                 let r = reader
                     .lines()
-                    .map_while(|r| r.ok())
+                    .map_while(std::io::Result::ok)
                     .filter_map(map_to_boilerplate_name)
                     .collect::<Vec<_>>();
                 Ok(r)
@@ -176,7 +176,7 @@ pub(super) fn load_prologue(path: &Path) -> Vec<String> {
         Ok(f) => {
             log::info!("loading prologue from {}", path.display());
             let reader = BufReader::new(f);
-            take_prologue(reader.lines().map_while(|r| r.ok()))
+            take_prologue(reader.lines().map_while(std::io::Result::ok))
         }
         Err(_) => vec![],
     }
