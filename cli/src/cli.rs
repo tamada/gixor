@@ -23,8 +23,6 @@ pub(crate) struct CliOpts {
     )]
     pub(crate) no_network: bool,
 
-    // #[arg(long = "dry-run", help = "Do not perform the actual operation")]
-    // pub(crate) dry_run: bool,
     #[arg(
         short,
         long,
