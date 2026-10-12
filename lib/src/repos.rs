@@ -241,9 +241,30 @@ impl Repository {
         }
     }
 
+    /// Finds every boilerplate matching the name, the shallowest first, and those of the same
+    /// depth by path, so that the order does not depend on the order the file system lists them in.
+    pub fn find_all<P: AsRef<Path>>(&self, name: &Name, base_path: P) -> Vec<Boilerplate<'_>> {
+        let mut candidates = self
+            .iter(base_path)
+            .filter(|b| name.matches(b))
+            .collect::<Vec<_>>();
+        candidates.sort_by(|a, b| {
+            let key = |b: &Boilerplate| (b.path().components().count(), b.path().to_path_buf());
+            key(a).cmp(&key(b))
+        });
+        candidates
+    }
+
     /// Finds the boilerplate by the name.
+    ///
+    /// When several boilerplates share the name, e.g. `AL.gitignore` and `Global/AL.gitignore`,
+    /// the first of [`Repository::find_all`] is taken, and a warning names the others.
     pub fn find<P: AsRef<Path>>(&self, name: &Name, base_path: P) -> Option<Boilerplate<'_>> {
-        self.iter(base_path).find(|b| name.matches(b))
+        let candidates = self.find_all(name, base_path);
+        if candidates.len() > 1 {
+            warn_multiple_candidates(name, &candidates)
+        }
+        candidates.into_iter().next()
     }
 
     /// Iterates the boilerplates in the repository.
@@ -278,6 +299,19 @@ impl Repository {
             crate::source::prepare(self, base_path)
         }
     }
+}
+
+fn warn_multiple_candidates(name: &Name, candidates: &[Boilerplate]) {
+    log::warn!(
+        "{name}: {} boilerplates share the name; using {} (others: {})",
+        candidates.len(),
+        candidates[0].path().display(),
+        candidates[1..]
+            .iter()
+            .map(|b| b.path().display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
 }
 
 fn url_to_owner_and_repo_name(url: &str) -> (String, String) {
@@ -385,6 +419,62 @@ mod tests {
         assert_eq!(to_owner("user:name"), "name".to_string());
         assert_eq!(to_owner("name"), "name".to_string());
         assert_eq!(to_owner(":"), "".to_string()); // items.last() of ":" split is ""
+    }
+
+    /// A repository on the file system holding the given boilerplates, under `<base>/fixture`.
+    #[cfg(feature = "local")]
+    fn fixture_repository(paths: &[&str]) -> (tempfile::TempDir, Repository) {
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("fixture");
+        for path in paths {
+            let file = root.join(path);
+            std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+            std::fs::write(file, "*.tmp\n").unwrap();
+        }
+        let repo = Repository::new_with("fixture", "https://example.invalid/fixture/gitignore");
+        (base, repo)
+    }
+
+    #[cfg(feature = "local")]
+    #[test]
+    fn find_takes_the_shallowest_of_the_boilerplates_sharing_a_name() {
+        let (base, repo) = fixture_repository(&["Global/AL.gitignore", "AL.gitignore"]);
+        let found = repo.find(&Name::new_of("AL"), base.path()).unwrap();
+        assert_eq!(found.path(), Path::new("AL.gitignore"));
+    }
+
+    #[cfg(feature = "local")]
+    #[test]
+    fn find_takes_the_first_by_path_among_the_same_depth() {
+        let (base, repo) = fixture_repository(&[
+            "community/CFML/ColdBox.gitignore",
+            "community/BoxLang/ColdBox.gitignore",
+        ]);
+        let found = repo.find(&Name::new_of("coldbox"), base.path()).unwrap();
+        assert_eq!(
+            found.path(),
+            Path::new("community/BoxLang/ColdBox.gitignore")
+        );
+    }
+
+    #[cfg(feature = "local")]
+    #[test]
+    fn find_all_lists_every_boilerplate_sharing_the_name_in_order() {
+        let (base, repo) = fixture_repository(&[
+            "community/Racket.gitignore",
+            "Racket.gitignore",
+            "Rust.gitignore",
+        ]);
+        let found = repo.find_all(&Name::new_of("racket"), base.path());
+        let paths = found.iter().map(|b| b.path()).collect::<Vec<_>>();
+        assert_eq!(
+            paths,
+            vec![
+                Path::new("Racket.gitignore"),
+                Path::new("community/Racket.gitignore")
+            ]
+        );
+        assert!(repo.find_all(&Name::new_of("Go"), base.path()).is_empty());
     }
 
     #[test]
