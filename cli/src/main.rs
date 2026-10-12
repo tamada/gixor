@@ -351,7 +351,7 @@ mod gencomp {
                 errs.push(e);
             }
         }
-        Error::to_err(None, errs)
+        Error::error_or(None, errs)
     }
 }
 

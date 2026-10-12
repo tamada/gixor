@@ -61,6 +61,8 @@ pub enum Error {
     Alias(String),
     /// Error when the alias is not found.
     AliasNotFound(String),
+    /// Error when the configuration directory cannot be determined, e.g. when `HOME` is not set.
+    ConfigDirNotFound,
     /// Error when the boilerplate is not found.
     BoilerplateNotFound(String),
     /// Error when the file is not found.
@@ -78,9 +80,20 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn to_err<T>(item: T, errs: Vec<Error>) -> Result<T> {
+    /// Returns `Ok(item)` when `errs` is empty, the error itself when it holds one,
+    /// and [`Error::Array`] of them all when it holds more.
+    pub fn error_or<T>(item: T, errs: Vec<Error>) -> Result<T> {
+        Self::error_or_else(|| item, errs)
+    }
+
+    /// Same as [`Error::error_or`], but the `Ok` value is made by `f`, which is called only
+    /// when `errs` is empty.
+    pub fn error_or_else<T, F>(f: F, errs: Vec<Error>) -> Result<T>
+    where
+        F: FnOnce() -> T,
+    {
         if errs.is_empty() {
-            Ok(item)
+            Ok(f())
         } else if errs.len() == 1 {
             Err(errs.into_iter().next().unwrap())
         } else {
@@ -100,7 +113,7 @@ impl Error {
                 Err(e) => errs.push(e),
             }
         }
-        Error::to_err(ok_items, errs)
+        Self::error_or(ok_items, errs)
     }
 }
 
@@ -120,6 +133,7 @@ impl Display for Error {
             Alias(msg) => write!(f, "{msg}"),
             AliasNotFound(name) => write!(f, "{name}: alias not found"),
             BoilerplateNotFound(name) => write!(f, "{name}: boilerplate not found"),
+            ConfigDirNotFound => write!(f, "cannot determine the configuration directory"),
             FileNotFound(path) => write!(f, "{}: file not found", path.display()),
             Git(e) => write!(f, "Git error: {e}"),
             IO(e) => write!(f, "IO error: {e}"),
@@ -295,39 +309,6 @@ pub trait AliasManager {
     fn add_alias(&mut self, alias: aliases::Alias) -> Result<()>;
 }
 
-/// The configuration directory only means something where there is a user to have one, so both
-/// it and the constructors resting on it belong to the `local` feature.
-#[cfg(feature = "local")]
-impl Default for Gixor {
-    /// Create a default instance of Gixor.
-    /// The default configuration is as follows:
-    /// - The base path is as follows.
-    ///     - Linux: `$XDG_CONFIG_HOME/gixor/config.json` or `$HOME/.config/gixor/config.json`
-    ///     - macOS: `$HOME/Library/Application Support/gixor/config.json`
-    ///     - Windows: `{FOLDERID_RoamingAppData}\gixor\config.json`
-    /// - The default repository is [`repos::Repository::default`].
-    /// - The default configuration file is `${XDG_CONFIG_HOME}/gixor/config.json`.
-    ///
-    /// The default location is as follows.
-    fn default() -> Self {
-        match dirs::config_dir() {
-            Some(dir) => {
-                let repositories = vec![repos::Repository::default()];
-                let config = Config {
-                    repositories,
-                    base_path: dir.join("gixor").join("boilerplates"),
-                    aliases: None,
-                };
-                Self {
-                    config,
-                    load_from: dir.join("gixor").join("config.json"),
-                }
-            }
-            None => panic!("Failed to get the config directory"),
-        }
-    }
-}
-
 /// The factory pattern for [`Gixor`].
 pub struct GixorFactory {}
 
@@ -349,14 +330,29 @@ impl GixorFactory {
         )
     }
 
+    /// The configuration file in the default location: `<config dir>/gixor/config.json`.
+    ///
+    /// - Linux: `$XDG_CONFIG_HOME/gixor/config.json` or `$HOME/.config/gixor/config.json`
+    /// - macOS: `$HOME/Library/Application Support/gixor/config.json`
+    /// - Windows: `{FOLDERID_RoamingAppData}\gixor\config.json`
+    ///
+    /// A fresh configuration in this location is
+    /// `GixorFactory::new_at(GixorFactory::default_config_path()?)`.
+    ///
+    /// Returns [`Error::ConfigDirNotFound`] when the platform has no configuration directory,
+    /// e.g. when `HOME` is not set.
+    #[cfg(feature = "local")]
+    pub fn default_config_path() -> Result<PathBuf> {
+        dirs::config_dir()
+            .map(|dir| dir.join("gixor").join("config.json"))
+            .ok_or(Error::ConfigDirNotFound)
+    }
+
     /// Load the configuration file from the default location,
     /// falling back to a fresh configuration when there is none yet.
     #[cfg(feature = "local")]
     pub fn load_or_default() -> Result<Gixor> {
-        match dirs::config_dir() {
-            Some(dir) => GixorFactory::load_or_new_at(dir.join("gixor").join("config.json")),
-            None => panic!("Failed to get the config directory"),
-        }
+        Self::default_config_path().and_then(Self::load_or_new_at)
     }
 
     /// Loads `path`, or starts a fresh configuration destined for it when it does not exist.
@@ -719,7 +715,7 @@ impl Config {
                     errs.push(e);
                 }
             });
-            Error::to_err((), errs)
+            Error::error_or((), errs)
         }
     }
 }
@@ -888,6 +884,10 @@ mod tests {
         assert_eq!(
             Error::BoilerplateNotFound("name".to_string()).to_string(),
             "name: boilerplate not found"
+        );
+        assert_eq!(
+            Error::ConfigDirNotFound.to_string(),
+            "cannot determine the configuration directory"
         );
         assert_eq!(Error::Git("hoge".into()).to_string(), "Git error: hoge");
         assert_eq!(
