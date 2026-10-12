@@ -6,8 +6,8 @@
 //! which is what lets the library be built for a target that has neither.
 use std::path::Path;
 
-use crate::repos::{Boilerplate, Repository};
 use crate::Result;
+use crate::repos::{Boilerplate, Repository};
 
 #[cfg(feature = "embedded")]
 #[path = "source/embedded.rs"]

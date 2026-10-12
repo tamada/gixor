@@ -280,7 +280,7 @@ pub trait RepositoryManager {
     fn add_repository_of<S: AsRef<str>>(&mut self, url: S) -> Result<()>;
     /// Remove the repository which has the given name, and returns the new instance of Gixor.
     fn remove_repository_with<S: AsRef<str>>(&mut self, name: S, keep_repo_dir: bool)
-        -> Result<()>;
+    -> Result<()>;
     /// Remove the repository which has the given name, and returns the new instance of Gixor.
     fn remove_repository<S: AsRef<str>>(&mut self, name: S) -> Result<()>;
 }
@@ -527,8 +527,9 @@ impl Gixor {
     /// Store the configuration to the configuration path.
     pub fn store(&self) -> Result<()> {
         if let Some(parent) = self.load_from.parent()
-            && !parent.as_os_str().is_empty() {
-                std::fs::create_dir_all(parent).map_err(Error::IO)?;
+            && !parent.as_os_str().is_empty()
+        {
+            std::fs::create_dir_all(parent).map_err(Error::IO)?;
         }
         match std::fs::File::create(&self.load_from) {
             Err(e) => Err(Error::IO(e)),

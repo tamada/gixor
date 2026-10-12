@@ -6,11 +6,11 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use gix::{
-    remote::{fetch::Outcome, ref_map::Options},
     ObjectId, Repository, Tree,
+    remote::{fetch::Outcome, ref_map::Options},
 };
 
-use crate::{repos::Boilerplate, Error, Result};
+use crate::{Error, Result, repos::Boilerplate};
 
 pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()> {
     let url = url.as_ref();
@@ -353,7 +353,10 @@ fn name_the_committer(repo: &mut Repository) {
     log::debug!("no committer is configured; signing the reflog as gixor");
     let mut config = gix::config::File::new(gix::config::file::Metadata::api());
     let fallbacks = [
-        (&gix::config::tree::gitoxide::Committer::NAME_FALLBACK, "gixor"),
+        (
+            &gix::config::tree::gitoxide::Committer::NAME_FALLBACK,
+            "gixor",
+        ),
         (
             &gix::config::tree::gitoxide::Committer::EMAIL_FALLBACK,
             "gixor@users.noreply.github.com",

@@ -63,7 +63,10 @@ fn test_dump_keeps_the_prologue() {
         .unwrap();
 
     let content = std::fs::read_to_string(&dest).unwrap();
-    assert!(content.starts_with("# my own rules\n*.local\n"), "{content}");
+    assert!(
+        content.starts_with("# my own rules\n*.local\n"),
+        "{content}"
+    );
     assert_eq!(gixor::entries(&dest).unwrap(), vec!["Rust".to_string()]);
 }
 

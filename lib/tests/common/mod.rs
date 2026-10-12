@@ -43,6 +43,8 @@ pub fn setup() -> Result<Gixor> {
     static PREPARED: OnceLock<Result<()>> = OnceLock::new();
     match PREPARED.get_or_init(|| gixor.prepare(false)) {
         Ok(_) => Ok(gixor),
-        Err(e) => Err(Error::Fatal(format!("failed to prepare the repositories: {e}"))),
+        Err(e) => Err(Error::Fatal(format!(
+            "failed to prepare the repositories: {e}"
+        ))),
     }
 }

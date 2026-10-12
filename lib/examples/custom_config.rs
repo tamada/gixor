@@ -1,6 +1,6 @@
-use gixor::{AliasManager, GixorFactory, Name, RepositoryManager};
-use gixor::repos::Repository;
 use gixor::aliases::Alias;
+use gixor::repos::Repository;
+use gixor::{AliasManager, GixorFactory, Name, RepositoryManager};
 use std::path::PathBuf;
 
 fn main() -> gixor::Result<()> {
@@ -32,7 +32,10 @@ fn main() -> gixor::Result<()> {
     // 5. List all aliases.
     println!("\nConfigured Aliases:");
     for alias in gixor.iter_aliases() {
-        println!(" - {}: {} ({:?})", alias.name, alias.description, alias.boilerplates);
+        println!(
+            " - {}: {} ({:?})",
+            alias.name, alias.description, alias.boilerplates
+        );
     }
 
     // 6. Save the configuration to the file.

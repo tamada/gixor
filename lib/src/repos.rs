@@ -23,7 +23,11 @@ pub struct Boilerplate<'a> {
 }
 
 impl<'a> Boilerplate<'a> {
-    pub(crate) fn new<P: AsRef<Path>>(name: String, path: P, repo: &'a Repository) -> Boilerplate<'a> {
+    pub(crate) fn new<P: AsRef<Path>>(
+        name: String,
+        path: P,
+        repo: &'a Repository,
+    ) -> Boilerplate<'a> {
         log::debug!(
             "Boilerplate::new(name: {name}, path: {:?}, repo: {:?})",
             path.as_ref(),
@@ -216,7 +220,9 @@ impl Repository {
         let url = url.as_ref();
         let name = name.as_ref();
         let (owner, repo_name) = url_to_owner_and_repo_name(url);
-        log::debug!("Repository::new_with(name: {name}, url: {url}) -> owner: {owner}, repo_name: {repo_name}");
+        log::debug!(
+            "Repository::new_with(name: {name}, url: {url}) -> owner: {owner}, repo_name: {repo_name}"
+        );
         Self {
             name: name.to_string(),
             url: url.to_string(),
@@ -277,7 +283,10 @@ impl Repository {
 fn url_to_owner_and_repo_name(url: &str) -> (String, String) {
     let items = url.split('/').collect::<Vec<_>>();
     let len = items.len();
-    match (len.checked_sub(2).and_then(|idx| items.get(idx)), items.last()) {
+    match (
+        len.checked_sub(2).and_then(|idx| items.get(idx)),
+        items.last(),
+    ) {
         (Some(&owner), Some(&name)) => (to_owner(owner), strip_dot_git(name)),
         (None, Some(&name)) => ("unknown".into(), strip_dot_git(name)),
         (Some(&owner), None) => (to_owner(owner), "gitignore".into()),
@@ -359,10 +368,19 @@ mod tests {
     #[test]
     fn test_url_parsing_edge_cases() {
         // Test with unusual URLs
-        assert_eq!(url_to_owner_and_repo_name("simple-name"), ("unknown".to_string(), "simple-name".to_string()));
-        assert_eq!(url_to_owner_and_repo_name("owner/repo"), ("owner".to_string(), "repo".to_string()));
-        assert_eq!(url_to_owner_and_repo_name("https://host.com/repo.git"), ("host.com".to_string(), "repo".to_string()));
-        
+        assert_eq!(
+            url_to_owner_and_repo_name("simple-name"),
+            ("unknown".to_string(), "simple-name".to_string())
+        );
+        assert_eq!(
+            url_to_owner_and_repo_name("owner/repo"),
+            ("owner".to_string(), "repo".to_string())
+        );
+        assert_eq!(
+            url_to_owner_and_repo_name("https://host.com/repo.git"),
+            ("host.com".to_string(), "repo".to_string())
+        );
+
         // Test to_owner
         assert_eq!(to_owner("user:name"), "name".to_string());
         assert_eq!(to_owner("name"), "name".to_string());
@@ -373,7 +391,7 @@ mod tests {
     fn test_boilerplate_content_url() {
         let repo = Repository::default();
         let b = Boilerplate::new("Rust".into(), "Rust.gitignore", &repo);
-        
+
         // This might fail if git command is not available or not in a git repo,
         // but it's worth testing the logic if possible.
         // We use a dummy base path.

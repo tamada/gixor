@@ -89,7 +89,10 @@ mod tests {
         let t = Terminal::new_with(125, " ");
         let r1 = t.format_in_column(v1.iter().map(|s| s.to_string()).collect());
         assert_eq!(r1.len(), 1);
-        assert_eq!(r1[0], "macOS            Linux            Windows          Go               VisualStudioCode JetBrains");
+        assert_eq!(
+            r1[0],
+            "macOS            Linux            Windows          Go               VisualStudioCode JetBrains"
+        );
 
         let v2 = [
             "macOS",
@@ -104,7 +107,10 @@ mod tests {
         let t = Terminal::new_with(125, " ");
         let r2 = t.format_in_column(v2.iter().map(|s| s.to_string()).collect());
         assert_eq!(r2.len(), 2);
-        assert_eq!(r2[0], "macOS            Linux            Windows          Go               VisualStudioCode JetBrains        Rust");
+        assert_eq!(
+            r2[0],
+            "macOS            Linux            Windows          Go               VisualStudioCode JetBrains        Rust"
+        );
         assert_eq!(r2[1], "NetBeans");
     }
 
