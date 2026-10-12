@@ -19,25 +19,105 @@ _gixor() {
 '--log=[Specify the log level]:LOG:(trace debug info warn error)' \
 '-c+[Specify the configuration file]:CONFIG_JSON:_files' \
 '--config=[Specify the configuration file]:CONFIG_JSON:_files' \
+'--no-network[Disable network access]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '-V[Print version]' \
 '--version[Print version]' \
 ":: :_gixor_commands" \
-"*::: :->gixor-cli" \
+"*::: :->gixor" \
 && ret=0
     case $state in
-    (gixor-cli)
+    (gixor)
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:gixor-command-$line[1]:"
         case $line[1] in
-            (dump)
+            (alias)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_gixor__subcmd__alias_commands" \
+"*::: :->alias" \
+&& ret=0
+
+    case $state in
+    (alias)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:gixor-alias-command-$line[1]:"
+        case $line[1] in
+            (add)
+_arguments "${_arguments_options[@]}" : \
+'-d+[Specify the alias description for registration.]:DESCRIPTION:_default' \
+'--description=[Specify the alias description for registration.]:DESCRIPTION:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+':name -- Specify the alias name:_default' \
+'*::boilerplates -- Specify the boilerplate names for the alias:_default' \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+'*::args -- Specify the alias name for removal:_default' \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_gixor__subcmd__alias__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:gixor-alias-help-command-$line[1]:"
+        case $line[1] in
+            (add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(dump)
 _arguments "${_arguments_options[@]}" : \
 '-d+[Specify the destination directory. "-" means stdout.]:DEST:_default' \
 '--dest=[Specify the destination directory. "-" means stdout.]:DEST:_default' \
-'-c[Clear the current content of gitignore]' \
-'--clean[Clear the current content of gitignore]' \
+'--no-append[Drop the entries currently listed in the gitignore.]' \
+'--clear-prologue[Drop the prologue, the part of the gitignore before the first boilerplate.]' \
+'-c[Start from scratch, dropping both the prologue and the current entries.]' \
+'--clear[Start from scratch, dropping both the prologue and the current entries.]' \
+'-n[Print the result to stdout and leave the gitignore untouched.]' \
+'--dry-run[Print the result to stdout and leave the gitignore untouched.]' \
+'-a[Kept so that existing scripts keep working. Appending is the default now]' \
+'--append[Kept so that existing scripts keep working. Appending is the default now]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '*::names -- The boilerplate names to dump.:_default' \
@@ -59,8 +139,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (list)
 _arguments "${_arguments_options[@]}" : \
-'-H[Show header]' \
-'--header[Show header]' \
+'--no-header[Hide repository headers]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '*::repos -- The repository names:_default' \
@@ -91,7 +170,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
 '--help[Print help]' \
-":: :_gixor__repository_commands" \
+":: :_gixor__subcmd__repository_commands" \
 "*::: :->repository" \
 && ret=0
 
@@ -134,7 +213,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_gixor__repository__help_commands" \
+":: :_gixor__subcmd__repository__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -181,7 +260,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_gixor__help_commands" \
+":: :_gixor__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -191,7 +270,35 @@ _arguments "${_arguments_options[@]}" : \
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:gixor-help-command-$line[1]:"
         case $line[1] in
-            (dump)
+            (alias)
+_arguments "${_arguments_options[@]}" : \
+":: :_gixor__subcmd__help__subcmd__alias_commands" \
+"*::: :->alias" \
+&& ret=0
+
+    case $state in
+    (alias)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:gixor-help-alias-command-$line[1]:"
+        case $line[1] in
+            (add)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(dump)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -221,7 +328,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (repository)
 _arguments "${_arguments_options[@]}" : \
-":: :_gixor__help__repository_commands" \
+":: :_gixor__subcmd__help__subcmd__repository_commands" \
 "*::: :->repository" \
 && ret=0
 
@@ -271,11 +378,12 @@ esac
 (( $+functions[_gixor_commands] )) ||
 _gixor_commands() {
     local commands; commands=(
+'alias:Manage the aliases. If no command is given, list the aliases.' \
 'dump:Dump the boilerplates' \
-'entries:List the the current entries in the .gitignore file' \
+'entries:List the current entries in the .gitignore file' \
 'init:Initialize the Gixor' \
 'list:List available boilerplates' \
-'root:Show the root directory of the boilerplate' \
+'root:Show the root directory of the boilerplates' \
 'search:Search the boilerplates from the query' \
 'update:Update the gitignore boilerplate repositories (alias of \`repository update\`)' \
 'repository:Manage the gitignore boilerplate repositories' \
@@ -284,29 +392,85 @@ _gixor_commands() {
     )
     _describe -t commands 'gixor commands' commands "$@"
 }
-(( $+functions[_gixor__dump_commands] )) ||
-_gixor__dump_commands() {
+(( $+functions[_gixor__subcmd__alias_commands] )) ||
+_gixor__subcmd__alias_commands() {
+    local commands; commands=(
+'add:Add a new alias' \
+'remove:Remove an existing alias' \
+'list:List all aliases' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'gixor alias commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__alias__subcmd__add_commands] )) ||
+_gixor__subcmd__alias__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor alias add commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__alias__subcmd__help_commands] )) ||
+_gixor__subcmd__alias__subcmd__help_commands() {
+    local commands; commands=(
+'add:Add a new alias' \
+'remove:Remove an existing alias' \
+'list:List all aliases' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'gixor alias help commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__alias__subcmd__help__subcmd__add_commands] )) ||
+_gixor__subcmd__alias__subcmd__help__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor alias help add commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__alias__subcmd__help__subcmd__help_commands] )) ||
+_gixor__subcmd__alias__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor alias help help commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__alias__subcmd__help__subcmd__list_commands] )) ||
+_gixor__subcmd__alias__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor alias help list commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__alias__subcmd__help__subcmd__remove_commands] )) ||
+_gixor__subcmd__alias__subcmd__help__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor alias help remove commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__alias__subcmd__list_commands] )) ||
+_gixor__subcmd__alias__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor alias list commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__alias__subcmd__remove_commands] )) ||
+_gixor__subcmd__alias__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor alias remove commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__dump_commands] )) ||
+_gixor__subcmd__dump_commands() {
     local commands; commands=()
     _describe -t commands 'gixor dump commands' commands "$@"
 }
-(( $+functions[_gixor__entries_commands] )) ||
-_gixor__entries_commands() {
+(( $+functions[_gixor__subcmd__entries_commands] )) ||
+_gixor__subcmd__entries_commands() {
     local commands; commands=()
     _describe -t commands 'gixor entries commands' commands "$@"
 }
-(( $+functions[_gixor__generate-completion-files_commands] )) ||
-_gixor__generate-completion-files_commands() {
+(( $+functions[_gixor__subcmd__generate-completion-files_commands] )) ||
+_gixor__subcmd__generate-completion-files_commands() {
     local commands; commands=()
     _describe -t commands 'gixor generate-completion-files commands' commands "$@"
 }
-(( $+functions[_gixor__help_commands] )) ||
-_gixor__help_commands() {
+(( $+functions[_gixor__subcmd__help_commands] )) ||
+_gixor__subcmd__help_commands() {
     local commands; commands=(
+'alias:Manage the aliases. If no command is given, list the aliases.' \
 'dump:Dump the boilerplates' \
-'entries:List the the current entries in the .gitignore file' \
+'entries:List the current entries in the .gitignore file' \
 'init:Initialize the Gixor' \
 'list:List available boilerplates' \
-'root:Show the root directory of the boilerplate' \
+'root:Show the root directory of the boilerplates' \
 'search:Search the boilerplates from the query' \
 'update:Update the gitignore boilerplate repositories (alias of \`repository update\`)' \
 'repository:Manage the gitignore boilerplate repositories' \
@@ -315,170 +479,194 @@ _gixor__help_commands() {
     )
     _describe -t commands 'gixor help commands' commands "$@"
 }
-(( $+functions[_gixor__help__dump_commands] )) ||
-_gixor__help__dump_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__alias_commands] )) ||
+_gixor__subcmd__help__subcmd__alias_commands() {
+    local commands; commands=(
+'add:Add a new alias' \
+'remove:Remove an existing alias' \
+'list:List all aliases' \
+    )
+    _describe -t commands 'gixor help alias commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__help__subcmd__alias__subcmd__add_commands] )) ||
+_gixor__subcmd__help__subcmd__alias__subcmd__add_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor help alias add commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__help__subcmd__alias__subcmd__list_commands] )) ||
+_gixor__subcmd__help__subcmd__alias__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor help alias list commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__help__subcmd__alias__subcmd__remove_commands] )) ||
+_gixor__subcmd__help__subcmd__alias__subcmd__remove_commands() {
+    local commands; commands=()
+    _describe -t commands 'gixor help alias remove commands' commands "$@"
+}
+(( $+functions[_gixor__subcmd__help__subcmd__dump_commands] )) ||
+_gixor__subcmd__help__subcmd__dump_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help dump commands' commands "$@"
 }
-(( $+functions[_gixor__help__entries_commands] )) ||
-_gixor__help__entries_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__entries_commands] )) ||
+_gixor__subcmd__help__subcmd__entries_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help entries commands' commands "$@"
 }
-(( $+functions[_gixor__help__generate-completion-files_commands] )) ||
-_gixor__help__generate-completion-files_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__generate-completion-files_commands] )) ||
+_gixor__subcmd__help__subcmd__generate-completion-files_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help generate-completion-files commands' commands "$@"
 }
-(( $+functions[_gixor__help__help_commands] )) ||
-_gixor__help__help_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__help_commands] )) ||
+_gixor__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help help commands' commands "$@"
 }
-(( $+functions[_gixor__help__init_commands] )) ||
-_gixor__help__init_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__init_commands] )) ||
+_gixor__subcmd__help__subcmd__init_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help init commands' commands "$@"
 }
-(( $+functions[_gixor__help__list_commands] )) ||
-_gixor__help__list_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__list_commands] )) ||
+_gixor__subcmd__help__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help list commands' commands "$@"
 }
-(( $+functions[_gixor__help__repository_commands] )) ||
-_gixor__help__repository_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__repository_commands] )) ||
+_gixor__subcmd__help__subcmd__repository_commands() {
     local commands; commands=(
 'add:Add a new gitignore boilerplate repository' \
 'list:List the current gitignore boilerplate repositories' \
 'remove:Remove a gitignore boilerplate repository' \
-'update:Update a gitignore boilerplate repository' \
+'update:Run \`git update\` for updating a gitignore boilerplate repository' \
     )
     _describe -t commands 'gixor help repository commands' commands "$@"
 }
-(( $+functions[_gixor__help__repository__add_commands] )) ||
-_gixor__help__repository__add_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__repository__subcmd__add_commands] )) ||
+_gixor__subcmd__help__subcmd__repository__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help repository add commands' commands "$@"
 }
-(( $+functions[_gixor__help__repository__list_commands] )) ||
-_gixor__help__repository__list_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__repository__subcmd__list_commands] )) ||
+_gixor__subcmd__help__subcmd__repository__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help repository list commands' commands "$@"
 }
-(( $+functions[_gixor__help__repository__remove_commands] )) ||
-_gixor__help__repository__remove_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__repository__subcmd__remove_commands] )) ||
+_gixor__subcmd__help__subcmd__repository__subcmd__remove_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help repository remove commands' commands "$@"
 }
-(( $+functions[_gixor__help__repository__update_commands] )) ||
-_gixor__help__repository__update_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__repository__subcmd__update_commands] )) ||
+_gixor__subcmd__help__subcmd__repository__subcmd__update_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help repository update commands' commands "$@"
 }
-(( $+functions[_gixor__help__root_commands] )) ||
-_gixor__help__root_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__root_commands] )) ||
+_gixor__subcmd__help__subcmd__root_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help root commands' commands "$@"
 }
-(( $+functions[_gixor__help__search_commands] )) ||
-_gixor__help__search_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__search_commands] )) ||
+_gixor__subcmd__help__subcmd__search_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help search commands' commands "$@"
 }
-(( $+functions[_gixor__help__update_commands] )) ||
-_gixor__help__update_commands() {
+(( $+functions[_gixor__subcmd__help__subcmd__update_commands] )) ||
+_gixor__subcmd__help__subcmd__update_commands() {
     local commands; commands=()
     _describe -t commands 'gixor help update commands' commands "$@"
 }
-(( $+functions[_gixor__init_commands] )) ||
-_gixor__init_commands() {
+(( $+functions[_gixor__subcmd__init_commands] )) ||
+_gixor__subcmd__init_commands() {
     local commands; commands=()
     _describe -t commands 'gixor init commands' commands "$@"
 }
-(( $+functions[_gixor__list_commands] )) ||
-_gixor__list_commands() {
+(( $+functions[_gixor__subcmd__list_commands] )) ||
+_gixor__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'gixor list commands' commands "$@"
 }
-(( $+functions[_gixor__repository_commands] )) ||
-_gixor__repository_commands() {
+(( $+functions[_gixor__subcmd__repository_commands] )) ||
+_gixor__subcmd__repository_commands() {
     local commands; commands=(
 'add:Add a new gitignore boilerplate repository' \
 'list:List the current gitignore boilerplate repositories' \
 'remove:Remove a gitignore boilerplate repository' \
-'update:Update a gitignore boilerplate repository' \
+'update:Run \`git update\` for updating a gitignore boilerplate repository' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'gixor repository commands' commands "$@"
 }
-(( $+functions[_gixor__repository__add_commands] )) ||
-_gixor__repository__add_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__add_commands] )) ||
+_gixor__subcmd__repository__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository add commands' commands "$@"
 }
-(( $+functions[_gixor__repository__help_commands] )) ||
-_gixor__repository__help_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__help_commands] )) ||
+_gixor__subcmd__repository__subcmd__help_commands() {
     local commands; commands=(
 'add:Add a new gitignore boilerplate repository' \
 'list:List the current gitignore boilerplate repositories' \
 'remove:Remove a gitignore boilerplate repository' \
-'update:Update a gitignore boilerplate repository' \
+'update:Run \`git update\` for updating a gitignore boilerplate repository' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'gixor repository help commands' commands "$@"
 }
-(( $+functions[_gixor__repository__help__add_commands] )) ||
-_gixor__repository__help__add_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__help__subcmd__add_commands] )) ||
+_gixor__subcmd__repository__subcmd__help__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository help add commands' commands "$@"
 }
-(( $+functions[_gixor__repository__help__help_commands] )) ||
-_gixor__repository__help__help_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__help__subcmd__help_commands] )) ||
+_gixor__subcmd__repository__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository help help commands' commands "$@"
 }
-(( $+functions[_gixor__repository__help__list_commands] )) ||
-_gixor__repository__help__list_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__help__subcmd__list_commands] )) ||
+_gixor__subcmd__repository__subcmd__help__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository help list commands' commands "$@"
 }
-(( $+functions[_gixor__repository__help__remove_commands] )) ||
-_gixor__repository__help__remove_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__help__subcmd__remove_commands] )) ||
+_gixor__subcmd__repository__subcmd__help__subcmd__remove_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository help remove commands' commands "$@"
 }
-(( $+functions[_gixor__repository__help__update_commands] )) ||
-_gixor__repository__help__update_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__help__subcmd__update_commands] )) ||
+_gixor__subcmd__repository__subcmd__help__subcmd__update_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository help update commands' commands "$@"
 }
-(( $+functions[_gixor__repository__list_commands] )) ||
-_gixor__repository__list_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__list_commands] )) ||
+_gixor__subcmd__repository__subcmd__list_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository list commands' commands "$@"
 }
-(( $+functions[_gixor__repository__remove_commands] )) ||
-_gixor__repository__remove_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__remove_commands] )) ||
+_gixor__subcmd__repository__subcmd__remove_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository remove commands' commands "$@"
 }
-(( $+functions[_gixor__repository__update_commands] )) ||
-_gixor__repository__update_commands() {
+(( $+functions[_gixor__subcmd__repository__subcmd__update_commands] )) ||
+_gixor__subcmd__repository__subcmd__update_commands() {
     local commands; commands=()
     _describe -t commands 'gixor repository update commands' commands "$@"
 }
-(( $+functions[_gixor__root_commands] )) ||
-_gixor__root_commands() {
+(( $+functions[_gixor__subcmd__root_commands] )) ||
+_gixor__subcmd__root_commands() {
     local commands; commands=()
     _describe -t commands 'gixor root commands' commands "$@"
 }
-(( $+functions[_gixor__search_commands] )) ||
-_gixor__search_commands() {
+(( $+functions[_gixor__subcmd__search_commands] )) ||
+_gixor__subcmd__search_commands() {
     local commands; commands=()
     _describe -t commands 'gixor search commands' commands "$@"
 }
-(( $+functions[_gixor__update_commands] )) ||
-_gixor__update_commands() {
+(( $+functions[_gixor__subcmd__update_commands] )) ||
+_gixor__subcmd__update_commands() {
     local commands; commands=()
     _describe -t commands 'gixor update commands' commands "$@"
 }

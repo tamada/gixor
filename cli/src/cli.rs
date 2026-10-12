@@ -94,7 +94,7 @@ pub(crate) enum AliasCmd {
     Remove(AliasRemoveOpts),
 
     #[command(name = "list", aliases = ["ls"], about = "List all aliases")]
-    List(AliasListOpts),
+    List,
 }
 
 #[derive(Parser, Debug)]
@@ -126,12 +126,6 @@ pub(crate) struct AliasRemoveOpts {
         help = "Specify the alias name for removal"
     )]
     pub(crate) args: Vec<String>,
-}
-
-#[derive(Parser, Debug)]
-pub(crate) struct AliasListOpts {
-    #[clap(short = 'H', long, help = "Show header", default_value_t = true)]
-    pub(crate) header: bool,
 }
 
 #[derive(Debug, Subcommand)]
@@ -330,8 +324,8 @@ pub(crate) struct EntriesOpts {
 
 #[derive(Parser, Debug)]
 pub(crate) struct ListOpts {
-    #[clap(short = 'H', long, help = "Show header", default_value_t = true)]
-    pub(crate) header: bool,
+    #[clap(long, help = "Hide repository headers")]
+    pub(crate) no_header: bool,
 
     #[clap(value_name = "REPO_NAMEs", num_args = 1.., help = "The repository names")]
     pub(crate) repos: Vec<String>,

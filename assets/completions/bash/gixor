@@ -1,118 +1,161 @@
 _gixor() {
     local i cur prev opts cmd
     COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+        cur="$2"
+    else
+        cur="${COMP_WORDS[COMP_CWORD]}"
+    fi
+    prev="$3"
     cmd=""
     opts=""
 
-    for i in ${COMP_WORDS[@]}
+    for i in "${COMP_WORDS[@]:0:COMP_CWORD}"
     do
         case "${cmd},${i}" in
             ",$1")
                 cmd="gixor"
                 ;;
+            gixor,alias)
+                cmd="gixor__subcmd__alias"
+                ;;
             gixor,dump)
-                cmd="gixor__dump"
+                cmd="gixor__subcmd__dump"
                 ;;
             gixor,entries)
-                cmd="gixor__entries"
+                cmd="gixor__subcmd__entries"
                 ;;
             gixor,generate-completion-files)
-                cmd="gixor__generate__completion__files"
+                cmd="gixor__subcmd__generate__subcmd__completion__subcmd__files"
                 ;;
             gixor,help)
-                cmd="gixor__help"
+                cmd="gixor__subcmd__help"
                 ;;
             gixor,init)
-                cmd="gixor__init"
+                cmd="gixor__subcmd__init"
                 ;;
             gixor,list)
-                cmd="gixor__list"
+                cmd="gixor__subcmd__list"
                 ;;
             gixor,repository)
-                cmd="gixor__repository"
+                cmd="gixor__subcmd__repository"
                 ;;
             gixor,root)
-                cmd="gixor__root"
+                cmd="gixor__subcmd__root"
                 ;;
             gixor,search)
-                cmd="gixor__search"
+                cmd="gixor__subcmd__search"
                 ;;
             gixor,update)
-                cmd="gixor__update"
+                cmd="gixor__subcmd__update"
                 ;;
-            gixor__help,dump)
-                cmd="gixor__help__dump"
+            gixor__subcmd__alias,add)
+                cmd="gixor__subcmd__alias__subcmd__add"
                 ;;
-            gixor__help,entries)
-                cmd="gixor__help__entries"
+            gixor__subcmd__alias,help)
+                cmd="gixor__subcmd__alias__subcmd__help"
                 ;;
-            gixor__help,generate-completion-files)
-                cmd="gixor__help__generate__completion__files"
+            gixor__subcmd__alias,list)
+                cmd="gixor__subcmd__alias__subcmd__list"
                 ;;
-            gixor__help,help)
-                cmd="gixor__help__help"
+            gixor__subcmd__alias,remove)
+                cmd="gixor__subcmd__alias__subcmd__remove"
                 ;;
-            gixor__help,init)
-                cmd="gixor__help__init"
+            gixor__subcmd__alias__subcmd__help,add)
+                cmd="gixor__subcmd__alias__subcmd__help__subcmd__add"
                 ;;
-            gixor__help,list)
-                cmd="gixor__help__list"
+            gixor__subcmd__alias__subcmd__help,help)
+                cmd="gixor__subcmd__alias__subcmd__help__subcmd__help"
                 ;;
-            gixor__help,repository)
-                cmd="gixor__help__repository"
+            gixor__subcmd__alias__subcmd__help,list)
+                cmd="gixor__subcmd__alias__subcmd__help__subcmd__list"
                 ;;
-            gixor__help,root)
-                cmd="gixor__help__root"
+            gixor__subcmd__alias__subcmd__help,remove)
+                cmd="gixor__subcmd__alias__subcmd__help__subcmd__remove"
                 ;;
-            gixor__help,search)
-                cmd="gixor__help__search"
+            gixor__subcmd__help,alias)
+                cmd="gixor__subcmd__help__subcmd__alias"
                 ;;
-            gixor__help,update)
-                cmd="gixor__help__update"
+            gixor__subcmd__help,dump)
+                cmd="gixor__subcmd__help__subcmd__dump"
                 ;;
-            gixor__help__repository,add)
-                cmd="gixor__help__repository__add"
+            gixor__subcmd__help,entries)
+                cmd="gixor__subcmd__help__subcmd__entries"
                 ;;
-            gixor__help__repository,list)
-                cmd="gixor__help__repository__list"
+            gixor__subcmd__help,generate-completion-files)
+                cmd="gixor__subcmd__help__subcmd__generate__subcmd__completion__subcmd__files"
                 ;;
-            gixor__help__repository,remove)
-                cmd="gixor__help__repository__remove"
+            gixor__subcmd__help,help)
+                cmd="gixor__subcmd__help__subcmd__help"
                 ;;
-            gixor__help__repository,update)
-                cmd="gixor__help__repository__update"
+            gixor__subcmd__help,init)
+                cmd="gixor__subcmd__help__subcmd__init"
                 ;;
-            gixor__repository,add)
-                cmd="gixor__repository__add"
+            gixor__subcmd__help,list)
+                cmd="gixor__subcmd__help__subcmd__list"
                 ;;
-            gixor__repository,help)
-                cmd="gixor__repository__help"
+            gixor__subcmd__help,repository)
+                cmd="gixor__subcmd__help__subcmd__repository"
                 ;;
-            gixor__repository,list)
-                cmd="gixor__repository__list"
+            gixor__subcmd__help,root)
+                cmd="gixor__subcmd__help__subcmd__root"
                 ;;
-            gixor__repository,remove)
-                cmd="gixor__repository__remove"
+            gixor__subcmd__help,search)
+                cmd="gixor__subcmd__help__subcmd__search"
                 ;;
-            gixor__repository,update)
-                cmd="gixor__repository__update"
+            gixor__subcmd__help,update)
+                cmd="gixor__subcmd__help__subcmd__update"
                 ;;
-            gixor__repository__help,add)
-                cmd="gixor__repository__help__add"
+            gixor__subcmd__help__subcmd__alias,add)
+                cmd="gixor__subcmd__help__subcmd__alias__subcmd__add"
                 ;;
-            gixor__repository__help,help)
-                cmd="gixor__repository__help__help"
+            gixor__subcmd__help__subcmd__alias,list)
+                cmd="gixor__subcmd__help__subcmd__alias__subcmd__list"
                 ;;
-            gixor__repository__help,list)
-                cmd="gixor__repository__help__list"
+            gixor__subcmd__help__subcmd__alias,remove)
+                cmd="gixor__subcmd__help__subcmd__alias__subcmd__remove"
                 ;;
-            gixor__repository__help,remove)
-                cmd="gixor__repository__help__remove"
+            gixor__subcmd__help__subcmd__repository,add)
+                cmd="gixor__subcmd__help__subcmd__repository__subcmd__add"
                 ;;
-            gixor__repository__help,update)
-                cmd="gixor__repository__help__update"
+            gixor__subcmd__help__subcmd__repository,list)
+                cmd="gixor__subcmd__help__subcmd__repository__subcmd__list"
+                ;;
+            gixor__subcmd__help__subcmd__repository,remove)
+                cmd="gixor__subcmd__help__subcmd__repository__subcmd__remove"
+                ;;
+            gixor__subcmd__help__subcmd__repository,update)
+                cmd="gixor__subcmd__help__subcmd__repository__subcmd__update"
+                ;;
+            gixor__subcmd__repository,add)
+                cmd="gixor__subcmd__repository__subcmd__add"
+                ;;
+            gixor__subcmd__repository,help)
+                cmd="gixor__subcmd__repository__subcmd__help"
+                ;;
+            gixor__subcmd__repository,list)
+                cmd="gixor__subcmd__repository__subcmd__list"
+                ;;
+            gixor__subcmd__repository,remove)
+                cmd="gixor__subcmd__repository__subcmd__remove"
+                ;;
+            gixor__subcmd__repository,update)
+                cmd="gixor__subcmd__repository__subcmd__update"
+                ;;
+            gixor__subcmd__repository__subcmd__help,add)
+                cmd="gixor__subcmd__repository__subcmd__help__subcmd__add"
+                ;;
+            gixor__subcmd__repository__subcmd__help,help)
+                cmd="gixor__subcmd__repository__subcmd__help__subcmd__help"
+                ;;
+            gixor__subcmd__repository__subcmd__help,list)
+                cmd="gixor__subcmd__repository__subcmd__help__subcmd__list"
+                ;;
+            gixor__subcmd__repository__subcmd__help,remove)
+                cmd="gixor__subcmd__repository__subcmd__help__subcmd__remove"
+                ;;
+            gixor__subcmd__repository__subcmd__help,update)
+                cmd="gixor__subcmd__repository__subcmd__help__subcmd__update"
                 ;;
             *)
                 ;;
@@ -121,7 +164,7 @@ _gixor() {
 
     case "${cmd}" in
         gixor)
-            opts="-l -c -h -V --log --config --help --version dump entries init list root search update repository generate-completion-files help"
+            opts="-l -c -h -V --log --no-network --config --help --version alias dump entries init list root search update repository generate-completion-files help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -150,8 +193,142 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__dump)
-            opts="-d -c -h --dest --clean --help [NAMES...]..."
+        gixor__subcmd__alias)
+            opts="-h --help add remove list help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__alias__subcmd__add)
+            opts="-d -h --description --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --description)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -d)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__alias__subcmd__help)
+            opts="add remove list help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__alias__subcmd__help__subcmd__add)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__alias__subcmd__help__subcmd__help)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__alias__subcmd__help__subcmd__list)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__alias__subcmd__help__subcmd__remove)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__alias__subcmd__list)
+            opts="-h --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__alias__subcmd__remove)
+            opts="-h --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__dump)
+            opts="-d -c -n -a -h --dest --no-append --clear-prologue --clear --dry-run --append --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -172,7 +349,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__entries)
+        gixor__subcmd__entries)
             opts="-d -h --dir --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -194,7 +371,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__generate__completion__files)
+        gixor__subcmd__generate__subcmd__completion__subcmd__files)
             opts="-h --completion-out-dir --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -212,8 +389,8 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help)
-            opts="dump entries init list root search update repository generate-completion-files help"
+        gixor__subcmd__help)
+            opts="alias dump entries init list root search update repository generate-completion-files help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -226,7 +403,63 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__dump)
+        gixor__subcmd__help__subcmd__alias)
+            opts="add remove list"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__help__subcmd__alias__subcmd__add)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__help__subcmd__alias__subcmd__list)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__help__subcmd__alias__subcmd__remove)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        gixor__subcmd__help__subcmd__dump)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -240,7 +473,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__entries)
+        gixor__subcmd__help__subcmd__entries)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -254,7 +487,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__generate__completion__files)
+        gixor__subcmd__help__subcmd__generate__subcmd__completion__subcmd__files)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -268,7 +501,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__help)
+        gixor__subcmd__help__subcmd__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -282,7 +515,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__init)
+        gixor__subcmd__help__subcmd__init)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -296,7 +529,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__list)
+        gixor__subcmd__help__subcmd__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -310,7 +543,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__repository)
+        gixor__subcmd__help__subcmd__repository)
             opts="add list remove update"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -324,7 +557,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__repository__add)
+        gixor__subcmd__help__subcmd__repository__subcmd__add)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -338,7 +571,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__repository__list)
+        gixor__subcmd__help__subcmd__repository__subcmd__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -352,7 +585,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__repository__remove)
+        gixor__subcmd__help__subcmd__repository__subcmd__remove)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -366,7 +599,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__repository__update)
+        gixor__subcmd__help__subcmd__repository__subcmd__update)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -380,7 +613,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__root)
+        gixor__subcmd__help__subcmd__root)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -394,7 +627,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__search)
+        gixor__subcmd__help__subcmd__search)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -408,7 +641,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__help__update)
+        gixor__subcmd__help__subcmd__update)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -422,7 +655,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__init)
+        gixor__subcmd__init)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -436,8 +669,8 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__list)
-            opts="-H -h --header --help [REPO_NAMEs]..."
+        gixor__subcmd__list)
+            opts="-h --no-header --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -450,7 +683,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository)
+        gixor__subcmd__repository)
             opts="-h --help add list remove update help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -464,8 +697,8 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__add)
-            opts="-n -h --name --help <URL|NAME>"
+        gixor__subcmd__repository__subcmd__add)
+            opts="-n -h --name --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -486,7 +719,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__help)
+        gixor__subcmd__repository__subcmd__help)
             opts="add list remove update help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -500,7 +733,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__help__add)
+        gixor__subcmd__repository__subcmd__help__subcmd__add)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -514,7 +747,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__help__help)
+        gixor__subcmd__repository__subcmd__help__subcmd__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -528,7 +761,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__help__list)
+        gixor__subcmd__repository__subcmd__help__subcmd__list)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -542,7 +775,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__help__remove)
+        gixor__subcmd__repository__subcmd__help__subcmd__remove)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -556,7 +789,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__help__update)
+        gixor__subcmd__repository__subcmd__help__subcmd__update)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -570,7 +803,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__list)
+        gixor__subcmd__repository__subcmd__list)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -584,8 +817,8 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__remove)
-            opts="-k -h --keep-dir --help <NAME>"
+        gixor__subcmd__repository__subcmd__remove)
+            opts="-k -h --keep-dir --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -598,7 +831,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__repository__update)
+        gixor__subcmd__repository__subcmd__update)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -612,7 +845,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__root)
+        gixor__subcmd__root)
             opts="-o -h --open --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -626,8 +859,8 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__search)
-            opts="-h --help [QUERIES...]..."
+        gixor__subcmd__search)
+            opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -640,7 +873,7 @@ _gixor() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        gixor__update)
+        gixor__subcmd__update)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )

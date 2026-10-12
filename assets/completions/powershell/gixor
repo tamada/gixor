@@ -25,15 +25,17 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             [CompletionResult]::new('--log', '--log', [CompletionResultType]::ParameterName, 'Specify the log level')
             [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Specify the configuration file')
             [CompletionResult]::new('--config', '--config', [CompletionResultType]::ParameterName, 'Specify the configuration file')
+            [CompletionResult]::new('--no-network', '--no-network', [CompletionResultType]::ParameterName, 'Disable network access')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
             [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
+            [CompletionResult]::new('alias', 'alias', [CompletionResultType]::ParameterValue, 'Manage the aliases. If no command is given, list the aliases.')
             [CompletionResult]::new('dump', 'dump', [CompletionResultType]::ParameterValue, 'Dump the boilerplates')
-            [CompletionResult]::new('entries', 'entries', [CompletionResultType]::ParameterValue, 'List the the current entries in the .gitignore file')
+            [CompletionResult]::new('entries', 'entries', [CompletionResultType]::ParameterValue, 'List the current entries in the .gitignore file')
             [CompletionResult]::new('init', 'init', [CompletionResultType]::ParameterValue, 'Initialize the Gixor')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List available boilerplates')
-            [CompletionResult]::new('root', 'root', [CompletionResultType]::ParameterValue, 'Show the root directory of the boilerplate')
+            [CompletionResult]::new('root', 'root', [CompletionResultType]::ParameterValue, 'Show the root directory of the boilerplates')
             [CompletionResult]::new('search', 'search', [CompletionResultType]::ParameterValue, 'Search the boilerplates from the query')
             [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update the gitignore boilerplate repositories (alias of `repository update`)')
             [CompletionResult]::new('repository', 'repository', [CompletionResultType]::ParameterValue, 'Manage the gitignore boilerplate repositories')
@@ -41,11 +43,62 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
+        'gixor;alias' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new alias')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove an existing alias')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List all aliases')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'gixor;alias;add' {
+            [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the alias description for registration.')
+            [CompletionResult]::new('--description', '--description', [CompletionResultType]::ParameterName, 'Specify the alias description for registration.')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'gixor;alias;remove' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'gixor;alias;list' {
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            break
+        }
+        'gixor;alias;help' {
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new alias')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove an existing alias')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List all aliases')
+            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'gixor;alias;help;add' {
+            break
+        }
+        'gixor;alias;help;remove' {
+            break
+        }
+        'gixor;alias;help;list' {
+            break
+        }
+        'gixor;alias;help;help' {
+            break
+        }
         'gixor;dump' {
             [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the destination directory. "-" means stdout.')
             [CompletionResult]::new('--dest', '--dest', [CompletionResultType]::ParameterName, 'Specify the destination directory. "-" means stdout.')
-            [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Clear the current content of gitignore')
-            [CompletionResult]::new('--clean', '--clean', [CompletionResultType]::ParameterName, 'Clear the current content of gitignore')
+            [CompletionResult]::new('--no-append', '--no-append', [CompletionResultType]::ParameterName, 'Drop the entries currently listed in the gitignore.')
+            [CompletionResult]::new('--clear-prologue', '--clear-prologue', [CompletionResultType]::ParameterName, 'Drop the prologue, the part of the gitignore before the first boilerplate.')
+            [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Start from scratch, dropping both the prologue and the current entries.')
+            [CompletionResult]::new('--clear', '--clear', [CompletionResultType]::ParameterName, 'Start from scratch, dropping both the prologue and the current entries.')
+            [CompletionResult]::new('-n', '-n', [CompletionResultType]::ParameterName, 'Print the result to stdout and leave the gitignore untouched.')
+            [CompletionResult]::new('--dry-run', '--dry-run', [CompletionResultType]::ParameterName, 'Print the result to stdout and leave the gitignore untouched.')
+            [CompletionResult]::new('-a', '-a', [CompletionResultType]::ParameterName, 'Kept so that existing scripts keep working. Appending is the default now')
+            [CompletionResult]::new('--append', '--append', [CompletionResultType]::ParameterName, 'Kept so that existing scripts keep working. Appending is the default now')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
@@ -63,8 +116,7 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             break
         }
         'gixor;list' {
-            [CompletionResult]::new('-H', '-H ', [CompletionResultType]::ParameterName, 'Show header')
-            [CompletionResult]::new('--header', '--header', [CompletionResultType]::ParameterName, 'Show header')
+            [CompletionResult]::new('--no-header', '--no-header', [CompletionResultType]::ParameterName, 'Hide repository headers')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
@@ -92,7 +144,7 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
             [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
-            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Run `git update` for updating a gitignore boilerplate repository')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -124,7 +176,7 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
             [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
-            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Run `git update` for updating a gitignore boilerplate repository')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -150,16 +202,32 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             break
         }
         'gixor;help' {
+            [CompletionResult]::new('alias', 'alias', [CompletionResultType]::ParameterValue, 'Manage the aliases. If no command is given, list the aliases.')
             [CompletionResult]::new('dump', 'dump', [CompletionResultType]::ParameterValue, 'Dump the boilerplates')
-            [CompletionResult]::new('entries', 'entries', [CompletionResultType]::ParameterValue, 'List the the current entries in the .gitignore file')
+            [CompletionResult]::new('entries', 'entries', [CompletionResultType]::ParameterValue, 'List the current entries in the .gitignore file')
             [CompletionResult]::new('init', 'init', [CompletionResultType]::ParameterValue, 'Initialize the Gixor')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List available boilerplates')
-            [CompletionResult]::new('root', 'root', [CompletionResultType]::ParameterValue, 'Show the root directory of the boilerplate')
+            [CompletionResult]::new('root', 'root', [CompletionResultType]::ParameterValue, 'Show the root directory of the boilerplates')
             [CompletionResult]::new('search', 'search', [CompletionResultType]::ParameterValue, 'Search the boilerplates from the query')
             [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update the gitignore boilerplate repositories (alias of `repository update`)')
             [CompletionResult]::new('repository', 'repository', [CompletionResultType]::ParameterValue, 'Manage the gitignore boilerplate repositories')
             [CompletionResult]::new('generate-completion-files', 'generate-completion-files', [CompletionResultType]::ParameterValue, 'Generate the completion files')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
+            break
+        }
+        'gixor;help;alias' {
+            [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new alias')
+            [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove an existing alias')
+            [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List all aliases')
+            break
+        }
+        'gixor;help;alias;add' {
+            break
+        }
+        'gixor;help;alias;remove' {
+            break
+        }
+        'gixor;help;alias;list' {
             break
         }
         'gixor;help;dump' {
@@ -187,7 +255,7 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
             [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
-            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Run `git update` for updating a gitignore boilerplate repository')
             break
         }
         'gixor;help;repository;add' {
