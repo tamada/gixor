@@ -2,8 +2,8 @@
 //! Provides functions to interact with Git repositories
 //! using either the `gix` crate or system Git commands
 //! based on feature flags.
-use crate::repos::Boilerplate;
 use crate::Result;
+use crate::repos::Boilerplate;
 use std::path::Path;
 
 #[cfg(feature = "usegix")]

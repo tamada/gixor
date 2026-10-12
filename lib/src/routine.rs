@@ -200,8 +200,14 @@ mod tests {
 
     #[test]
     fn test_map_to_boilerplate_name() {
-        assert_eq!(map_to_boilerplate_name("### Rust.gitignore".into()), Some("Rust".into()));
-        assert_eq!(map_to_boilerplate_name("### path/to/Rust.gitignore".into()), Some("Rust".into()));
+        assert_eq!(
+            map_to_boilerplate_name("### Rust.gitignore".into()),
+            Some("Rust".into())
+        );
+        assert_eq!(
+            map_to_boilerplate_name("### path/to/Rust.gitignore".into()),
+            Some("Rust".into())
+        );
         assert_eq!(map_to_boilerplate_name("Not a boilerplate".into()), None);
     }
 
@@ -210,7 +216,7 @@ mod tests {
         let temp_dir = tempfile::tempdir().unwrap();
         let dir_path = temp_dir.path();
         assert_eq!(find_gitignore(dir_path), dir_path.join(".gitignore"));
-        
+
         let file_path = dir_path.join("custom.gitignore");
         assert_eq!(find_gitignore(&file_path), file_path);
     }

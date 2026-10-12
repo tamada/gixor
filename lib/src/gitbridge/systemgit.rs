@@ -4,8 +4,8 @@
 //! It includes functions to clone repositories, pull updates, and retrieve commit hashes.
 use std::{path::Path, process::Command};
 
-use crate::repos::Boilerplate;
 use crate::Result;
+use crate::repos::Boilerplate;
 
 /// Run `git pull {remote} {branch}` on the repository at the given path.
 pub fn pull(repo_path: &Path, remote: &str, branch: &str) -> Result<()> {

@@ -100,9 +100,8 @@ fn collect(root: &Path, dir: &Path, found: &mut BTreeMap<String, PathBuf>) {
 
 fn read_sources(path: &Path) -> Vec<Source> {
     println!("cargo:rerun-if-changed={}", path.display());
-    let content = fs::read_to_string(path).unwrap_or_else(|e| {
-        panic!("{}: cannot read the snapshot sources: {e}", path.display())
-    });
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("{}: cannot read the snapshot sources: {e}", path.display()));
     let sources = content
         .lines()
         .map(str::trim)
