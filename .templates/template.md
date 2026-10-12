@@ -6,7 +6,7 @@ date: 2025-02-25
 
 [![build](https://github.com/tamada/gixor/actions/workflows/build.yaml/badge.svg)](https://github.com/tamada/gixor/actions/workflows/build.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/tamada/gixor/badge.svg?branch=main)](https://coveralls.io/github/tamada/gixor?branch=main)
-[![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/tamada/gixor)](https://rust-reportcard.xuri.me/report/github.com/tamada/gixor)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=tamada_gixor&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tamada_gixor)
 
 [![Version](https://img.shields.io/badge/Version-v$VERSION-green)](https://github.com/tamada/gixor/releases/tag/v$VERSION)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/tamada/gixor/blob/main/LICENSE)
