@@ -12,12 +12,41 @@ on:
         type: string
 
 jobs:
+  # release-start takes a plain path, but on a pull request the version is only in the head
+  # branch, so the path is resolved here.
+  notes:
+    if: github.event_name == 'workflow_dispatch' || (startsWith(github.head_ref, 'release/v') && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    outputs:
+      path: ${{ steps.path.outputs.path }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Resolve the release notes
+        id: path
+        env:
+          VERSION: ${{ inputs.version }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          version="${VERSION:-${HEAD_REF#release/}}"
+          path=".github/release-notes/v${version#v}.md"
+          if [ -f "$path" ]; then
+            echo "path=$path" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$path not found; the notes will be generated"
+          fi
+
   setup:
     if: github.event_name == 'workflow_dispatch' || (startsWith(github.head_ref, 'release/v') && github.event.pull_request.merged == true)
     uses: tamada/.github/.github/workflows/release-start.yaml@v1
+    needs: notes
     with:
       # Empty on the pull request; the version comes from the head branch then.
       version: ${{ inputs.version }}
+      release-notes: ${{ needs.notes.outputs.path }}
     permissions:
       contents: write
 
@@ -91,7 +120,7 @@ jobs:
 
       - name: Setup Rust
         run: rustup update stable
-      
+
       # No openssl to set up: gix is pure Rust and speaks TLS through rustls.
       - name: Setup for Linux
         if: matrix.os == 'ubuntu-latest'
@@ -118,9 +147,9 @@ jobs:
       - name: Upload the asset to the draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: 
+        run:
           gh release upload "${{ needs.setup.outputs.tag }}" "dist/${{ matrix.asset_name }}.tar.gz" --clobber
-        
+
   # Each architecture is built on a runner of its own architecture. Emulating arm64 through QEMU
   # took an hour of compiling Rust and produced enough intermediate layers to break the cache it
   # was writing; natively it is minutes. Neither runner produces a tag — each pushes an image by
@@ -249,7 +278,7 @@ jobs:
 
       - name: Setup Rust
         run: rustup update stable
-      
+
       - name: Authenticate with crates.io
         id: auth
         uses: rust-lang/crates-io-auth-action@v1
