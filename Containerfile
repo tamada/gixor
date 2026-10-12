@@ -4,7 +4,7 @@ ARG FEATURES=""
 
 WORKDIR /app
 COPY . .
-RUN    cargo build --release -p gixor-cli $FEATURES \
+RUN    cargo build --release --locked -p gixor-cli $FEATURES \
     && mkdir -p /opt/gixor/boilerplates \
     && git clone https://github.com/github/gitignore.git /opt/gixor/boilerplates/default \
     && echo '{ \n\

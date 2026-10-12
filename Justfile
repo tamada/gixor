@@ -12,11 +12,11 @@ VERSION := `grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/g'`
 
 # Build the project with cargo build
 build target = "": format clippy
-    cargo build --workspace {{ target }}
+    cargo build --locked --workspace {{ target }}
 
 # Run the test with cargo test
 test: (build "") clone_for_test
-    cargo llvm-cov --lcov --output-path target/coverage.lcov
+    cargo llvm-cov --locked --lcov --output-path target/coverage.lcov
 
 # Check that the source codes are formatted, without rewriting them.
 verify_format:
@@ -28,9 +28,9 @@ format:
 
 # Run clippy for checking the source codes.
 clippy:
-    cargo clippy --workspace --all-targets -- -D warnings
-    cargo clippy -p gixor --all-targets --no-default-features --features local    -- -D warnings
-    cargo clippy -p gixor --all-targets --no-default-features --features embedded -- -D warnings
+    cargo clippy --locked --workspace --all-targets -- -D warnings
+    cargo clippy --locked -p gixor --all-targets --no-default-features --features local    -- -D warnings
+    cargo clippy --locked -p gixor --all-targets --no-default-features --features embedded -- -D warnings
 
 clone_default_ignores:
     test -d lib/testdata/boilerplates/default || git clone https://github.com/github/gitignore.git lib/testdata/boilerplates/default
@@ -67,7 +67,7 @@ wasm:
 # target that only this crate needs.
 wasm_check:
     rustup target add wasm32-unknown-unknown
-    cargo clippy --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown -- -D warnings
+    cargo clippy --locked --manifest-path wasm/Cargo.toml --target wasm32-unknown-unknown -- -D warnings
 
 # Serve wasm/demo.html for a manual check, at http://localhost:8765/demo.html.
 # A server is needed rather than opening the file: modules and wasm are not fetched from file://.

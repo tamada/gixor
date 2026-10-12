@@ -131,7 +131,7 @@ jobs:
       - name: Build
         run: |
           rustup target add ${{ matrix.target }}
-          cargo build --release -p gixor-cli --target ${{ matrix.target }}
+          cargo build --locked --release -p gixor-cli --target ${{ matrix.target }}
 
       # publish release
       - name: Create release file
@@ -287,8 +287,8 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
         run: |
-          cargo publish -p gixor
-          cargo publish -p gixor-cli
+          cargo publish --locked -p gixor
+          cargo publish --locked -p gixor-cli
 
   finish:
     needs: [setup, publish]
