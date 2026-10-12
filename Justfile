@@ -11,16 +11,20 @@ VERSION := `grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/g'`
     just --list
 
 # Build the project with cargo build
-build target = "": formats clippy
+build target = "": format clippy
     cargo build --workspace {{ target }}
 
 # Run the test with cargo test
 test: (build "") clone_for_test
     cargo llvm-cov --lcov --output-path target/coverage.lcov
 
-# Run cargo fmt for formatting the source codes.
-formats:
+# Check that the source codes are formatted, without rewriting them.
+verify_format:
     cargo fmt --all --check
+
+# Run cargo fmt for formatting the source codes.
+format:
+    cargo fmt -- --emit=files
 
 # Run clippy for checking the source codes.
 clippy:
