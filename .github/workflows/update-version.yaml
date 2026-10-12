@@ -34,6 +34,10 @@ jobs:
           sed "s/\$VERSION/${{ steps.vars.outputs.tag }}/g" .templates/README.md > README.md
           sed "s/\$VERSION/${{ steps.vars.outputs.tag }}/g" .templates/template.md > docs/content/_index.md
           sed "s/ARG VERSION=.*/ARG VERSION=${{ steps.vars.outputs.tag }}/g" Containerfile > a ; mv a Containerfile
+          # The workspace members' versions are recorded in the lock files too, and --locked
+          # refuses lock files that disagree with the manifests.
+          cargo update --workspace
+          cargo update --workspace --manifest-path wasm/Cargo.toml
 
       - name: Initialize Git
         shell: bash
