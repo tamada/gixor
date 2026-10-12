@@ -199,6 +199,7 @@ jobs:
           context: .
           file: ./Containerfile
           platforms: ${{ matrix.platform }}
+          build-args: GIT_REVISION=${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=quay.io/tama5/${{ needs.publish.outputs.appname }},push-by-digest=true,name-canonical=true,push=true
 

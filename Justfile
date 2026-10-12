@@ -1,11 +1,13 @@
 [private]
 @default: help
 
-VERSION := `grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/g'`
+git_revision := `git rev-parse --short HEAD`
+app_version := `awk -F'"' '/^\[workspace.package\]/{p=1} p && /^version *=/{print $2; exit}' Cargo.toml`
+build_date := `date -u +%Y-%m-%dT%H:%M:%SZ`
 
 # show help message
 @help:
-    echo "Task runner for Gixor {{ VERSION }} with Just"
+    echo "Task runner for Gixor {{ app_version }} with Just"
     echo "Usage: just <recipe>"
     echo ""
     just --list
@@ -105,29 +107,25 @@ stop:
 
 # Build the docker images of gixor with different backends.
 # The default image carries gix, so it needs no git installed alongside.
-docker: _docker_build_default_feature _docker_build_systemgit_feature
-
-_docker_build_default_feature:   (_docker_build "" "" "")
-_docker_build_systemgit_feature: (_docker_build "--no-default-features" "git" "-systemgit")
-
-_docker_build features apt_optional docker_tag_suffix:
+docker:
     docker build \
+        --build-arg GIT_REVISION={{git_revision}} \
+        --build-arg BUILD_DATE={{build_date}} \
+        --build-arg VERSION={{app_version}} \
         -f Containerfile \
-        --build-arg APT_OPTIONAL="{{apt_optional}}" \
-        --build-arg FEATURES="{{features}}" \
-        -t quay.io/tama5/gixor:{{VERSION}}{{docker_tag_suffix}} .
+        -t quay.io/tama5/gixor:latest \
+        -t quay.io/tama5/gixor:{{app_version}} \
+       .
 
 # Build the docker image for multiple platforms and push them into quay.io
-docker_buildx: _docker_buildx_default_feature _docker_buildx_systemgit_feature
-
-_docker_buildx_default_feature:   (_docker_buildx "" "" "")
-_docker_buildx_systemgit_feature: (_docker_buildx "--no-default-features" "git" "-systemgit")
-
-_docker_buildx features apt_optional docker_tag_suffix:
+docker_buildx:
     docker buildx build \
+        --build-arg GIT_REVISION={{git_revision}} \
+        --build-arg BUILD_DATE={{build_date}} \
+        --build-arg VERSION={{app_version}} \
         -f Containerfile \
         --platform linux/arm64/v8,linux/amd64 \
         --output=type=image,push=true \
-        --build-arg APT_OPTIONAL="{{apt_optional}}" \
-        --build-arg FEATURES="{{features}}" \
-        -t quay.io/tama5/gixor:{{VERSION}}{{docker_tag_suffix}} .
+        -t quay.io/tama5/gixor:latest \
+        -t quay.io/tama5/gixor:{{app_version}} \
+        .
