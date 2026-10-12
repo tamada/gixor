@@ -1,21 +1,9 @@
-//! Embed build information into the binary via environment variables.
-//! This script collects enabled Cargo features, package name and version,
-//! and git commit hash (if provided), then sets them as environment variables
-//! to be included in the compiled binary.
+//! Writes the long version shown by `gixor --version` to `$OUT_DIR/BUILD_LONG_VERSION.txt`,
+//! which `cli.rs` includes: the version, the target, the rustc version, and the git commit and
+//! branch, taken from `GIT_SHA` and `GIT_BRANCH` when they are set and from git otherwise.
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
-
-fn collect_enabled_cargo_features() -> Vec<String> {
-    let mut features = Vec::new();
-    for (k, _) in env::vars() {
-        if let Some(name) = k.strip_prefix("CARGO_FEATURE_") {
-            features.push(name.to_lowercase().replace('_', "-"));
-        }
-    }
-    features.sort();
-    features
-}
 
 fn extract_rustc_version() -> String {
     Command::new("rustc")
@@ -51,13 +39,24 @@ fn extract_git_branch() -> String {
     })
 }
 
+/// Names the files that change with the commit and the branch, so that the build script reruns
+/// when they do and only then.
+fn watch_git_state() {
+    // Asking git rather than joining ".git" by hand: the paths are relative to the package
+    // directory, not to the repository, and in a worktree .git is a file rather than a directory.
+    for name in ["HEAD", "refs/heads"] {
+        if let Some(path) = run_git_command(vec![
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-path",
+            name,
+        ]) {
+            println!("cargo:rerun-if-changed={path}");
+        }
+    }
+}
+
 fn embed_build_info_into_version() {
-    let features = collect_enabled_cargo_features();
-    let features_str = if features.is_empty() {
-        "no features".to_string()
-    } else {
-        features.join(",")
-    };
     let ver = env::var("CARGO_PKG_VERSION").unwrap_or_default();
     let target = env::var("TARGET").unwrap_or_default();
     let git_sha = extract_latest_git_sha();
@@ -65,7 +64,7 @@ fn embed_build_info_into_version() {
     let rustc_version = extract_rustc_version();
 
     let long = format!(
-        r#"{ver} ({features_str}, {target})
+        r#"{ver} ({target})
 Building with: {rustc_version}
 Git: {git_sha} (on branch {branch})"#
     );
@@ -77,8 +76,7 @@ Git: {git_sha} (on branch {branch})"#
     // Emitting any rerun-if instruction replaces Cargo's default of rerunning whenever a file
     // in the package changes, so the git state has to be named explicitly. Without these the
     // embedded commit is whatever it was the first time this ran, and never moves again.
-    println!("cargo:rerun-if-changed=.git/HEAD");
-    println!("cargo:rerun-if-changed=.git/refs/heads");
+    watch_git_state();
 }
 
 fn main() {
