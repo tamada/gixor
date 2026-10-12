@@ -421,6 +421,62 @@ mod tests {
         assert_eq!(to_owner(":"), "".to_string()); // items.last() of ":" split is ""
     }
 
+    /// A repository on the file system holding the given boilerplates, under `<base>/fixture`.
+    #[cfg(feature = "local")]
+    fn fixture_repository(paths: &[&str]) -> (tempfile::TempDir, Repository) {
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("fixture");
+        for path in paths {
+            let file = root.join(path);
+            std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+            std::fs::write(file, "*.tmp\n").unwrap();
+        }
+        let repo = Repository::new_with("fixture", "https://example.invalid/fixture/gitignore");
+        (base, repo)
+    }
+
+    #[cfg(feature = "local")]
+    #[test]
+    fn find_takes_the_shallowest_of_the_boilerplates_sharing_a_name() {
+        let (base, repo) = fixture_repository(&["Global/AL.gitignore", "AL.gitignore"]);
+        let found = repo.find(&Name::new_of("AL"), base.path()).unwrap();
+        assert_eq!(found.path(), Path::new("AL.gitignore"));
+    }
+
+    #[cfg(feature = "local")]
+    #[test]
+    fn find_takes_the_first_by_path_among_the_same_depth() {
+        let (base, repo) = fixture_repository(&[
+            "community/CFML/ColdBox.gitignore",
+            "community/BoxLang/ColdBox.gitignore",
+        ]);
+        let found = repo.find(&Name::new_of("coldbox"), base.path()).unwrap();
+        assert_eq!(
+            found.path(),
+            Path::new("community/BoxLang/ColdBox.gitignore")
+        );
+    }
+
+    #[cfg(feature = "local")]
+    #[test]
+    fn find_all_lists_every_boilerplate_sharing_the_name_in_order() {
+        let (base, repo) = fixture_repository(&[
+            "community/Racket.gitignore",
+            "Racket.gitignore",
+            "Rust.gitignore",
+        ]);
+        let found = repo.find_all(&Name::new_of("racket"), base.path());
+        let paths = found.iter().map(|b| b.path()).collect::<Vec<_>>();
+        assert_eq!(
+            paths,
+            vec![
+                Path::new("Racket.gitignore"),
+                Path::new("community/Racket.gitignore")
+            ]
+        );
+        assert!(repo.find_all(&Name::new_of("Go"), base.path()).is_empty());
+    }
+
     #[test]
     fn test_boilerplate_content_url() {
         let repo = Repository::default();
