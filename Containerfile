@@ -1,10 +1,14 @@
-FROM rust:1-bullseye AS builder
+FROM rust:1-trixie AS builder
 
-ARG FEATURES=""
+# Handed to the build script, which embeds it in `gixor --version`: there is no .git to ask here.
+ARG GIT_REVISION=unknown
 
 WORKDIR /app
-COPY . .
-RUN    cargo build --release --locked -p gixor-cli $FEATURES \
+COPY Cargo.toml Cargo.lock ./
+COPY cli ./cli
+COPY lib ./lib
+
+RUN     GIT_SHA=${GIT_REVISION} cargo build --release --locked -p gixor-cli \
     && mkdir -p /opt/gixor/boilerplates \
     && git clone https://github.com/github/gitignore.git /opt/gixor/boilerplates/default \
     && echo '{ \n\
@@ -20,24 +24,31 @@ RUN    cargo build --release --locked -p gixor-cli $FEATURES \
     ]\n\
 }' > /opt/gixor/config.json
 
-FROM debian:bullseye-slim
+FROM debian:trixie-slim
 
 ARG VERSION=0.5.2
-# The default build carries gix and needs nothing installed here. It is the --no-default-features
-# build that drives the git command and therefore asks for git.
-# This has to be declared in this stage: an ARG belongs to the stage it appears in, and being
-# declared in the builder left it empty here, so it never installed anything.
-ARG APT_OPTIONAL=""
+ARG GIT_REVISION
+ARG BUILD_DATE
+ARG AUTHOR="Haruaki Tamada"
+ARG TITLE=gixor
+ARG URL=https://tamada.github.io/gixor
+ARG SOURCE=https://github.com/tamada/gixor
+ARG LICENSE=MIT
 
-LABEL   org.opencontainers.image.source=https://github.com/tamada/gixor \
-        org.opencontainers.image.version=${VERSION} \
-        org.opencontainers.image.title=gixor \
-        org.opencontainers.image.description="Git Ignore Managenemnt System for Multiple Repositories."
+LABEL org.opencontainers.image.authors=${AUTHOR} \
+      org.opencontainers.image.title=${TITLE} \
+      org.opencontainers.image.description="Git Ignore Management System for Multiple Repositories." \
+      org.opencontainers.image.url=${URL} \
+      org.opencontainers.image.source=${SOURCE} \
+      org.opencontainers.image.version=${VERSION} \
+      org.opencontainers.image.revision=${GIT_REVISION} \
+      org.opencontainers.image.created=${BUILD_DATE} \
+      org.opencontainers.image.licenses=${LICENSE}
 
-RUN    adduser --disabled-password --disabled-login --home /opt/gixor nonroot \
+RUN    useradd --create-home --home-dir /app --shell /usr/sbin/nologin nonroot \
     && mkdir -p /app /opt/gixor/boilerplates \
     && apt-get update \
-    && apt-get install --no-install-recommends -y $APT_OPTIONAL ca-certificates \
+    && apt-get install --no-install-recommends -y ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
