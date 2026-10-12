@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # The workspace (lib and cli).
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - rust
+    # One pull request a week for the minor and patch updates, rather than one per crate.
+    # Major updates still come one by one, since they are the ones that may need code changes.
+    groups:
+      cargo:
+        update-types:
+          - minor
+          - patch
+
+  # wasm is a workspace of its own, with its own lock file.
+  - package-ecosystem: cargo
+    directory: /wasm
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - rust
+    groups:
+      cargo-wasm:
+        update-types:
+          - minor
+          - patch
+
