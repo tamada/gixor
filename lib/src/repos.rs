@@ -241,9 +241,30 @@ impl Repository {
         }
     }
 
+    /// Finds every boilerplate matching the name, the shallowest first, and those of the same
+    /// depth by path, so that the order does not depend on the order the file system lists them in.
+    pub fn find_all<P: AsRef<Path>>(&self, name: &Name, base_path: P) -> Vec<Boilerplate<'_>> {
+        let mut candidates = self
+            .iter(base_path)
+            .filter(|b| name.matches(b))
+            .collect::<Vec<_>>();
+        candidates.sort_by(|a, b| {
+            let key = |b: &Boilerplate| (b.path().components().count(), b.path().to_path_buf());
+            key(a).cmp(&key(b))
+        });
+        candidates
+    }
+
     /// Finds the boilerplate by the name.
+    ///
+    /// When several boilerplates share the name, e.g. `AL.gitignore` and `Global/AL.gitignore`,
+    /// the first of [`Repository::find_all`] is taken, and a warning names the others.
     pub fn find<P: AsRef<Path>>(&self, name: &Name, base_path: P) -> Option<Boilerplate<'_>> {
-        self.iter(base_path).find(|b| name.matches(b))
+        let candidates = self.find_all(name, base_path);
+        if candidates.len() > 1 {
+            warn_multiple_candidates(name, &candidates)
+        }
+        candidates.into_iter().next()
     }
 
     /// Iterates the boilerplates in the repository.
@@ -278,6 +299,19 @@ impl Repository {
             crate::source::prepare(self, base_path)
         }
     }
+}
+
+fn warn_multiple_candidates(name: &Name, candidates: &[Boilerplate]) {
+    log::warn!(
+        "{name}: {} boilerplates share the name; using {} (others: {})",
+        candidates.len(),
+        candidates[0].path().display(),
+        candidates[1..]
+            .iter()
+            .map(|b| b.path().display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
 }
 
 fn url_to_owner_and_repo_name(url: &str) -> (String, String) {
