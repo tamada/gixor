@@ -831,6 +831,40 @@ mod tests {
     }
 
     #[test]
+    fn load_or_new_at_starts_fresh_without_a_configuration() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+
+        let gixor = GixorFactory::load_or_new_at(&path).unwrap();
+        assert_eq!(gixor.config.repositories.len(), 1);
+        assert_eq!(gixor.load_from, path);
+        // nothing is written until the configuration is stored
+        assert!(!path.exists());
+    }
+
+    /// A malformed configuration used to be replaced by a fresh one without a word, and then
+    /// overwritten by the next command that stored the configuration.
+    #[test]
+    fn load_or_new_at_reports_a_malformed_configuration() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+        std::fs::write(&path, "{ not json").unwrap();
+
+        assert!(matches!(
+            GixorFactory::load_or_new_at(&path),
+            Err(Error::Json(_))
+        ));
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "{ not json");
+    }
+
+    #[test]
+    fn load_or_new_at_loads_an_existing_configuration() {
+        let gixor = GixorFactory::load_or_new_at(config_path()).unwrap();
+        assert_eq!(gixor.config.base_path, boilerplates_path());
+        assert_eq!(gixor.config.repositories.len(), 3);
+    }
+
+    #[test]
     fn parse_gixor() {
         match GixorFactory::load(config_path()) {
             Err(e) => panic!("Failed to parse the config file: {e}"),
