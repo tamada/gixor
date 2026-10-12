@@ -45,6 +45,6 @@ pub(super) fn prepare(repo: &Repository, base_path: &Path) -> Result<()> {
 }
 
 fn is_gitignore_file(name: Option<&std::ffi::OsStr>) -> bool {
-    name.and_then(|n| n.to_str())
+    name.and_then(std::ffi::OsStr::to_str)
         .is_some_and(|name| name.ends_with(".gitignore"))
 }
