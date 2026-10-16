@@ -592,6 +592,41 @@ mod tests {
         assert!(repo.find(&Name::new_of("Local/AL"), base.path()).is_none());
     }
 
+    #[cfg(feature = "local")]
+    #[test]
+    fn list_names_lists_the_paths_sorted() {
+        // written out of order, so that the order comes from list_names and not from the files
+        let (base, repo) = fixture_repository(&[
+            "Rust.gitignore",
+            "community/CFML/ColdBox.gitignore",
+            "Global/AL.gitignore",
+            "AL.gitignore",
+            "community/BoxLang/ColdBox.gitignore",
+        ]);
+        assert_eq!(
+            repo.list_names(base.path()),
+            vec![
+                "AL",
+                "Global/AL",
+                "Rust",
+                "community/BoxLang/ColdBox",
+                "community/CFML/ColdBox",
+            ]
+        );
+    }
+
+    /// Every listed name resolves to the boilerplate it was listed for, also when several share
+    /// a file stem, so that a name taken from the list can be passed on as it is.
+    #[cfg(feature = "local")]
+    #[test]
+    fn list_names_resolve_to_their_own_boilerplates() {
+        let (base, repo) = fixture_repository(&["AL.gitignore", "Global/AL.gitignore"]);
+        for name in repo.list_names(base.path()) {
+            let found = repo.find(&Name::new_of(&name), base.path()).unwrap();
+            assert_eq!(found.path_name(), name);
+        }
+    }
+
     #[test]
     fn test_boilerplate_content_url() {
         let repo = Repository::default();
