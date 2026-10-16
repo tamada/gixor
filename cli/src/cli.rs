@@ -273,10 +273,12 @@ impl DumpOpts {
         for name in &self.names {
             if let Some(trunk) = name.strip_prefix('-') {
                 let dropped = resolve(trunk);
-                if dropped.is_empty() {
-                    log::warn!("{trunk}: no boilerplate to drop");
-                }
+                let before = entries.len();
                 entries.retain(|(_, bs)| bs.iter().all(|b| !dropped.contains(b)));
+                if entries.len() == before {
+                    let listed = entries.iter().map(|(n, _)| n.as_str()).collect::<Vec<_>>();
+                    warn_nothing_dropped(trunk, !dropped.is_empty(), &listed);
+                }
             } else {
                 let added = resolve(name);
                 let listed = !added.is_empty()
@@ -331,6 +333,78 @@ impl DumpOpts {
             r => r,
         }
     }
+}
+
+/// Tells why `-name` dropped nothing, with the current entries it may have meant.
+///
+/// `name` either names no boilerplate at all, typically a typo, or names one the `.gitignore` does
+/// not list, as `AL` does when only `Global/AL` is listed: `AL` takes `AL.gitignore`, the
+/// shallowest of the boilerplates sharing the name.
+fn warn_nothing_dropped(name: &str, resolved: bool, entries: &[&str]) {
+    let reason = if resolved {
+        "the .gitignore does not list it"
+    } else {
+        "no boilerplate has the name"
+    };
+    let candidates = suggestions(name, entries);
+    if candidates.is_empty() {
+        log::warn!("{name}: nothing dropped, {reason}");
+    } else {
+        log::warn!(
+            "{name}: nothing dropped, {reason}; did you mean {}?",
+            candidates.join(", ")
+        );
+    }
+}
+
+/// The current entries `name` may have meant: those whose file stem is `name` ignoring case, then
+/// those whose file stem is a small edit away from it.
+fn suggestions(name: &str, entries: &[&str]) -> Vec<String> {
+    let wanted = file_stem(name).to_lowercase();
+    let limit = if wanted.chars().count() >= 5 { 2 } else { 1 };
+    let mut same = vec![];
+    let mut similar = vec![];
+    for entry in entries {
+        let stem = file_stem(entry).to_lowercase();
+        if stem == wanted {
+            same.push(entry.to_string());
+        } else if edit_distance(&stem, &wanted) <= limit {
+            similar.push(entry.to_string());
+        }
+    }
+    same.extend(similar);
+    same
+}
+
+/// The last part of a name such as `default/Global/AL`, i.e. `AL`.
+fn file_stem(name: &str) -> &str {
+    name.rsplit('/').next().unwrap_or(name)
+}
+
+/// The number of insertions, deletions, substitutions and transpositions of adjacent characters
+/// turning `a` into `b`, so that a swap such as `Rsut` for `Rust` counts once.
+fn edit_distance(a: &str, b: &str) -> usize {
+    let a = a.chars().collect::<Vec<_>>();
+    let b = b.chars().collect::<Vec<_>>();
+    let mut d = vec![vec![0; b.len() + 1]; a.len() + 1];
+    for (i, row) in d.iter_mut().enumerate() {
+        row[0] = i;
+    }
+    for (j, cell) in d[0].iter_mut().enumerate() {
+        *cell = j;
+    }
+    for i in 1..=a.len() {
+        for j in 1..=b.len() {
+            let cost = usize::from(a[i - 1] != b[j - 1]);
+            d[i][j] = (d[i - 1][j] + 1)
+                .min(d[i][j - 1] + 1)
+                .min(d[i - 1][j - 1] + cost);
+            if i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] {
+                d[i][j] = d[i][j].min(d[i - 2][j - 2] + 1);
+            }
+        }
+    }
+    d[a.len()][b.len()]
 }
 
 /// The boilerplates `name` stands for, each as `<repository>/<path>` in lower case, such as
@@ -476,6 +550,39 @@ mod tests {
             merged(&opts, vec!["default/Go"], github),
             vec!["default/Go", "Nope"]
         );
+    }
+
+    #[test]
+    fn suggestions_offer_the_entries_sharing_the_file_stem() {
+        let entries = ["default/Global/AL", "default/Go"];
+        assert_eq!(suggestions("AL", &entries), vec!["default/Global/AL"]);
+        assert_eq!(suggestions("al", &entries), vec!["default/Global/AL"]);
+    }
+
+    #[test]
+    fn suggestions_offer_the_entries_a_typo_away() {
+        let entries = ["default/Rust", "default/Python", "default/Go"];
+        assert_eq!(suggestions("Rsut", &entries), vec!["default/Rust"]);
+        assert_eq!(suggestions("Pyhton", &entries), vec!["default/Python"]);
+        assert_eq!(suggestions("Pythn", &entries), vec!["default/Python"]);
+        assert!(suggestions("Java", &entries).is_empty());
+    }
+
+    #[test]
+    fn suggestions_put_the_same_file_stem_first() {
+        let entries = ["default/Gox", "default/Global/Go"];
+        assert_eq!(
+            suggestions("Go", &entries),
+            vec!["default/Global/Go", "default/Gox"]
+        );
+    }
+
+    #[test]
+    fn edit_distance_counts_a_swap_once() {
+        assert_eq!(edit_distance("rust", "rust"), 0);
+        assert_eq!(edit_distance("rsut", "rust"), 1);
+        assert_eq!(edit_distance("pythn", "python"), 1);
+        assert_eq!(edit_distance("go", "java"), 4);
     }
 
     #[test]
