@@ -12,19 +12,9 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          # - windows-latest
+          - windows-latest
     steps:
-      # No openssl to set up: gix is pure Rust and speaks TLS through rustls.
-
-      # - name: Setup Msys2
-      #   uses: msys2/setup-msys2@v2
-      #   if: matrix.os == 'windows-latest'
-
-      # - name: Setup for Windows (aarch64 (amd64))
-      #   if: matrix.os == 'windows-latest'
-      #   shell: msys2 {0}
-      #   run:
-      #     pacman -Syu --noconfirm mingw-w64-clang-aarch64-openssl
+      # No openssl to set up on any platform: gix is pure Rust and speaks TLS through rustls.
 
       - name: Checkout project
         uses: actions/checkout@v4
