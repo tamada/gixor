@@ -269,6 +269,20 @@ impl Repository {
         }
     }
 
+    /// Returns the names of the boilerplates of this repository, sorted: their paths in the
+    /// repository without `.gitignore`, such as `AL`, `Global/AL` and `Rust`.
+    ///
+    /// Each name names exactly one boilerplate, also when several share a file stem, and can be
+    /// passed to [`crate::Name::parse`] as it is. See [`Boilerplate::path_name`].
+    pub fn list_names<P: AsRef<Path>>(&self, base_path: P) -> Vec<String> {
+        let mut list = self
+            .iter(base_path)
+            .map(|b| b.path_name())
+            .collect::<Vec<_>>();
+        list.sort();
+        list
+    }
+
     /// Finds every boilerplate matching the name, the shallowest first, and those of the same
     /// depth by path, so that the order does not depend on the order the file system lists them in.
     pub fn find_all<P: AsRef<Path>>(&self, name: &Name, base_path: P) -> Vec<Boilerplate<'_>> {
@@ -576,6 +590,41 @@ mod tests {
         let found = repo.find(&Name::new_of("Global/AL"), base.path()).unwrap();
         assert_eq!(found.path(), Path::new("Global/AL.gitignore"));
         assert!(repo.find(&Name::new_of("Local/AL"), base.path()).is_none());
+    }
+
+    #[cfg(feature = "local")]
+    #[test]
+    fn list_names_lists_the_paths_sorted() {
+        // written out of order, so that the order comes from list_names and not from the files
+        let (base, repo) = fixture_repository(&[
+            "Rust.gitignore",
+            "community/CFML/ColdBox.gitignore",
+            "Global/AL.gitignore",
+            "AL.gitignore",
+            "community/BoxLang/ColdBox.gitignore",
+        ]);
+        assert_eq!(
+            repo.list_names(base.path()),
+            vec![
+                "AL",
+                "Global/AL",
+                "Rust",
+                "community/BoxLang/ColdBox",
+                "community/CFML/ColdBox",
+            ]
+        );
+    }
+
+    /// Every listed name resolves to the boilerplate it was listed for, also when several share
+    /// a file stem, so that a name taken from the list can be passed on as it is.
+    #[cfg(feature = "local")]
+    #[test]
+    fn list_names_resolve_to_their_own_boilerplates() {
+        let (base, repo) = fixture_repository(&["AL.gitignore", "Global/AL.gitignore"]);
+        for name in repo.list_names(base.path()) {
+            let found = repo.find(&Name::new_of(&name), base.path()).unwrap();
+            assert_eq!(found.path_name(), name);
+        }
     }
 
     #[test]

@@ -35,7 +35,7 @@ impl Terminal {
         }
     }
 
-    pub(crate) fn format_header(&self, header: String) -> String {
+    pub(crate) fn format_header(&self, header: &str) -> String {
         let deco_len = self.width - header.len() - 2;
         let deco_prefix = "=".repeat(deco_len / 2);
         let deco_suffix = "=".repeat(deco_len - deco_prefix.len());
@@ -118,7 +118,7 @@ mod tests {
     pub fn test_format_header() {
         let t = Terminal::new_with(80, " ");
         assert_eq!(
-            t.format_header("Hello, World!".to_string()),
+            t.format_header("Hello, World!"),
             "================================ Hello, World! ================================="
         );
     }
