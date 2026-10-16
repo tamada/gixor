@@ -103,7 +103,7 @@ fn test_dump_failure_leaves_the_destination_untouched() {
     let original = "# my own rules\n*.local\n### Rust.gitignore\ntarget\n";
     std::fs::write(&dest, original).unwrap();
 
-    let r = gixor.dump_to(vec![gixor::Name::parse("Rustt")], &dest, false);
+    let r = gixor.dump_to(vec![gixor::Name::parse("not_exist")], &dest, false);
 
     assert!(r.is_err());
     assert_eq!(std::fs::read_to_string(&dest).unwrap(), original);
