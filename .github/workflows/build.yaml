@@ -13,6 +13,7 @@ jobs:
           - ubuntu-latest
           - macOS-latest
           - windows-latest
+          - windows-11-arm
     steps:
       # No openssl to set up on any platform: gix is pure Rust and speaks TLS through rustls.
 
