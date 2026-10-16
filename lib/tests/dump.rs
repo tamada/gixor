@@ -27,9 +27,9 @@ fn test_dump() {
     assert!(r.is_ok());
     let entries = r.unwrap();
     assert_eq!(entries.len(), 3);
-    assert_eq!(entries[0], "Rust".to_string());
-    assert_eq!(entries[1], "Python".to_string());
-    assert_eq!(entries[2], "C".to_string());
+    assert_eq!(entries[0], "default/Rust".to_string());
+    assert_eq!(entries[1], "default/Python".to_string());
+    assert_eq!(entries[2], "default/C".to_string());
 }
 
 #[test]
@@ -67,7 +67,10 @@ fn test_dump_keeps_the_prologue() {
         content.starts_with("# my own rules\n*.local\n"),
         "{content}"
     );
-    assert_eq!(gixor::entries(&dest).unwrap(), vec!["Rust".to_string()]);
+    assert_eq!(
+        gixor::entries(&dest).unwrap(),
+        vec!["default/Rust".to_string()]
+    );
 }
 
 /// Dropping the prologue keeps the boilerplates and nothing else.
@@ -84,7 +87,10 @@ fn test_dump_can_clear_the_prologue() {
 
     let content = std::fs::read_to_string(&dest).unwrap();
     assert!(!content.contains("my own rules"), "{content}");
-    assert_eq!(gixor::entries(&dest).unwrap(), vec!["Rust".to_string()]);
+    assert_eq!(
+        gixor::entries(&dest).unwrap(),
+        vec!["default/Rust".to_string()]
+    );
 }
 
 /// A failing dump must leave the destination byte for byte as it was, which is what makes a
@@ -115,7 +121,10 @@ fn test_dump_creates_a_missing_gitignore() {
         .dump_to(vec![gixor::Name::parse("rust")], &dest, false)
         .unwrap();
 
-    assert_eq!(gixor::entries(&dest).unwrap(), vec!["Rust".to_string()]);
+    assert_eq!(
+        gixor::entries(&dest).unwrap(),
+        vec!["default/Rust".to_string()]
+    );
 }
 
 /// `build_gitignore` backs `--dry-run`, so it must produce what would be written while leaving
