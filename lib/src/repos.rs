@@ -269,6 +269,20 @@ impl Repository {
         }
     }
 
+    /// Returns the names of the boilerplates of this repository, sorted: their paths in the
+    /// repository without `.gitignore`, such as `AL`, `Global/AL` and `Rust`.
+    ///
+    /// Each name names exactly one boilerplate, also when several share a file stem, and can be
+    /// passed to [`crate::Name::parse`] as it is. See [`Boilerplate::path_name`].
+    pub fn list_names<P: AsRef<Path>>(&self, base_path: P) -> Vec<String> {
+        let mut list = self
+            .iter(base_path)
+            .map(|b| b.path_name())
+            .collect::<Vec<_>>();
+        list.sort();
+        list
+    }
+
     /// Finds every boilerplate matching the name, the shallowest first, and those of the same
     /// depth by path, so that the order does not depend on the order the file system lists them in.
     pub fn find_all<P: AsRef<Path>>(&self, name: &Name, base_path: P) -> Vec<Boilerplate<'_>> {
