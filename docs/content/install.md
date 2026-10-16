@@ -22,6 +22,15 @@ command line dependencies in. The installed command is still called `gixor`.
 cargo install gixor-cli
 ```
 
+## :package: Prebuilt binaries
+
+Each [release](https://github.com/tamada/gixor/releases) carries the command for Linux and macOS
+(`tar.gz`, amd64 and arm64) and for Windows (`zip`, amd64). Extract the archive and put `gixor`
+(`gixor.exe` on Windows) on the `PATH`.
+
+On Windows, the configuration lives in `%APPDATA%\gixor\config.json`, and the boilerplate
+repositories are cloned next to it, in `%APPDATA%\gixor\boilerplates`.
+
 ## :muscle: Compile yourself
 
 ```shell
