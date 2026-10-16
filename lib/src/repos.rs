@@ -61,6 +61,16 @@ impl<'a> Boilerplate<'a> {
         &self.path
     }
 
+    /// Returns the path of this boilerplate in its repository without `.gitignore`, such as
+    /// `Global/AL`, with `/` as the separator on every platform. It names this boilerplate in
+    /// the headings `dump` writes, and is what a name holding a slash is matched against.
+    pub fn path_name(&self) -> String {
+        self.path() // get path (Global/AL.gitignore)
+            .with_extension("") // strip the extension (Global/AL)
+            .to_string_lossy() // convert to str
+            .replace('\\', "/") // replace windows path separator to '/'
+    }
+
     /// Returns the repository path from the base path.
     /// This method delegates to [`Repository::path`].
     ///
@@ -82,14 +92,32 @@ impl<'a> Boilerplate<'a> {
     }
 
     /// Returns `true` if the given name and this instance are matched.
+    ///
+    /// The boilerplate part of the name is compared, ignoring case, with
+    ///
+    /// - the path of the boilerplate in the repository without `.gitignore` when it holds a
+    ///   slash, so that `Global/AL` matches `Global/AL.gitignore` and nothing else, or
+    /// - the file stem otherwise, so that `AL` matches both `AL.gitignore` and
+    ///   `Global/AL.gitignore`.
+    ///
+    /// The repository name, when given, has to match as well.
     pub fn matches(&self, name: &Name) -> bool {
-        name.boilerplate_name.to_lowercase() == self.boilerplate_name().to_lowercase()
+        self.matches_boilerplate(&name.boilerplate_name)
             && match &name.repository_name {
                 Some(repo_name) => {
                     repo_name.to_lowercase() == self.repository_name().to_lowercase()
                 }
                 None => true,
             }
+    }
+
+    fn matches_boilerplate(&self, name: &str) -> bool {
+        if name.contains('/') {
+            let path_string = self.path_name();
+            name.eq_ignore_ascii_case(&path_string)
+        } else {
+            name.to_lowercase() == self.boilerplate_name().to_lowercase()
+        }
     }
 
     /// Returns the latest commit hash (as bytes) of this boilerplate in the repository located at base_path.
@@ -156,7 +184,7 @@ impl<'a> Boilerplate<'a> {
 {}
 "#,
             self.repository_name(),
-            self.name,
+            self.path_name(),
             self.content_url(base_path.as_ref())?,
             content
         ))
@@ -475,6 +503,79 @@ mod tests {
             ]
         );
         assert!(repo.find_all(&Name::new_of("Go"), base.path()).is_empty());
+    }
+
+    fn repository(name: &str) -> Repository {
+        Repository::new_with(name, "https://example.invalid/owner/gitignore")
+    }
+
+    fn boilerplate<'a>(repo: &'a Repository, path: &str) -> Boilerplate<'a> {
+        let stem = Path::new(path).file_stem().unwrap().to_string_lossy();
+        Boilerplate::new(stem.to_string(), path, repo)
+    }
+
+    #[test]
+    fn matches_a_name_by_the_file_stem() {
+        let repo = repository("default");
+        let name = Name::new_of("al");
+        assert!(boilerplate(&repo, "AL.gitignore").matches(&name));
+        assert!(boilerplate(&repo, "Global/AL.gitignore").matches(&name));
+    }
+
+    #[test]
+    fn matches_a_name_holding_a_slash_by_the_path_only() {
+        let repo = repository("default");
+        let name = Name::new_of("Global/AL");
+        assert!(boilerplate(&repo, "Global/AL.gitignore").matches(&name));
+        assert!(!boilerplate(&repo, "AL.gitignore").matches(&name));
+        assert!(boilerplate(&repo, "Global/AL.gitignore").matches(&Name::new_of("global/al")));
+    }
+
+    #[test]
+    fn matches_a_deep_path() {
+        let repo = repository("default");
+        let name = Name::new_of("community/CFML/ColdBox");
+        assert!(boilerplate(&repo, "community/CFML/ColdBox.gitignore").matches(&name));
+        assert!(!boilerplate(&repo, "community/BoxLang/ColdBox.gitignore").matches(&name));
+    }
+
+    #[test]
+    fn matches_no_part_of_a_path() {
+        let repo = repository("default");
+        let b = boilerplate(&repo, "community/CFML/ColdBox.gitignore");
+        assert!(!b.matches(&Name::new_of("CFML/ColdBox")));
+        assert!(!b.matches(&Name::new_of("munity/CFML/ColdBox")));
+        assert!(!b.matches(&Name::new_of("community/CFML")));
+    }
+
+    #[test]
+    fn matches_a_path_with_windows_separators() {
+        let repo = repository("default");
+        let b = boilerplate(&repo, "Global\\AL.gitignore");
+        assert!(b.matches(&Name::new_of("Global/AL")));
+    }
+
+    /// A path names a file in every repository having it, so the repository has to be checked as
+    /// well, or `tamada/Global/AL` would take the file of whichever repository comes first.
+    #[test]
+    fn matches_the_repository_name_with_a_path_too() {
+        let default = repository("default");
+        let tamada = repository("tamada");
+        let name = Name::new("tamada", "Global/AL");
+        assert!(!boilerplate(&default, "Global/AL.gitignore").matches(&name));
+        assert!(boilerplate(&tamada, "Global/AL.gitignore").matches(&name));
+        assert!(
+            boilerplate(&tamada, "Global/AL.gitignore").matches(&Name::new("TAMADA", "Global/AL"))
+        );
+    }
+
+    #[cfg(feature = "local")]
+    #[test]
+    fn find_takes_the_boilerplate_named_by_its_path() {
+        let (base, repo) = fixture_repository(&["AL.gitignore", "Global/AL.gitignore"]);
+        let found = repo.find(&Name::new_of("Global/AL"), base.path()).unwrap();
+        assert_eq!(found.path(), Path::new("Global/AL.gitignore"));
+        assert!(repo.find(&Name::new_of("Local/AL"), base.path()).is_none());
     }
 
     #[test]

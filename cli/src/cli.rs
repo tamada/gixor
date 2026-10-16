@@ -247,13 +247,53 @@ impl DumpOpts {
     /// Finally, convert `String` to `Name` by `Name::parse` and return it.
     pub fn names(&self, gixor: &Gixor) -> gixor::Result<Vec<Name>> {
         let current = self.resolvable_current_list(gixor)?;
-        Ok(self.names_with(current))
+        Ok(self.names_with(current, |name| boilerplates_named(gixor, name)))
     }
 
     /// Merges the given names into `current` and parses the result.
-    /// Split out from [`DumpOpts::names`] so the merging can be exercised on its own.
-    fn names_with(&self, current: Vec<String>) -> Vec<Name> {
-        let v = self.merge_names_with_add_or_remove(&self.names, current);
+    ///
+    /// The names are compared by the boilerplates `resolve` gives for them rather than as
+    /// strings, so that a name drops what the same name would add: `-macOS` drops the entry
+    /// `default/Global/macOS`, `-AL` drops `default/AL` but not `default/Global/AL`, and adding
+    /// `Go` again does not list it twice. A name resolving to nothing is still added, to be
+    /// reported when it is resolved strictly; dropping it only warns.
+    ///
+    /// Split out from [`DumpOpts::names`] so the merging can be exercised without repositories.
+    fn names_with<F>(&self, current: Vec<String>, resolve: F) -> Vec<Name>
+    where
+        F: Fn(&str) -> Vec<String>,
+    {
+        let mut entries = current
+            .into_iter()
+            .map(|name| {
+                let boilerplates = resolve(&name);
+                (name, boilerplates)
+            })
+            .collect::<Vec<_>>();
+        for name in &self.names {
+            if let Some(trunk) = name.strip_prefix('-') {
+                let dropped = resolve(trunk);
+                let before = entries.len();
+                entries.retain(|(_, bs)| bs.iter().all(|b| !dropped.contains(b)));
+                if entries.len() == before {
+                    let listed = entries.iter().map(|(n, _)| n.as_str()).collect::<Vec<_>>();
+                    warn_nothing_dropped(trunk, !dropped.is_empty(), &listed);
+                }
+            } else {
+                let added = resolve(name);
+                let listed = !added.is_empty()
+                    && added
+                        .iter()
+                        .all(|b| entries.iter().any(|(_, bs)| bs.contains(b)));
+                if !listed {
+                    entries.push((name.clone(), added));
+                }
+            }
+        }
+        let v = entries
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect::<Vec<_>>();
         log::debug!("parse dumping targets: {}", v.join(", "));
         Name::parse_all(v)
     }
@@ -277,22 +317,6 @@ impl DumpOpts {
             .collect())
     }
 
-    fn merge_names_with_add_or_remove(
-        &self,
-        names: &Vec<String>,
-        mut v: Vec<String>,
-    ) -> Vec<String> {
-        for name in names {
-            if let Some(trunk) = name.strip_prefix("-") {
-                let t = trunk.to_lowercase();
-                v.retain(|item| item.to_lowercase() != t);
-            } else {
-                v.push(name.clone());
-            }
-        }
-        v
-    }
-
     fn current_list_if_append(&self) -> gixor::Result<Vec<String>> {
         if self.drop_current_entries() {
             return Ok(vec![]);
@@ -309,6 +333,91 @@ impl DumpOpts {
             r => r,
         }
     }
+}
+
+/// Tells why `-name` dropped nothing, with the current entries it may have meant.
+///
+/// `name` either names no boilerplate at all, typically a typo, or names one the `.gitignore` does
+/// not list, as `AL` does when only `Global/AL` is listed: `AL` takes `AL.gitignore`, the
+/// shallowest of the boilerplates sharing the name.
+fn warn_nothing_dropped(name: &str, resolved: bool, entries: &[&str]) {
+    let reason = if resolved {
+        "the .gitignore does not list it"
+    } else {
+        "no boilerplate has the name"
+    };
+    let candidates = suggestions(name, entries);
+    if candidates.is_empty() {
+        log::warn!("{name}: nothing dropped, {reason}");
+    } else {
+        log::warn!(
+            "{name}: nothing dropped, {reason}; did you mean {}?",
+            candidates.join(", ")
+        );
+    }
+}
+
+/// The current entries `name` may have meant: those whose file stem is `name` ignoring case, then
+/// those whose file stem is a small edit away from it.
+fn suggestions(name: &str, entries: &[&str]) -> Vec<String> {
+    let wanted = file_stem(name).to_lowercase();
+    let limit = if wanted.chars().count() >= 5 { 2 } else { 1 };
+    let mut same = vec![];
+    let mut similar = vec![];
+    for entry in entries {
+        let stem = file_stem(entry).to_lowercase();
+        if stem == wanted {
+            same.push(entry.to_string());
+        } else if edit_distance(&stem, &wanted) <= limit {
+            similar.push(entry.to_string());
+        }
+    }
+    same.extend(similar);
+    same
+}
+
+/// The last part of a name such as `default/Global/AL`, i.e. `AL`.
+fn file_stem(name: &str) -> &str {
+    name.rsplit('/').next().unwrap_or(name)
+}
+
+/// The number of insertions, deletions, substitutions and transpositions of adjacent characters
+/// turning `a` into `b`, so that a swap such as `Rsut` for `Rust` counts once.
+fn edit_distance(a: &str, b: &str) -> usize {
+    let a = a.chars().collect::<Vec<_>>();
+    let b = b.chars().collect::<Vec<_>>();
+    let mut d = vec![vec![0; b.len() + 1]; a.len() + 1];
+    for (i, row) in d.iter_mut().enumerate() {
+        row[0] = i;
+    }
+    for (j, cell) in d[0].iter_mut().enumerate() {
+        *cell = j;
+    }
+    for i in 1..=a.len() {
+        for j in 1..=b.len() {
+            let cost = usize::from(a[i - 1] != b[j - 1]);
+            d[i][j] = (d[i - 1][j] + 1)
+                .min(d[i][j - 1] + 1)
+                .min(d[i - 1][j - 1] + cost);
+            if i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] {
+                d[i][j] = d[i][j].min(d[i - 2][j - 2] + 1);
+            }
+        }
+    }
+    d[a.len()][b.len()]
+}
+
+/// The boilerplates `name` stands for, each as `<repository>/<path>` in lower case, such as
+/// `default/global/macos`; none when it names nothing.
+fn boilerplates_named(gixor: &Gixor, name: &str) -> Vec<String> {
+    gixor
+        .find(Name::parse(name))
+        .map(|bs| {
+            bs.iter()
+                .map(|b| format!("{}/{}", b.repository_name(), b.path_name()).to_lowercase())
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 #[derive(Parser, Debug)]
@@ -372,10 +481,114 @@ mod tests {
         }
     }
 
+    /// Resolves every name to itself, as if each named a boilerplate of its own.
+    fn plain(name: &str) -> Vec<String> {
+        vec![name.to_lowercase()]
+    }
+
+    /// Resolves the names the way the repository `default` of `github/gitignore` does, where
+    /// `AL.gitignore` and `Global/AL.gitignore` share a name and `macOS` lives under `Global/`.
+    fn github(name: &str) -> Vec<String> {
+        let key = match name.to_lowercase().as_str() {
+            "al" | "default/al" => "default/al",
+            "global/al" | "default/global/al" => "default/global/al",
+            "macos" | "global/macos" | "default/global/macos" => "default/global/macos",
+            "go" | "default/go" => "default/go",
+            _ => return vec![],
+        };
+        vec![key.to_string()]
+    }
+
+    fn merged(
+        opts: &DumpOpts,
+        current: Vec<&str>,
+        resolve: fn(&str) -> Vec<String>,
+    ) -> Vec<String> {
+        let current = current.into_iter().map(String::from).collect();
+        opts.names_with(current, resolve)
+            .iter()
+            .map(|n| n.to_string())
+            .collect()
+    }
+
+    #[test]
+    fn dump_opts_names_drops_an_entry_by_its_file_stem() {
+        let opts = dump_opts(".gitignore", vec!["-macOS"]);
+        assert_eq!(
+            merged(&opts, vec!["default/Global/macOS", "default/Go"], github),
+            vec!["default/Go"]
+        );
+    }
+
+    #[test]
+    fn dump_opts_names_drops_only_the_boilerplate_the_name_resolves_to() {
+        let opts = dump_opts(".gitignore", vec!["-AL"]);
+        assert_eq!(
+            merged(&opts, vec!["default/AL", "default/Global/AL"], github),
+            vec!["default/Global/AL"]
+        );
+        let opts = dump_opts(".gitignore", vec!["-Global/AL"]);
+        assert_eq!(
+            merged(&opts, vec!["default/AL", "default/Global/AL"], github),
+            vec!["default/AL"]
+        );
+    }
+
+    #[test]
+    fn dump_opts_names_does_not_list_a_boilerplate_twice() {
+        let opts = dump_opts(".gitignore", vec!["Go", "go"]);
+        assert_eq!(
+            merged(&opts, vec!["default/Go"], github),
+            vec!["default/Go"]
+        );
+    }
+
+    #[test]
+    fn dump_opts_names_keeps_a_name_resolving_to_nothing() {
+        let opts = dump_opts(".gitignore", vec!["Nope", "-Nope2"]);
+        assert_eq!(
+            merged(&opts, vec!["default/Go"], github),
+            vec!["default/Go", "Nope"]
+        );
+    }
+
+    #[test]
+    fn suggestions_offer_the_entries_sharing_the_file_stem() {
+        let entries = ["default/Global/AL", "default/Go"];
+        assert_eq!(suggestions("AL", &entries), vec!["default/Global/AL"]);
+        assert_eq!(suggestions("al", &entries), vec!["default/Global/AL"]);
+    }
+
+    #[test]
+    fn suggestions_offer_the_entries_a_typo_away() {
+        let entries = ["default/Rust", "default/Python", "default/Go"];
+        assert_eq!(suggestions("Rsut", &entries), vec!["default/Rust"]);
+        assert_eq!(suggestions("Pyhton", &entries), vec!["default/Python"]);
+        assert_eq!(suggestions("Pythn", &entries), vec!["default/Python"]);
+        assert!(suggestions("Java", &entries).is_empty());
+    }
+
+    #[test]
+    fn suggestions_put_the_same_file_stem_first() {
+        let entries = ["default/Gox", "default/Global/Go"];
+        assert_eq!(
+            suggestions("Go", &entries),
+            vec!["default/Global/Go", "default/Gox"]
+        );
+    }
+
+    #[test]
+    fn edit_distance_counts_a_swap_once() {
+        assert_eq!(edit_distance("rust", "rust"), 0);
+        assert_eq!(edit_distance("rsut", "rust"), 1);
+        assert_eq!(edit_distance("pythn", "python"), 1);
+        assert_eq!(edit_distance("go", "java"), 4);
+    }
+
     #[test]
     fn dump_opts_names_appends_to_the_current_ones() {
         let opts = dump_opts(".gitignore", vec!["java"]);
-        let names = opts.names_with(vec!["Rust".into(), "Python".into()]);
+        let names = opts.names_with(vec!["Rust".into(), "Python".into()], plain);
         let names = names.iter().map(|n| n.to_string()).collect::<Vec<_>>();
         assert_eq!(names, vec!["Rust", "Python", "java"]);
     }
@@ -383,7 +596,7 @@ mod tests {
     #[test]
     fn dump_opts_names_removes_the_ones_prefixed_with_a_dash() {
         let opts = dump_opts(".gitignore", vec!["-rust", "go"]);
-        let names = opts.names_with(vec!["Rust".into(), "Python".into()]);
+        let names = opts.names_with(vec!["Rust".into(), "Python".into()], plain);
         let names = names.iter().map(|n| n.to_string()).collect::<Vec<_>>();
         assert_eq!(names, vec!["Python", "go"]);
     }
@@ -401,7 +614,11 @@ mod tests {
     fn dump_opts_current_list_is_read_when_appending() {
         let dir = tempfile::tempdir().unwrap();
         let dest = dir.path().join(".gitignore");
-        std::fs::write(&dest, "# mine\n### Rust.gitignore\ntarget\n").unwrap();
+        std::fs::write(
+            &dest,
+            "# mine\n### Generated by Gixor (https://github.com/tamada/gixor) (Rust)\ntarget\n",
+        )
+        .unwrap();
         let opts = dump_opts(&dest.to_string_lossy(), vec![]);
         assert_eq!(opts.current_list_if_append().unwrap(), vec!["Rust"]);
     }

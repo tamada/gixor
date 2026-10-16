@@ -181,7 +181,9 @@ pub fn find_target_repositories<S: AsRef<str>>(
 
 /// The name of the boilerplate which contains the repository name and the boilerplate name.
 /// The repository name is [`repos::Repository::name`].
-/// The boilerplate name is the file stem of the boilerplate (gitignore) file.
+/// The boilerplate name is the file stem of the boilerplate (gitignore) file, such as `AL`, or its
+/// path in the repository without `.gitignore`, such as `Global/AL`, to tell apart boilerplates
+/// sharing a file stem.
 #[derive(Debug, Clone)]
 pub struct Name {
     /// The repository name for of the boilerplate. If `None`, the repository name do not care.
@@ -245,15 +247,16 @@ impl Name {
     }
 
     /// Create a new `Name` instance with the given name.
-    /// The given name should format `<repository_name>/<boilerplate_name>`.
+    /// The given name should format `<repository_name>/<boilerplate_name>`, where the boilerplate
+    /// name may be a path (`default/Global/AL`). The part before the first `/` is taken as the
+    /// repository name; whether it really names a repository is decided when the name is resolved,
+    /// and a name such as `Global/AL` is read as a path then.
     /// If the given string do not contain `/`, the repository name is `None`.
     pub fn parse<S: AsRef<str>>(name: S) -> Self {
         let name = name.as_ref();
-        let items = name.split('/').collect::<Vec<_>>();
-        if items.len() >= 2 {
-            Self::new(items[0], items[1])
-        } else {
-            Self::new_of(name)
+        match name.split_once('/') {
+            Some((repo, rest)) => Self::new(repo, rest),
+            None => Self::new_of(name),
         }
     }
 
@@ -673,6 +676,7 @@ impl Config {
         if let Some(r) = aliases::extract_alias(self, &name) {
             Ok(r)
         } else {
+            let name = self.resolve(name);
             for repo in &self.repositories {
                 if let Some(item) = repo.find(&name, &self.base_path) {
                     log::trace!("{}: found from repository {}", name, item.repository_name());
@@ -680,6 +684,27 @@ impl Config {
                 }
             }
             Err(Error::BoilerplateNotFound(name.boilerplate_name))
+        }
+    }
+
+    /// Decides what the part of the name before the first slash is.
+    ///
+    /// [`Name::parse`] takes it as a repository name without knowing the repositories, so
+    /// `Global/AL` comes out as the boilerplate `AL` of a repository `Global`. When no repository
+    /// has that name (compared ignoring case), the whole name is read as the path of a
+    /// boilerplate in any repository instead. A name naming a repository, such as
+    /// `default/Global/AL`, is kept as it is.
+    fn resolve(&self, name: Name) -> Name {
+        match &name.repository_name {
+            Some(repo)
+                if self
+                    .repositories
+                    .iter()
+                    .all(|r| !r.name.eq_ignore_ascii_case(repo)) =>
+            {
+                Name::new_of(name.to_string())
+            }
+            _ => name,
         }
     }
 
@@ -1014,6 +1039,70 @@ mod tests {
 
         gixor.store().unwrap();
         assert!(config_path.exists());
+    }
+
+    /// A configuration holding the repositories `default` and `tamada`, with nothing on disk.
+    fn config_with_two_repositories() -> Config {
+        Config {
+            repositories: vec![
+                repos::Repository::default(),
+                repos::Repository::new_with("tamada", "https://github.com/tamada/gitignore.git"),
+            ],
+            base_path: PathBuf::from("."),
+            aliases: None,
+        }
+    }
+
+    fn resolved(config: &Config, name: &str) -> (Option<String>, String) {
+        let name = config.resolve(Name::parse(name));
+        (name.repository_name, name.boilerplate_name)
+    }
+
+    #[test]
+    fn resolve_keeps_a_name_without_a_repository() {
+        let config = config_with_two_repositories();
+        assert_eq!(resolved(&config, "Rust"), (None, "Rust".into()));
+    }
+
+    #[test]
+    fn resolve_keeps_a_repository_name_given() {
+        let config = config_with_two_repositories();
+        assert_eq!(
+            resolved(&config, "default/Rust"),
+            (Some("default".into()), "Rust".into())
+        );
+        assert_eq!(
+            resolved(&config, "tamada/devcontainer"),
+            (Some("tamada".into()), "devcontainer".into())
+        );
+    }
+
+    #[test]
+    fn resolve_compares_repository_names_ignoring_case() {
+        let config = config_with_two_repositories();
+        assert_eq!(
+            resolved(&config, "DEFAULT/Rust"),
+            (Some("DEFAULT".into()), "Rust".into())
+        );
+    }
+
+    #[test]
+    fn resolve_reads_a_name_naming_no_repository_as_a_path() {
+        let config = config_with_two_repositories();
+        assert_eq!(resolved(&config, "Global/AL"), (None, "Global/AL".into()));
+        assert_eq!(
+            resolved(&config, "community/CFML/ColdBox"),
+            (None, "community/CFML/ColdBox".into())
+        );
+    }
+
+    #[test]
+    fn resolve_keeps_a_path_after_a_repository_name() {
+        let config = config_with_two_repositories();
+        assert_eq!(
+            resolved(&config, "default/Global/AL"),
+            (Some("default".into()), "Global/AL".into())
+        );
     }
 
     #[test]

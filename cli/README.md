@@ -23,6 +23,7 @@ brew install tamada/tap/gixor
 gixor dump Rust          # add Rust to the .gitignore, keeping what is already there
 gixor dump -Rust         # drop Rust from it
 gixor dump --dry-run Go  # see the result without writing
+gixor dump Global/AL     # name a boilerplate by its path when several share a name
 gixor entries            # list what the .gitignore currently carries
 gixor list               # list the available boilerplates
 gixor list --no-header   # list only boilerplate names, without repository headers

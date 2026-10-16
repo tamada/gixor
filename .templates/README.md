@@ -57,6 +57,11 @@ and the boilerplates already listed both stay. `gixor dump -Rust` drops one of t
 drops them all, `--clear-prologue` drops what you wrote, and `--clear` drops both. `--dry-run`
 shows the result without writing it. Should anything go wrong, the `.gitignore` is left as it was.
 
+A boilerplate is named by its file name without `.gitignore`, such as `Rust`. When several
+share a name, as `AL.gitignore` and `Global/AL.gitignore` in `github/gitignore` do, the shallowest
+one is taken; name the other by its path, `gixor dump Global/AL`, or together with the repository,
+`gixor dump default/Global/AL`.
+
 ## ℹ️ About
 
 ### 👩‍💻 Authors 👨‍💻
