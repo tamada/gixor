@@ -61,6 +61,16 @@ impl<'a> Boilerplate<'a> {
         &self.path
     }
 
+    /// Returns the path of this boilerplate in its repository without `.gitignore`, such as
+    /// `Global/AL`, with `/` as the separator on every platform. It names this boilerplate in
+    /// the headings `dump` writes, and is what a name holding a slash is matched against.
+    pub fn path_name(&self) -> String {
+        self.path() // get path (Global/AL.gitignore)
+            .with_extension("") // strip the extension (Global/AL)
+            .to_string_lossy() // convert to str
+            .replace('\\', "/") // replace windows path separator to '/'
+    }
+
     /// Returns the repository path from the base path.
     /// This method delegates to [`Repository::path`].
     ///
@@ -103,11 +113,7 @@ impl<'a> Boilerplate<'a> {
 
     fn matches_boilerplate(&self, name: &str) -> bool {
         if name.contains('/') {
-            let path_string = self
-                .path() // get path (Global/AL.gitignore)
-                .with_extension("") // strip the extension (Global/AL)
-                .to_string_lossy() // convert to str
-                .replace('\\', "/"); // replace windows path separator to '/'
+            let path_string = self.path_name();
             name.eq_ignore_ascii_case(&path_string)
         } else {
             name.to_lowercase() == self.boilerplate_name().to_lowercase()
@@ -178,7 +184,7 @@ impl<'a> Boilerplate<'a> {
 {}
 "#,
             self.repository_name(),
-            self.name,
+            self.path_name(),
             self.content_url(base_path.as_ref())?,
             content
         ))
