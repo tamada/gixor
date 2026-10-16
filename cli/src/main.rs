@@ -123,42 +123,23 @@ fn perform_dump(gixor: &Gixor, opts: cli::DumpOpts) -> Result<Option<&Gixor>> {
     gixor.dump_to(names, dest, clear_prologue).map(|_| None)
 }
 
-fn list_each_boilerplate(
-    repo: &gixor::repos::Repository,
-    base_path: &PathBuf,
-) -> Result<Vec<String>> {
-    let r = repo
-        .iter(base_path)
-        .map(|entry| entry.boilerplate_name().to_string())
-        .collect::<Vec<_>>();
-    Ok(r)
-}
-
 fn list_boilerplates(gixor: &Gixor, opts: cli::ListOpts) -> Result<Option<&Gixor>> {
-    let repos = gixor::find_target_repositories(gixor, opts.repos.clone())?;
+    let (repos, no_header) = (opts.repos, opts.no_header);
+    let repos = gixor::find_target_repositories(gixor, repos)?;
     let base_path = gixor.base_path().to_path_buf();
-    let mut errs = vec![];
     for &repo in repos.iter() {
-        let header = if !opts.no_header {
-            Some(repo.name.clone())
-        } else {
+        let header = if no_header {
             None
+        } else {
+            Some(repo.name.as_str())
         };
-        match list_each_boilerplate(repo, &base_path) {
-            Err(e) => errs.push(e),
-            Ok(list) => print_in_columns_if_needed(list, header),
-        }
+        let list = repo.list_names(&base_path);
+        print_in_columns_if_needed(list, header);
     }
-    if errs.is_empty() {
-        Ok(None)
-    } else if errs.len() == 1 {
-        Err(errs.into_iter().next().unwrap())
-    } else {
-        Err(Error::Array(errs))
-    }
+    Ok(None)
 }
 
-pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<String>) {
+pub(crate) fn print_in_columns_if_needed(items: Vec<String>, header: Option<&str>) {
     if std::io::IsTerminal::is_terminal(&std::io::stdout()) {
         let term = terminal::Terminal::default();
         if let Some(header) = header {
@@ -212,15 +193,23 @@ fn contains_case_insensitive(name: &str, query: &str) -> bool {
 }
 
 fn search_boilerplates(gixor: &Gixor, opts: cli::SearchOpts) -> Result<Option<&Gixor>> {
-    let names = gixor
+    let qualify = gixor.len() > 1;
+    let mut names = gixor
         .iter()
-        .map(|b| b.boilerplate_name().to_string())
-        .filter(|name| {
+        .filter(|b| {
             opts.queries
                 .iter()
-                .any(|query| contains_case_insensitive(name, query))
+                .any(|query| contains_case_insensitive(b.boilerplate_name(), query))
+        })
+        .map(|b| {
+            if qualify {
+                format!("{}/{}", b.repository_name(), b.path_name())
+            } else {
+                b.path_name()
+            }
         })
         .collect::<Vec<_>>();
+    names.sort();
     print_in_columns_if_needed(names, None);
     Ok(None)
 }
