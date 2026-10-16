@@ -181,7 +181,9 @@ pub fn find_target_repositories<S: AsRef<str>>(
 
 /// The name of the boilerplate which contains the repository name and the boilerplate name.
 /// The repository name is [`repos::Repository::name`].
-/// The boilerplate name is the file stem of the boilerplate (gitignore) file.
+/// The boilerplate name is the file stem of the boilerplate (gitignore) file, such as `AL`, or its
+/// path in the repository without `.gitignore`, such as `Global/AL`, to tell apart boilerplates
+/// sharing a file stem.
 #[derive(Debug, Clone)]
 pub struct Name {
     /// The repository name for of the boilerplate. If `None`, the repository name do not care.
@@ -245,7 +247,10 @@ impl Name {
     }
 
     /// Create a new `Name` instance with the given name.
-    /// The given name should format `<repository_name>/<boilerplate_name>`.
+    /// The given name should format `<repository_name>/<boilerplate_name>`, where the boilerplate
+    /// name may be a path (`default/Global/AL`). The part before the first `/` is taken as the
+    /// repository name; whether it really names a repository is decided when the name is resolved,
+    /// and a name such as `Global/AL` is read as a path then.
     /// If the given string do not contain `/`, the repository name is `None`.
     pub fn parse<S: AsRef<str>>(name: S) -> Self {
         let name = name.as_ref();
