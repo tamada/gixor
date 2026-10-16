@@ -8,6 +8,8 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      # see every platform's result, rather than cancelling the rest on the first failure
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
@@ -29,7 +31,9 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - uses: extractions/setup-just@v2
+      # extractions/setup-just has no build for Windows on arm64; install-action has.
+      - name: Install just
+        uses: taiki-e/install-action@just
 
       - name: Verify formatting
         run:
