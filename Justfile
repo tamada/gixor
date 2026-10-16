@@ -20,6 +20,12 @@ build target = "": format clippy
 test: (build "") clone_for_test
     cargo llvm-cov --locked --lcov --output-path target/coverage.lcov
 
+# Only ubuntu reports the coverage to Coveralls, and the coverage of Windows on arm64 cannot be
+# measured at all: llvm-profdata finds its profiles malformed.
+# Run the tests without measuring the coverage.
+test_without_coverage: (build "") clone_for_test
+    cargo test --locked --workspace
+
 # Check that the source codes are formatted, without rewriting them.
 verify_format:
     cargo fmt --all --check
