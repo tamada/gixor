@@ -249,11 +249,9 @@ impl Name {
     /// If the given string do not contain `/`, the repository name is `None`.
     pub fn parse<S: AsRef<str>>(name: S) -> Self {
         let name = name.as_ref();
-        let items = name.split('/').collect::<Vec<_>>();
-        if items.len() >= 2 {
-            Self::new(items[0], items[1])
-        } else {
-            Self::new_of(name)
+        match name.split_once('/') {
+            Some((repo, rest)) => Self::new(repo, rest),
+            None => Self::new_of(name),
         }
     }
 
@@ -673,6 +671,7 @@ impl Config {
         if let Some(r) = aliases::extract_alias(self, &name) {
             Ok(r)
         } else {
+            let name = self.resolve(name);
             for repo in &self.repositories {
                 if let Some(item) = repo.find(&name, &self.base_path) {
                     log::trace!("{}: found from repository {}", name, item.repository_name());
@@ -680,6 +679,20 @@ impl Config {
                 }
             }
             Err(Error::BoilerplateNotFound(name.boilerplate_name))
+        }
+    }
+
+    fn resolve(&self, name: Name) -> Name {
+        match &name.repository_name {
+            Some(repo)
+                if self
+                    .repositories
+                    .iter()
+                    .all(|r| !r.name.eq_ignore_ascii_case(repo)) =>
+            {
+                Name::new_of(name.to_string())
+            }
+            _ => name,
         }
     }
 
