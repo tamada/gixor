@@ -29,9 +29,16 @@ pub fn pull(repo_path: &Path, remote: &str, branch: &str) -> Result<()> {
 }
 
 /// Run `git clone {url} {dest_path}` to clone the repository.
+///
+/// The [line-ending configuration](super::LINE_ENDINGS) is passed with `--config`, which writes
+/// it into the configuration of the clone, so that the later `git pull` keeps to it as well.
 pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, dest_path: P) -> crate::Result<()> {
     let dest_path = dest_path.as_ref().to_string_lossy().to_string();
-    let args = ["clone", url.as_ref(), dest_path.as_ref()];
+    let mut args = vec!["clone"];
+    for config in super::LINE_ENDINGS {
+        args.extend(["--config", config]);
+    }
+    args.extend([url.as_ref(), dest_path.as_str()]);
     log::info!("Executing: git {}", args.join(" "));
     let r = Command::new("git").args(args).output();
     match r {
