@@ -82,14 +82,36 @@ impl<'a> Boilerplate<'a> {
     }
 
     /// Returns `true` if the given name and this instance are matched.
+    ///
+    /// The boilerplate part of the name is compared, ignoring case, with
+    ///
+    /// - the path of the boilerplate in the repository without `.gitignore` when it holds a
+    ///   slash, so that `Global/AL` matches `Global/AL.gitignore` and nothing else, or
+    /// - the file stem otherwise, so that `AL` matches both `AL.gitignore` and
+    ///   `Global/AL.gitignore`.
+    ///
+    /// The repository name, when given, has to match as well.
     pub fn matches(&self, name: &Name) -> bool {
-        name.boilerplate_name.to_lowercase() == self.boilerplate_name().to_lowercase()
+        self.matches_boilerplate(&name.boilerplate_name)
             && match &name.repository_name {
                 Some(repo_name) => {
                     repo_name.to_lowercase() == self.repository_name().to_lowercase()
                 }
                 None => true,
             }
+    }
+
+    fn matches_boilerplate(&self, name: &str) -> bool {
+        if name.contains('/') {
+            let path_string = self
+                .path() // get path (Global/AL.gitignore)
+                .with_extension("") // strip the extension (Global/AL)
+                .to_string_lossy() // convert to str
+                .replace('\\', "/"); // replace windows path separator to '/'
+            name.eq_ignore_ascii_case(&path_string)
+        } else {
+            name.to_lowercase() == self.boilerplate_name().to_lowercase()
+        }
     }
 
     /// Returns the latest commit hash (as bytes) of this boilerplate in the repository located at base_path.
