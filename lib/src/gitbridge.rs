@@ -13,12 +13,7 @@ use std::path::Path;
 /// are gixor's own and never edited, so nothing is lost by not converting them.
 const LINE_ENDINGS: [&str; 2] = ["core.autocrlf=false", "core.eol=lf"];
 
-#[cfg(feature = "usegix")]
 #[path = "gitbridge/gix.rs"]
-mod gitctrl;
-
-#[cfg(not(feature = "usegix"))]
-#[path = "gitbridge/systemgit.rs"]
 mod gitctrl;
 
 /// Returns the latest commit hash (as bytes) of the repository at the given path.

@@ -37,7 +37,6 @@ format:
 # Run clippy for checking the source codes.
 clippy:
     cargo clippy --locked --workspace --all-targets -- -D warnings
-    cargo clippy --locked -p gixor --all-targets --no-default-features --features local    -- -D warnings
     cargo clippy --locked -p gixor --all-targets --no-default-features --features embedded -- -D warnings
 
 clone_default_ignores:
