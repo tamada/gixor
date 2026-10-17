@@ -22,15 +22,15 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: llvm-tools-preview
+      - name: Setup Rust
+        run: |
+              rustup update stable
+              rustup default stable
+              rustup component add llvm-tools-preview
 
       - name: Install cargo-llvm-cov
         if: matrix.os == 'ubuntu-latest'
-        uses: taiki-e/install-action@cargo-llvm-cov
+        run:  cargo install --locked cargo-llvm-cov
 
       # extractions/setup-just has no build for Windows on arm64; install-action has.
       - name: Install just

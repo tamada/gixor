@@ -12,11 +12,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - name: Setup Rust
+        run: |
+              rustup update stable
 
       - name: Setup Check
         run: |
