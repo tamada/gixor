@@ -51,7 +51,7 @@ jobs:
           git commit -a -m "update version to ${{ steps.vars.outputs.tag }}, ready to publish v${{ steps.vars.outputs.tag }}" || true
 
       - name: Push branch
-        uses: ad-m/github-push-action@master
+        uses: ad-m/github-push-action@881a6320fdb16eb5318c5054f31c218aec2b324c # v1.3.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ steps.vars.outputs.branch }}
