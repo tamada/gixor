@@ -20,17 +20,18 @@ jobs:
       # No openssl to set up on any platform: gix is pure Rust and speaks TLS through rustls.
 
       - name: Checkout project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: llvm-tools-preview
+      - name: Setup Rust
+        run: |
+            rustup update stable
+            rustup default stable
 
       - name: Install cargo-llvm-cov
         if: matrix.os == 'ubuntu-latest'
-        uses: taiki-e/install-action@cargo-llvm-cov
+        run: |
+            rustup component add llvm-tools-preview
+            cargo install --locked cargo-llvm-cov
 
       # extractions/setup-just has no build for Windows on arm64; install-action has.
       - name: Install just
