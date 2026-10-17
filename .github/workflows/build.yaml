@@ -24,13 +24,14 @@ jobs:
 
       - name: Setup Rust
         run: |
-              rustup update stable
-              rustup default stable
-              rustup component add llvm-tools-preview
+            rustup update stable
+            rustup default stable
 
       - name: Install cargo-llvm-cov
         if: matrix.os == 'ubuntu-latest'
-        run:  cargo install --locked cargo-llvm-cov
+        run: |
+            rustup component add llvm-tools-preview
+            cargo install --locked cargo-llvm-cov
 
       # extractions/setup-just has no build for Windows on arm64; install-action has.
       - name: Install just
