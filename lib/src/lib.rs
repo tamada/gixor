@@ -20,13 +20,12 @@
 //!
 //! # Features
 //!
-//! [`Gixor`] provides the following features for operating Git repositories.:
-//! - `usegix` (default): use [`gix`](https://docs.rs/gix/latest/gix/) crate which is a pure Rust
-//!   implementation of Git. Nothing has to be installed alongside, and no C library is linked.
-//! - `--no-default-features`: use `git` command via
-//!   [`std::process::Command`](https://doc.rust-lang.org/std/process/struct.Command.html),
-//!   which requires `git` to be on the `PATH`.
-//!
+//! - `local` (default): clone the boilerplate repositories with
+//!   [`gix`](https://docs.rs/gix/latest/gix/), a pure Rust Git, and read them from the file
+//!   system. No `git` command has to be installed. HTTPS goes through rustls, whose crypto
+//!   provider builds a C library (`aws-lc-sys`, not OpenSSL).
+//! - `embedded`: compile a snapshot of the boilerplates into the binary instead, needing neither
+//!   a clone nor a file system, as for WebAssembly. It cannot be enabled together with `local`.
 use std::{
     fmt::Display,
     path::{Path, PathBuf},

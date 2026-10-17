@@ -18,10 +18,13 @@ gixor.dump(names, std::io::stdout(), false).unwrap();
 
 ## Features
 
-- `usegix` (default): drive Git through [`gix`](https://docs.rs/gix/), a pure Rust
-  implementation. Nothing has to be installed alongside, and no C library is linked.
-- `--no-default-features --features local`: run the `git` command instead, which requires `git`
-  on the `PATH`.
+- `local` (default): clone the boilerplate repositories with [`gix`](https://docs.rs/gix/), a pure
+  Rust Git, and read them from the file system. No `git` command has to be installed. HTTPS goes
+  through rustls, whose crypto provider `aws-lc-rs` builds a C library (`aws-lc-sys`, not
+  OpenSSL), so a C compiler is needed to build it.
+- `embedded`: compile a snapshot of the boilerplates into the binary instead, needing neither a
+  clone nor a file system, as for WebAssembly. It cannot be enabled together with `local`:
+  build with `--no-default-features --features embedded`.
 
 ## Install the command
 
