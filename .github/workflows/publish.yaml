@@ -312,23 +312,10 @@ jobs:
           cargo publish --locked -p gixor-cli
 
   finish:
-    needs: [setup, publish]
+    needs: [setup, publish, docker_manifest, publish_to_crates_io]
     uses: tamada/.github/.github/workflows/release-finish.yaml@v1
     with:
       tag: ${{ needs.setup.outputs.tag }}
     permissions:
       contents: write
     secrets: inherit
-
-  # finalize_release:
-  #   needs: publish
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #   steps:
-  #     - name: Publish the release
-  #       id: publish_release
-  #       run:
-  #         gh release edit --draft=false --repo $GITHUB_REPOSITORY v${{ needs.publish.outputs.tag }}
-  #       env:
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
