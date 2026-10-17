@@ -20,7 +20,7 @@ jobs:
       # No openssl to set up on any platform: gix is pure Rust and speaks TLS through rustls.
 
       - name: Checkout project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Rust
         run: |
