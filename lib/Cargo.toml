@@ -18,13 +18,10 @@ keywords = [
 ]
 
 [features]
-# `local` clones the boilerplate repositories and reads them from the file system, and is what
-# the CLI is built on. `usegix` picks the Git implementation for it: gix is a pure Rust Git, so
-# the default needs no git command and links no C library. Build with --no-default-features and
-# --features local to drive the git command instead.
-default = ["local", "usegix"]
-local = ["dep:dirs", "dep:ignore"]
-usegix = ["local", "dep:gix"]
+# `local` clones the boilerplate repositories with gix, a pure Rust Git, and reads them from the
+# file system. It is what the command is built on.
+default = ["local"]
+local = ["dep:dirs", "dep:ignore", "dep:gix"]
 # `embedded` compiles the snapshot under boilerplates/ into the binary instead, so that neither
 # a clone nor a file system is needed. It is what the wasm build stands on, and it excludes
 # `local`: the two answer the same questions.
