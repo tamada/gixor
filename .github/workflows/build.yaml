@@ -8,23 +8,16 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      # see every platform's result, rather than cancelling the rest on the first failure
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
           - macOS-latest
-          # - windows-latest
+          - windows-latest
+          - windows-11-arm
     steps:
-      # No openssl to set up: gix is pure Rust and speaks TLS through rustls.
-
-      # - name: Setup Msys2
-      #   uses: msys2/setup-msys2@v2
-      #   if: matrix.os == 'windows-latest'
-
-      # - name: Setup for Windows (aarch64 (amd64))
-      #   if: matrix.os == 'windows-latest'
-      #   shell: msys2 {0}
-      #   run:
-      #     pacman -Syu --noconfirm mingw-w64-clang-aarch64-openssl
+      # No openssl to set up on any platform: gix is pure Rust and speaks TLS through rustls.
 
       - name: Checkout project
         uses: actions/checkout@v4
@@ -36,17 +29,27 @@ jobs:
           components: llvm-tools-preview
 
       - name: Install cargo-llvm-cov
+        if: matrix.os == 'ubuntu-latest'
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - uses: extractions/setup-just@v2
+      # extractions/setup-just has no build for Windows on arm64; install-action has.
+      - name: Install just
+        uses: taiki-e/install-action@just
 
       - name: Verify formatting
         run:
           just verify_format
 
+      # Only ubuntu reports the coverage, so the other platforms just build and test.
       - name: Build and calculate coverages
+        if: matrix.os == 'ubuntu-latest'
         run:
           just test
+
+      - name: Build and test
+        if: matrix.os != 'ubuntu-latest'
+        run:
+          just test_without_coverage
 
       # The browser bindings are built for a target of their own and from a workspace of their
       # own, so `just test` does not reach them.

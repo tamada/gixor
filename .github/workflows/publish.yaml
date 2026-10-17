@@ -90,18 +90,32 @@ jobs:
             target: aarch64-unknown-linux-gnu
             artifact_name: ${{ needs.setup.outputs.appname }}
             asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_linux_arm64
+            archive: tar.gz
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: ${{ needs.setup.outputs.appname }}
             asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_linux_amd64
+            archive: tar.gz
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: ${{ needs.setup.outputs.appname }}
             asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_darwin_arm64
+            archive: tar.gz
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: ${{ needs.setup.outputs.appname }}
             asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_darwin_amd64
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: ${{ needs.setup.outputs.appname }}.exe
+            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_windows_amd64
+            archive: zip
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            artifact_name: ${{ needs.setup.outputs.appname }}.exe
+            asset_name: ${{ needs.setup.outputs.appname }}-${{ needs.setup.outputs.version }}_windows_arm64
+            archive: zip
 
     steps:
       # initialization
@@ -142,13 +156,19 @@ jobs:
           mkdir -p dist/$DIST/$DIR
           cp -r README.md LICENSE assets dist/$DIST/$DIR
           cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} dist/$DIST/$DIR/
-          tar cvfz dist/${{ matrix.asset_name }}.tar.gz -C dist/$DIST $DIR
+          # Windows users expect a zip. The Windows runners have no zip command, but PowerShell,
+          # on x64 and arm64 alike, can make one.
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            (cd dist/$DIST && pwsh -NoProfile -Command "Compress-Archive -Path '$DIR' -DestinationPath '../${{ matrix.asset_name }}.zip'")
+          else
+            tar cvfz dist/${{ matrix.asset_name }}.tar.gz -C dist/$DIST $DIR
+          fi
 
       - name: Upload the asset to the draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run:
-          gh release upload "${{ needs.setup.outputs.tag }}" "dist/${{ matrix.asset_name }}.tar.gz" --clobber
+          gh release upload "${{ needs.setup.outputs.tag }}" "dist/${{ matrix.asset_name }}.${{ matrix.archive }}" --clobber
 
   # Each architecture is built on a runner of its own architecture. Emulating arm64 through QEMU
   # took an hour of compiling Rust and produced enough intermediate layers to break the cache it

@@ -71,6 +71,12 @@ impl<'a> Boilerplate<'a> {
             .replace('\\', "/") // replace windows path separator to '/'
     }
 
+    /// The path of this boilerplate in its repository as it goes into a URL, i.e. with `/` as the
+    /// separator on every platform: `Global\AL.gitignore` on Windows gives `Global/AL.gitignore`.
+    fn url_path(&self) -> String {
+        self.path.to_string_lossy().replace('\\', "/")
+    }
+
     /// Returns the repository path from the base path.
     /// This method delegates to [`Repository::path`].
     ///
@@ -146,29 +152,21 @@ impl<'a> Boilerplate<'a> {
             output
         });
         let url = &self.repo.url;
+        let path = self.url_path();
         if url.contains("github.com") {
             Ok(format!(
                 "https://raw.github.com/{0}/{1}/{2}/{3}",
-                self.repo.owner,
-                self.repo.repo_name,
-                hash_string,
-                self.path.to_string_lossy()
+                self.repo.owner, self.repo.repo_name, hash_string, path
             ))
         } else if url.contains("gitlab.com") {
             Ok(format!(
                 "https://gitlab.com/{0}/{1}/-/raw/{2}/{3}",
-                self.repo.owner,
-                self.repo.repo_name,
-                hash_string,
-                self.path.to_string_lossy()
+                self.repo.owner, self.repo.repo_name, hash_string, path
             ))
         } else if url.contains("bitbucket.org") {
             Ok(format!(
                 "https://bitbucket.org/{0}/{1}/raw/{2}/{3}",
-                self.repo.owner,
-                self.repo.repo_name,
-                hash_string,
-                self.path.to_string_lossy()
+                self.repo.owner, self.repo.repo_name, hash_string, path
             ))
         } else {
             Err(Error::Fatal(format!("{url}: Unsupported repository host")))
@@ -625,6 +623,19 @@ mod tests {
             let found = repo.find(&Name::new_of(&name), base.path()).unwrap();
             assert_eq!(found.path_name(), name);
         }
+    }
+
+    #[test]
+    fn url_path_uses_slashes_on_every_platform() {
+        let repo = repository("default");
+        assert_eq!(
+            boilerplate(&repo, "Global\\AL.gitignore").url_path(),
+            "Global/AL.gitignore"
+        );
+        assert_eq!(
+            boilerplate(&repo, "Global/AL.gitignore").url_path(),
+            "Global/AL.gitignore"
+        );
     }
 
     #[test]

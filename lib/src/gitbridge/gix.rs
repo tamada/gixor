@@ -19,7 +19,8 @@ pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> crate::Result<()
     let url = gix::url::parse(url.as_ref())
         .map_err(|e| crate::Error::Git(format!("Failed to parse URL: {e}")))?;
     let mut prepare_clone = gix::prepare_clone(url.clone(), path)
-        .map_err(|e| crate::Error::Git(format!("Failed to prepare clone: {e}")))?;
+        .map_err(|e| crate::Error::Git(format!("Failed to prepare clone: {e}")))?
+        .with_in_memory_config_overrides(super::LINE_ENDINGS);
     log::info!("Cloning {:?} into {path:?}...", url.to_string());
     let (mut prepare_checkout, _) = prepare_clone
         .fetch_then_checkout(gix::progress::Discard, &gix::interrupt::IS_INTERRUPTED)
@@ -372,8 +373,9 @@ fn name_the_committer(repo: &mut Repository) {
 }
 
 pub fn pull(path: &Path, remote: &str, branch: &str) -> Result<()> {
-    let mut repo =
-        gix::open(path).map_err(|e| Error::Git(format!("Failed to open repository: {e}")))?;
+    let options = gix::open::Options::default().config_overrides(super::LINE_ENDINGS);
+    let mut repo = gix::open_opts(path, options)
+        .map_err(|e| Error::Git(format!("Failed to open repository: {e}")))?;
     name_the_committer(&mut repo);
     let _fetch_outcome = do_fetch(&repo, remote)?;
     do_merge(&mut repo, remote, branch)

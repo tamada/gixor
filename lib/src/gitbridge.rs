@@ -6,6 +6,13 @@ use crate::Result;
 use crate::repos::Boilerplate;
 use std::path::Path;
 
+/// The configuration the clones of the boilerplate repositories are checked out with: the line
+/// endings are kept as the repository has them, whatever the platform or the user's git
+/// configuration says. `core.autocrlf=true`, the default of Git for Windows, would otherwise turn
+/// them into CRLF, so that `dump` would write different files on different platforms. The clones
+/// are gixor's own and never edited, so nothing is lost by not converting them.
+const LINE_ENDINGS: [&str; 2] = ["core.autocrlf=false", "core.eol=lf"];
+
 #[cfg(feature = "usegix")]
 #[path = "gitbridge/gix.rs"]
 mod gitctrl;
