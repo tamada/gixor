@@ -90,3 +90,17 @@ fn alias_list_rejects_unused_header_options() {
         assert!(String::from_utf8_lossy(&output.stderr).contains("unexpected argument"));
     }
 }
+
+#[test]
+fn help_messages_are_accurate() {
+    let dir = fixture();
+    let help = |args: &[&str]| stdout(run(&dir, args));
+    let update = help(&["repository", "--help"]);
+    assert!(update.contains("Update (pull) the gitignore boilerplate repositories"));
+    assert!(!update.contains("git update"));
+    let dump = help(&["dump", "--help"]);
+    assert!(dump.contains("destination gitignore file or the directory containing it"));
+    let entries = help(&["entries", "--help"]);
+    assert!(entries.contains("Specify the directory containing the .gitignore file"));
+    assert!(!entries.contains("located the"));
+}

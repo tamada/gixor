@@ -89,8 +89,8 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             break
         }
         'gixor;dump' {
-            [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the destination directory. "-" means stdout.')
-            [CompletionResult]::new('--dest', '--dest', [CompletionResultType]::ParameterName, 'Specify the destination directory. "-" means stdout.')
+            [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the destination gitignore file or the directory containing it. "-" means stdout.')
+            [CompletionResult]::new('--dest', '--dest', [CompletionResultType]::ParameterName, 'Specify the destination gitignore file or the directory containing it. "-" means stdout.')
             [CompletionResult]::new('--no-append', '--no-append', [CompletionResultType]::ParameterName, 'Drop the entries currently listed in the gitignore.')
             [CompletionResult]::new('--clear-prologue', '--clear-prologue', [CompletionResultType]::ParameterName, 'Drop the prologue, the part of the gitignore before the first boilerplate.')
             [CompletionResult]::new('-c', '-c', [CompletionResultType]::ParameterName, 'Start from scratch, dropping both the prologue and the current entries.')
@@ -104,8 +104,8 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             break
         }
         'gixor;entries' {
-            [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the directory located the .gitignore file')
-            [CompletionResult]::new('--dir', '--dir', [CompletionResultType]::ParameterName, 'Specify the directory located the .gitignore file')
+            [CompletionResult]::new('-d', '-d', [CompletionResultType]::ParameterName, 'Specify the directory containing the .gitignore file')
+            [CompletionResult]::new('--dir', '--dir', [CompletionResultType]::ParameterName, 'Specify the directory containing the .gitignore file')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break
@@ -144,7 +144,7 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
             [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
-            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Run `git update` for updating a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update (pull) the gitignore boilerplate repositories')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -176,7 +176,7 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
             [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
-            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Run `git update` for updating a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update (pull) the gitignore boilerplate repositories')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
@@ -255,7 +255,7 @@ Register-ArgumentCompleter -Native -CommandName 'gixor' -ScriptBlock {
             [CompletionResult]::new('add', 'add', [CompletionResultType]::ParameterValue, 'Add a new gitignore boilerplate repository')
             [CompletionResult]::new('list', 'list', [CompletionResultType]::ParameterValue, 'List the current gitignore boilerplate repositories')
             [CompletionResult]::new('remove', 'remove', [CompletionResultType]::ParameterValue, 'Remove a gitignore boilerplate repository')
-            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Run `git update` for updating a gitignore boilerplate repository')
+            [CompletionResult]::new('update', 'update', [CompletionResultType]::ParameterValue, 'Update (pull) the gitignore boilerplate repositories')
             break
         }
         'gixor;help;repository;add' {
