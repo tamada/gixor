@@ -83,7 +83,7 @@ wasm_demo: wasm
 
 # Generate the completion files
 gen_complete:
-    cargo run -p gixor-cli -- --generate-completion-files
+    cargo run -p gixor-cli -- generate-completion-files --completion-out-dir assets/completions
 
 prepare_site_build:
     test -d docs/public || git worktree add -f docs/public gh-pages
