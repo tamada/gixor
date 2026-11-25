@@ -26,7 +26,7 @@ RUN     GIT_SHA=${GIT_REVISION} cargo build --release --locked -p gixor-cli \
 
 FROM debian:trixie-slim
 
-ARG VERSION=0.5.2
+ARG VERSION=0.6.0
 ARG GIT_REVISION
 ARG BUILD_DATE
 ARG AUTHOR="Haruaki Tamada"

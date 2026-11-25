@@ -1616,7 +1616,7 @@ dependencies = [
 
 [[package]]
 name = "gixor"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "dirs",
  "gix",
@@ -1632,7 +1632,7 @@ dependencies = [
 
 [[package]]
 name = "gixor-cli"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "clap",
  "clap_complete",
