@@ -4,10 +4,10 @@
 [![Coverage Status](https://coveralls.io/repos/github/tamada/gixor/badge.svg?branch=main)](https://coveralls.io/github/tamada/gixor?branch=main)
 [![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=tamada_gixor&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tamada_gixor)
 
-[![Version](https://img.shields.io/badge/Version-v0.5.2-green)](https://github.com/tamada/gixor/releases/tag/v0.5.2)
+[![Version](https://img.shields.io/badge/Version-v0.6.0-green)](https://github.com/tamada/gixor/releases/tag/v0.6.0)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/tamada/gixor/blob/main/LICENSE)
 
-[![Docker](https://img.shields.io/badge/Docker-quay.io/tama5/gixor:0.5.2-blue?logo=docker)](https://quay.io/repository/tama5/gixor)
+[![Docker](https://img.shields.io/badge/Docker-quay.io/tama5/gixor:0.6.0-blue?logo=docker)](https://quay.io/repository/tama5/gixor)
 [![Homebrew](https://img.shields.io/badge/Homebrew-tamada/tap/gixor-blue?logo=homebrew)](https://github.com/tamada/homebrew-tap)
 
 Git Ignore Management System for Multiple Repositories.
